@@ -1,4 +1,4 @@
-"""Tests for bin/odapkit-parts and tools/sourcing on synthetic fixtures (tests/fixtures/parts).
+"""Tests for odapkit parts (its engine, tools/sourcing/partscli.py) and tools/sourcing on synthetic fixtures (tests/fixtures/parts).
 
 The channel fixtures copy the structure of each source (Digi-Key's __NEXT_DATA__, FindChips'
 result rows, the JLCPCB parts API, and the documented responses of the keyed APIs) with made-up
@@ -19,7 +19,7 @@ import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIX = os.path.join(HERE, "fixtures", "parts")
-TOOL = os.path.join(HERE, "..", "bin", "odapkit-parts")
+TOOL = os.path.join(HERE, "..", "tools", "sourcing", "__main__.py")
 sys.path.insert(0, os.path.join(HERE, "..", "tools"))
 
 from sourcing import channels, matrix, rkddr  # noqa: E402

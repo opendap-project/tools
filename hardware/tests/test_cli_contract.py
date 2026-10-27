@@ -33,6 +33,15 @@ class Plugins(unittest.TestCase):
     def test_every_plugin_is_declared(self):
         self.assertEqual({f.removeprefix("odapkit-") for f in os.listdir(os.path.join(ROOT, "bin"))}, set(TOOLS))
 
+    def test_every_plugin_is_a_thin_entry_point(self):
+        # bin/ holds entry points only: each execs its engine (under tools/, or toolkit-host's helpers).
+        for f in sorted(os.listdir(os.path.join(ROOT, "bin"))):
+            with open(os.path.join(ROOT, "bin", f)) as fh:
+                text = fh.read()
+            self.assertTrue(text.startswith("#!/bin/sh"), f)
+            self.assertIn("exec ", text, f)
+            self.assertLessEqual(len(text.splitlines()), 70, f)
+
     def test_help_first_line_is_front_tool_and_summary(self):
         for name in PLUGINS:
             r = run(tool(name), "--help")

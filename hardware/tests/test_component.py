@@ -1,4 +1,4 @@
-"""Tests for bin/odapkit-component on the board example in tests/fixtures/component (needs uv).
+"""Tests for odapkit component (bin/odapkit-component, engine tools/component/validate.py) on the board example in tests/fixtures/component (needs uv).
 
 Run from the repository root: python3 -m unittest discover tests
 """

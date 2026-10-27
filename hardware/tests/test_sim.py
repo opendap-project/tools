@@ -1,4 +1,4 @@
-"""Tests for bin/odapkit-sim on the RC fixture in tests/fixtures/sim (needs ngspice on PATH).
+"""Tests for odapkit sim (its engine, tools/sim/simchecks.py) on the RC fixture in tests/fixtures/sim (needs ngspice on PATH).
 
 Run from the repository root: python3 -m unittest discover tests
 """
@@ -13,7 +13,7 @@ import unittest
 import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TOOL = os.path.join(HERE, "..", "bin", "odapkit-sim")
+TOOL = os.path.join(HERE, "..", "tools", "sim", "__main__.py")
 FIXTURE = os.path.join(HERE, "fixtures", "sim")
 MODEL = b"* fake vendor model\n.subckt FAKE a b\nR1 a b 1k\n.ends\n"
 
