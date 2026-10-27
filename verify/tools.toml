@@ -1,0 +1,10 @@
+# The tools this root adds to the maintainers' umbrella command (command standard §3).
+schema = "opendap.tools/v1"
+front = "odw"
+
+[[tool]]
+name = "motion"
+summary = "Record motion on screen and measure it (transitions, animations, scrolling)"
+entry = "bin/odapkit-motion"
+audience = "maintainer"
+stability = "preview"

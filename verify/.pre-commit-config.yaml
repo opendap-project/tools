@@ -31,3 +31,12 @@ repos:
         language: system
         pass_filenames: false
         files: ^docs/requirements/
+  # odapkit motion's command-line contract (command standard §6), without a screen or a recording.
+  - repo: local
+    hooks:
+      - id: cli-contract
+        name: command-line contract (tests/cli.sh)
+        entry: tests/cli.sh
+        language: system
+        pass_filenames: false
+        files: ^(bin|tests)/|^tools\.toml$

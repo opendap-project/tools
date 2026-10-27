@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """odapkit motion: record motion on screen and measure it (transitions, animations, scrolling).
 
-Usage: odapkit motion record (--region X,Y,W,H [--screen N] | --qmp SOCKET [--keys QCODE@S,…]) [--seconds S] [--fps F] [--run CMD] [--out FILE]
+Usage: odapkit motion record (--region X,Y,W,H [--screen N] | --qmp SOCKET [--keys QCODE@S,…]) [--seconds S] [--fps F] [--run CMD] [--out FILE] [--dry-run]
        odapkit motion analyze FILE [--roi X,Y,W,H] [--track RRGGBB[/TOL]] [--threshold T] [--json]
-       odapkit motion frames FILE (--at T,T,… | --segment K [--count N]) [--roi X,Y,W,H] [--width PX] [--out PNG]
+       odapkit motion frames FILE (--at T,T,… | --segment K [--count N]) [--roi X,Y,W,H] [--width PX] [--out PNG] [--dry-run]
+       odapkit motion --help
 
   record   records a region of a screen (points from its top-left corner, as a screenshot shows
            them; scaled to the screen's pixels) at its full frame rate, lossless enough to
@@ -27,6 +28,10 @@ Usage: odapkit motion record (--region X,Y,W,H [--screen N] | --qmp SOCKET [--ke
            side by side in one PNG (a contact sheet; the times are printed): --at given times, or
            --count frames spread over segment K (its first and last included).
 
+--dry-run (record, frames) checks the arguments, names the file it would write and records or writes
+nothing. analyze --json prints opendap.motion-analysis/v1. Errors carry a dotted code, a hint and a
+fix (odw.clikit from toolkit-host; with --json, also an opendap.error/v1 document on stdout).
+
 Times are in seconds from the recording's start. Needs ffmpeg (toolkit-host's Brewfile). On macOS
 the terminal needs the Screen Recording permission once. The capture is the host's: what it says
 of frame pacing covers the whole chain on screen (for the virtual T1: the guest, VNC, the
@@ -45,14 +50,48 @@ import subprocess
 import sys
 import tempfile
 import time
+import tomllib
 
 TOKENS = {"fast": 0.120, "standard": 0.200, "slow": 0.320}
 ANALYSIS_WIDTH = 160
 
 
-def die(msg, code=2):
-    print(f"odapkit motion: {msg}", file=sys.stderr)
-    sys.exit(code)
+TOOL = "odapkit motion"
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def _host_dir():
+    """toolkit-host: ODAP_TOOLKIT_HOST_DIR (odapkit sets it), else the workspace's repos.tsv."""
+    d = HERE
+    if os.environ.get("ODAP_TOOLKIT_HOST_DIR"):
+        return os.environ["ODAP_TOOLKIT_HOST_DIR"]
+    while d != os.path.dirname(d):
+        if os.path.isfile(os.path.join(d, "repos.tsv")):
+            for line in open(os.path.join(d, "repos.tsv")).read().splitlines()[1:]:
+                path, _, slug = line.partition("\t")
+                if slug.split("/")[-1] == "toolkit-host" and os.path.isdir(os.path.join(d, path)):
+                    return os.path.join(d, path)
+            return None
+        d = os.path.dirname(d)
+    return None
+
+
+def _clikit():
+    host = _host_dir()
+    if not host:
+        sys.exit(f"{TOOL}: error repo.not_found: no toolkit-host checkout\n  hint: its odw.clikit runs this tool's "
+                 "command line\n  fix: export ODAP_TOOLKIT_HOST_DIR=<toolkit-host checkout>")
+    sys.path.insert(0, os.path.join(host, "src"))
+    from odw import clikit
+    return clikit
+
+
+clikit = _clikit()
+
+
+def die(msg, code=2, err="input.invalid", hint="the usage is in odapkit motion --help", fix=f"{TOOL} --help"):
+    """An error with a stable code, a hint and a fix (odw.clikit); exit status `code`."""
+    raise clikit.CliError(err, msg, hint, fix, status=code)
 
 
 def box(text):
@@ -86,7 +125,7 @@ def capture_device(n):
                          capture_output=True, text=True).stderr
     found = [int(m.group(1)) for m in re.finditer(r"\[(\d+)\] Capture screen \d+", out)]
     if n >= len(found):
-        die(f"no screen {n} (screens: {len(found)})")
+        die(f"no screen {n} (screens: {len(found)})", err="screen.not_found", hint="screens are numbered from 0", fix="system_profiler SPDisplaysDataType")
     return found[n]
 
 
@@ -96,10 +135,10 @@ def record(a):
     if not a.region:
         die("record needs --region or --qmp")
     if sys.platform != "darwin":
-        die("record runs on macOS (avfoundation); on Linux record with ffmpeg's x11grab or kmsgrab")
+        die("record runs on macOS (avfoundation); on Linux record with ffmpeg's x11grab or kmsgrab", err="platform.unsupported", hint="on Linux, --qmp records a QEMU machine's display", fix=f"{TOOL} record --qmp SOCKET")
     sc = screens()
     if a.screen >= len(sc):
-        die(f"no screen {a.screen} (screens: {len(sc)})")
+        die(f"no screen {a.screen} (screens: {len(sc)})", err="screen.not_found", hint="screens are numbered from 0", fix="system_profiler SPDisplaysDataType")
     sw, sh, scale = sc[a.screen]
     x, y, w, h = a.region
     if x < 0 or y < 0 or x + w > sw or y + h > sh:
@@ -108,6 +147,10 @@ def record(a):
     px = [int(round(v * scale)) for v in (x, y, w, h)]
     px[2] -= px[2] % 2
     px[3] -= px[3] % 2
+    if a.dry_run:
+        print(f"{TOOL}: would record {w:g}x{h:g} points of screen {a.screen} for {a.seconds:g} s at {a.fps} fps to "
+              f"{a.out or 'a temporary .mp4'}" + (f", running {a.run!r}" if a.run else ""), file=sys.stderr)
+        return
     out = a.out or tempfile.NamedTemporaryFile(prefix="motion-", suffix=".mp4", delete=False).name
     argv = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "avfoundation", "-capture_cursor", "0",
             "-framerate", str(a.fps), "-pixel_format", "nv12", "-i", f"{capture_device(a.screen)}:none",
@@ -122,7 +165,7 @@ def record(a):
         subprocess.run(shlex.split(a.run))
     err = p.communicate()[1]
     if p.returncode != 0:
-        die(f"ffmpeg failed: {err.strip()}", 1)
+        die(f"ffmpeg failed: {err.strip()}", 1, err="ffmpeg.failed", hint="on macOS the terminal needs the Screen Recording permission", fix="open \"x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture\"")
     print(out)
 
 
@@ -148,13 +191,19 @@ class Qmp:
         self.f.flush()
         reply = self.read()
         if "error" in reply:
-            die(f"QMP {name}: {reply['error']['desc']}", 1)
+            die(f"QMP {name}: {reply['error']['desc']}", 1, err="qmp.refused", hint="QEMU refused the command; QMP serves one client at a time", fix="odap-vdev status")
         return reply.get("return")
 
 
 def record_qmp(a):
     """The machine's display, sampled every 1/fps seconds on a deadline (not after the last frame:
     the rate holds), each dump read back and piped to the encoder."""
+    if a.dry_run:
+        if not os.path.exists(a.qmp):
+            die(f"no QMP socket at {a.qmp}", err="qmp.not_found", hint="a running QEMU machine serves it", fix="odap-vdev status")
+        print(f"{TOOL}: would record the display behind {a.qmp} for {a.seconds:g} s at {a.fps} fps to "
+              f"{a.out or 'a temporary .mp4'}", file=sys.stderr)
+        return
     q = Qmp(a.qmp)
     out = a.out or tempfile.NamedTemporaryFile(prefix="motion-", suffix=".mp4", delete=False).name
     tmp = tempfile.mkdtemp(prefix="motion-")
@@ -198,7 +247,7 @@ def record_qmp(a):
     os.remove(dump)
     os.rmdir(tmp)
     if enc.returncode != 0:
-        die("ffmpeg failed to encode the frames", 1)
+        die("ffmpeg failed to encode the frames", 1, err="ffmpeg.failed", hint="the encoder's message is above", fix="ffmpeg -version")
     if late:
         print(f"odapkit motion: {late} of {n} samples late by more than a frame: lower --fps", file=sys.stderr)
     print(out)
@@ -208,12 +257,12 @@ def record_qmp(a):
 
 def probe(path):
     if not os.path.exists(path):
-        die(f"no recording at {path}")
+        die(f"no recording at {path}", err="recording.not_found", hint="FILE is a recording made by odapkit motion record", fix=f"{TOOL} record --help")
     check = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
                            capture_output=True, text=True)
     if check.returncode != 0:
         # An MP4 has its index written when recording ends: until then it cannot be read.
-        die(f"{path} cannot be read yet: is it still recording? ({check.stderr.strip().splitlines()[-1] if check.stderr.strip() else 'no details'})", 1)
+        die(f"{path} cannot be read yet: is it still recording? ({check.stderr.strip().splitlines()[-1] if check.stderr.strip() else 'no details'})", 1, err="recording.unreadable", hint="an MP4 is readable once its recording ends", fix=f"ffprobe {path}")
     out = run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height",
                "-of", "csv=p=0", path], text=True).stdout.strip().split(",")
     times = run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "frame=pts_time",
@@ -269,7 +318,7 @@ def analyze(a):
             j += 1
         segments.append({"start_frame": start - 1, "end_frame": last, "held": held})
         i = last + 1
-    report = {"file": a.file, "frames": n, "seconds": round(times[n - 1], 3) if n else 0,
+    report = {"schema": "opendap.motion-analysis/v1", "file": a.file, "frames": n, "seconds": round(times[n - 1], 3) if n else 0,
               "fps": round((n - 1) / times[n - 1], 1) if n > 1 and times[n - 1] > 0 else None, "segments": []}
     track = parse_track(a.track) if a.track else None
     rgb = None
@@ -374,13 +423,16 @@ def frames(a):
             analyze(b)
         segs = json.loads(buf.getvalue())["segments"]
         if a.segment >= len(segs):
-            die(f"no segment {a.segment} (found {len(segs)})")
+            die(f"no segment {a.segment} (found {len(segs)})", err="segment.not_found", hint="segments are numbered from 0 by analyze", fix=f"{TOOL} analyze {a.file}")
         s = segs[a.segment]
         n = max(2, a.count)
         at = [s["start"] + (s["end"] - s["start"]) * i / (n - 1) for i in range(n)]
     # The frame shown at each time: the last one that started at or before it.
     picks = [max([i for i, t in enumerate(times) if t <= x + 1e-6] or [0]) for x in at]
     vf = crop_filter(a.roi, width, height) + [f"scale={a.width}:-2:flags=lanczos"]
+    if a.dry_run:
+        print(f"{TOOL}: would write {len(set(picks))} frames side by side to {a.out or 'a temporary .png'}", file=sys.stderr)
+        return
     out = a.out or tempfile.NamedTemporaryFile(prefix="motion-sheet-", suffix=".png", delete=False).name
     select = "+".join(f"eq(n\\,{p})" for p in picks)
     # Picked frames in time order, side by side; repeats (a held frame) kept once.
@@ -392,10 +444,13 @@ def frames(a):
     print("left to right: " + ", ".join(f"{times[p]:.3f} s (frame {p})" for p in unique))
 
 
-def main():
-    p = argparse.ArgumentParser(prog="odapkit motion", description=__doc__.split("\n\n")[0],
-                                formatter_class=argparse.RawDescriptionHelpFormatter)
-    sub = p.add_subparsers(dest="cmd", required=True)
+def _main(argv):
+    tools = tomllib.loads(open(os.path.join(HERE, "..", "tools.toml")).read())["tool"]
+    p = clikit.Parser(prog=TOOL, summary=next(t["summary"] for t in tools if t["name"] == "motion"), description=__doc__.split("\n\n", 1)[1],
+                      formatter_class=argparse.RawDescriptionHelpFormatter,
+                      examples=["odapkit motion record --region 0,0,400,300 --seconds 2 --dry-run",
+                                "odapkit motion analyze /tmp/motion.mp4 --json"])
+    sub = p.add_subparsers(dest="cmd", required=True, parser_class=clikit.Parser)
     r = sub.add_parser("record")
     r.add_argument("--region", type=box)
     r.add_argument("--qmp", help="a QEMU machine's QMP socket: record its display")
@@ -406,6 +461,7 @@ def main():
     r.add_argument("--run", help="command that triggers the motion, started once recording runs")
     r.add_argument("--lead", type=float, default=0.4, help="seconds recorded before --run starts")
     r.add_argument("--out")
+    r.add_argument("--dry-run", action="store_true", help="check the arguments and record nothing")
     an = sub.add_parser("analyze")
     an.add_argument("file")
     an.add_argument("--roi", type=box)
@@ -421,10 +477,17 @@ def main():
     fr.add_argument("--width", type=int, default=200)
     fr.add_argument("--threshold", type=float, default=0.6)
     fr.add_argument("--out")
-    a = p.parse_args()
+    fr.add_argument("--dry-run", action="store_true", help="pick the frames and write nothing")
+    a = p.parse_args(argv)
     if not all(run_ok(t) for t in ("ffmpeg", "ffprobe")):
-        die("needs ffmpeg and ffprobe (toolkit-host's Brewfile)", 1)
+        die("needs ffmpeg and ffprobe", 1, err="tool.missing", hint="they come with toolkit-host's Brewfile",
+            fix="brew install ffmpeg")
     {"record": record, "analyze": analyze, "frames": frames}[a.cmd](a)
+    return 0
+
+
+def main(argv=None):
+    return clikit.main(TOOL, _main, argv)
 
 
 def run_ok(tool):
@@ -432,4 +495,4 @@ def run_ok(tool):
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
