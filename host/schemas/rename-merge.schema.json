@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/rename-merge.schema.json",
+  "title": "opendap.rename-merge/v1: a root's source repositories joined with their history (odapkit rename merge)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "mode", "root", "into", "branch", "engine", "commit", "sources", "checks", "size", "problems",
+               "warnings", "steps"],
+  "$defs": {
+    "sha": {"type": "string", "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$"},
+    "count": {"type": ["integer", "null"], "minimum": 0},
+    "problem": {
+      "type": "object", "additionalProperties": false, "required": ["code", "message", "hint", "fix"],
+      "properties": {"code": {"type": "string", "pattern": "^merge\\."}, "message": {"type": "string"},
+                     "hint": {"type": "string"}, "fix": {"type": "string"}}
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "path", "from", "landing", "head", "rewritten", "commits", "commits_rewritten",
+                   "trees_match", "lfs_pointers", "gitlinks", "pack_kib", "commit_map"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1, "description": "GitHub repository name"},
+        "path": {"type": "string", "description": "Workspace path of its clone (repos.tsv)"},
+        "from": {"type": "string", "description": "Where it was cloned from: the workspace clone, or --source"},
+        "landing": {"type": "string", "description": "Folder inside the root; empty when the root is this repository"},
+        "head": {"oneOf": [{"$ref": "#/$defs/sha"}, {"type": "null"}], "description": "The source's last commit, recorded by the cut"},
+        "rewritten": {"oneOf": [{"$ref": "#/$defs/sha"}, {"type": "null"}], "description": "The head after the rewrite; null in a dry run"},
+        "commits": {"$ref": "#/$defs/count"},
+        "commits_rewritten": {"$ref": "#/$defs/count"},
+        "trees_match": {"type": ["boolean", "null"], "description": "Every original commit's tree equals its rewritten commit's tree at the landing folder"},
+        "lfs_pointers": {"$ref": "#/$defs/count"},
+        "gitlinks": {"type": ["array", "null"], "items": {"type": "string"}},
+        "pack_kib": {"$ref": "#/$defs/count"},
+        "commit_map": {"type": ["string", "null"], "description": "Old → new commit ids, relative to the root checkout"}
+      }
+    }
+  },
+  "properties": {
+    "schema": {"const": "opendap.rename-merge/v1"},
+    "mode": {"enum": ["dry-run", "merge"]},
+    "root": {"type": "string", "minLength": 1},
+    "into": {"type": ["string", "null"]},
+    "branch": {"type": "string", "minLength": 1},
+    "engine": {"enum": ["filter-repo", "fast-export"]},
+    "commit": {"oneOf": [{"$ref": "#/$defs/sha"}, {"type": "null"}], "description": "The root's first commit: the merge of every rewritten source"},
+    "sources": {"type": "array", "items": {"$ref": "#/$defs/source"}, "minItems": 1},
+    "checks": {
+      "type": ["object", "null"], "additionalProperties": false,
+      "required": ["source_commits", "root_commits", "commits_match", "trees_match"],
+      "properties": {"source_commits": {"type": "integer", "minimum": 0}, "root_commits": {"type": "integer", "minimum": 1},
+                     "commits_match": {"type": "boolean", "description": "Root commits = source commits + the merge, and no rewrite dropped a commit"},
+                     "trees_match": {"type": "boolean"}}
+    },
+    "size": {
+      "type": ["object", "null"], "additionalProperties": false, "required": ["sources_pack_kib", "root_kib"],
+      "properties": {"sources_pack_kib": {"type": "integer", "minimum": 0}, "root_kib": {"type": "integer", "minimum": 0}}
+    },
+    "problems": {"type": "array", "items": {"$ref": "#/$defs/problem"}},
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["code", "source", "message", "fix"],
+        "properties": {"code": {"enum": ["merge.lfs", "merge.gitlinks"]}, "source": {"type": "string"},
+                       "message": {"type": "string"}, "fix": {"type": "string"}}
+      }
+    },
+    "steps": {"type": "array", "items": {"type": "string"}}
+  }
+}

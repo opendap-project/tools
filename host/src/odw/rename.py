@@ -1,6 +1,7 @@
 """odw rename: one root's cut from the rename map (RFC 0017 §7 steps 3 and 4).
 
-Usage: odapkit rename (plan | apply | check) ROOT [--workspace DIR] [--map TSV] [--root-dir DIR] [--cut ROOTS]
+Usage: odapkit rename merge ROOT --into DIR [...]   (step 2, the history merge: odw/rename_merge.py)
+       odapkit rename (plan | apply | check) ROOT [--workspace DIR] [--map TSV] [--root-dir DIR] [--cut ROOTS]
        [--landing REPO=DIR] [--dry-run] [--json | --text]
 
 plan (a dry run, the default) lists every move, delete, identifier rewrite and link or URL rewrite the root needs;
@@ -375,11 +376,13 @@ def _parser():
     ap = argparse.ArgumentParser(
         prog="odapkit rename", description="odapkit rename: one root's cut from the rename map (moves, links, "
         "identifiers).", formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="examples:\n  odapkit rename plan libs --map rename-map.tsv\n"
+        epilog="examples:\n  odapkit rename merge libs --map rename-map.tsv --into ../libs   (step 2: history merge)\n"
+               "  odapkit rename plan libs --map rename-map.tsv\n"
                "  odapkit rename plan libs --map rename-map.tsv --json\n"
                "  odapkit rename apply libs --map rename-map.tsv --root-dir ../libs\n"
                "  odapkit rename check libs --map rename-map.tsv --root-dir ../libs --json")
-    ap.add_argument("verb", choices=["plan", "apply", "check"])
+    ap.add_argument("verb", choices=["plan", "apply", "check"], help="plan, apply or check; `merge` has its own "
+                    "options (odapkit rename merge --help)")
     ap.add_argument("root")
     ap.add_argument("--workspace")
     ap.add_argument("--map", help="the rename map (default: $ODAP_RENAME_MAP)")
@@ -399,6 +402,10 @@ def _emit(doc, as_json, text):
 
 
 def main(argv=None):
+    argv = sys.argv[1:] if argv is None else argv
+    if argv[:1] == ["merge"]:
+        from odw import rename_merge
+        return rename_merge.main(argv[1:])
     try:
         args = _parser().parse_args(argv)
     except SystemExit as e:
