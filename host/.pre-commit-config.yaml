@@ -30,6 +30,15 @@ repos:
         language: system
         pass_filenames: false
         files: ^(src|schemas|tests)/|^pyproject\.toml$
+  # The odw dispatch crate: its unit and fixture-workspace tests, built into this checkout's target/.
+  - repo: local
+    hooks:
+      - id: odw-dispatch-tests
+        name: odw dispatch tests (cargo test)
+        entry: sh -c 'CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-4}" cargo test --quiet --locked --manifest-path crates/odw-dispatch/Cargo.toml --target-dir target'
+        language: system
+        pass_filenames: false
+        files: ^crates/odw-dispatch/|^rust-toolchain\.toml$
   # The requirements README is rendered from requirements.toml and checked.
   - repo: local
     hooks:
