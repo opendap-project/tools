@@ -75,10 +75,13 @@ class Map:
             return s.root, None
         return s.root, f"{s.landing}/{rest}".strip("/") if s.landing else rest
 
-    def cut(self, root, override=None):
-        """The roots already cut when `root` is: those before it in ORDER, and itself."""
+    def cut(self, root, override=None, ws=None):
+        """The roots already cut when `root` is: the override; else the roots the workspace already has as one
+        repository (repos.tsv), and itself; else (no workspace) those before it in ORDER, and itself."""
         if override:
             return list(dict.fromkeys([*override, root]))
+        if ws is not None and (pathlib.Path(ws) / "repos.tsv").is_file():
+            return cut_roots(ws, root)
         if root in ORDER:
             return ORDER[:ORDER.index(root) + 1]
         return [*ORDER, root]
@@ -121,6 +124,16 @@ def _landing(text, root, notes):
     if not found and m:
         return m.group(1)
     return None
+
+
+def cut_roots(ws, root):
+    """Roots the workspace lists as their own repository (opendap-project/<root>), in ORDER, then `root`."""
+    names = set()
+    for line in (pathlib.Path(ws) / "repos.tsv").read_text().splitlines()[1:]:
+        cols = line.split("\t")
+        if len(cols) >= 2:
+            names.add(cols[1].strip().rsplit("/", 1)[-1])
+    return list(dict.fromkeys([r for r in ORDER if r in names and r != root] + [root]))
 
 
 def load(ws, map_path, landings=None):

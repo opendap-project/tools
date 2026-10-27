@@ -428,7 +428,7 @@ def _main(argv):
             raise Refused("rename.unknown-root", f"the map names no root {args.root!r}",
                           f"roots in the map: {', '.join(m.roots)}", f"odapkit rename plan {m.roots[0]}", 2)
         root_dir = pathlib.Path(args.root_dir) if args.root_dir else ws / "public" / args.root
-        cut = m.cut(args.root, [c for c in (args.cut or "").split(",") if c])
+        cut = m.cut(args.root, [c for c in (args.cut or "").split(",") if c], ws)
         if args.verb == "check":
             doc = check(m, args.root, ws, root_dir, cut)
             fails = [r for r in doc["results"] if r["verdict"] == "fail"]

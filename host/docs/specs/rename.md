@@ -58,7 +58,7 @@ Every text file of the root (UTF-8, no NUL byte, at most 8 MiB) is read once. Fi
 3. **Links into the root itself**: inside the root's Markdown, a link to the root's own URL at `main` becomes a relative link.
 4. **Identifiers** listed in the map, in every text file. Values match as whole tokens (not inside a longer name or path), longest first, in one pass, so `/usr/bin/odap-x` wins over `odap-x` and no rewrite feeds another.
 
-**Which roots are cut.** URLs and identifiers are rewritten only for roots already cut: the roots before ROOT in RFC 0017's order (`libs`, `tools`, `hats`, `host`, `t1`, `blackbird`) and ROOT itself; roots outside that list come after it. `--cut a,b` overrides the order. A reference to a root not cut yet stays until that root's cut.
+**Which roots are cut.** URLs and identifiers are rewritten only for roots already cut: the roots the workspace's `repos.tsv` already lists as their own repository (`opendap-project/<root>`), and ROOT itself, since cuts need not follow RFC 0017's order; without a `repos.tsv`, the roots before ROOT in that order (`libs`, `tools`, `hats`, `host`, `t1`, `blackbird`). `--cut a,b` overrides both. A reference to a root not cut yet stays until that root's cut.
 
 **Identifier status.** Each identifier row found in the root is one of:
 
