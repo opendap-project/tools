@@ -25,6 +25,7 @@ JSON_PROBES = {
     "odapkit-component": ["validate", "--json", f"{HW}/tests/fixtures/component/board"],
     "odapkit-craft": ["check", "--json", f"{HW}/tests/fixtures/craft-sch/bad.kicad_sym"],
     "odapkit-sim": ["list", "--json", f"{HW}/tests/fixtures/sim"],
+    "odapkit-variant": ["get", "--dir", f"{HW}/tests/fixtures/variant/board/variants", "--json", "variant-b"],
     "odapkit-stackup": ["stack", f"{HW}/tests/fixtures/stackup/fixture.toml", "--json"],
     "sch-craft-check.py": ["--json", f"{HW}/tests/fixtures/craft-sch/bad.kicad_sym"],
     "craftrules.py": ["render", f"{HW}/tests/fixtures/craft-rules/pcb-craft-standard.md", "--check", "--json"],
