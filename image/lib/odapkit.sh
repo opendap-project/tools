@@ -46,7 +46,7 @@ _host_sibling() {
     [ "$d" = / ] && return 1
     d="$(dirname "$d")"
   done
-  [ "$d" != "$top" ] && [ -f "$d/host/lib/cli.sh" ] && _mine "$d/host/lib/cli.sh" && echo "$d/host"
+  [ "$d" != "$top" ] && _mine "$d/.git" && [ -f "$d/host/lib/cli.sh" ] && _mine "$d/host/lib/cli.sh" && echo "$d/host"
 }
 _host_dir() {
   _host_sibling && return 0
