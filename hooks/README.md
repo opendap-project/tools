@@ -50,7 +50,7 @@ The same engine is the maintainers' `odapkit dru compose|check` (`bin/odapkit-dr
 - `hooks/` — the hook scripts and their engines
 - `bin/` — the tools this repository adds to `odapkit` (`tools.toml`), thin wrappers over the engines in `hooks/`
 - `lib/cli.sh` — the command-line helpers of the shell wrappers (toolkit-host's, with a minimal fallback): `host/` of the same repository when this checkout is one of its folders (the merged `tools` root), else `ODAP_TOOLKIT_HOST_DIR`, else the `toolkit-host` row of `repos.tsv` (`tests/test_host_lookup.py` builds both layouts)
-- `tests/` — tests and their fixtures: `python3 -m unittest discover tests` (pre-commit runs them)
+- `tests/` — tests and their fixtures: `python3 -m unittest discover tests` (pre-commit runs them). They pass in both toolkit layouts: this repository, and `hooks/` of the merged `tools` root, where `.pre-commit-hooks.yaml` sits at the root with entries under `hooks/hooks/`
 
 ## License
 

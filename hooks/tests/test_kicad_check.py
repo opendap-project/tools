@@ -159,28 +159,78 @@ class KicadCheck(unittest.TestCase):
             self.assertRegex(r.stderr, r"error input\.invalid: .*\n  hint: .*\n  fix: ")
 
 
+def hooks_yaml(root):
+    """The .pre-commit-hooks.yaml that serves the hooks of folder `root`, and the path from that file's folder to
+    `root` ("" or "hooks"): the file in `root` (toolkit-hooks), or at the repository's top, whose entries are then
+    under hooks/ (the merged tools root). Entries are relative to the file's folder, as pre-commit runs them."""
+    for d in (root, os.path.dirname(root)):
+        f = os.path.join(d, ".pre-commit-hooks.yaml")
+        if os.path.isfile(f):
+            return f, "" if d == root else os.path.basename(root)
+    raise FileNotFoundError(f"no .pre-commit-hooks.yaml in {root} or its parent")
+
+
 class HookDefinitions(unittest.TestCase):
     """The hook ids and arguments other repositories pin stay as they were; the README lists every hook."""
 
+    root = ROOT
+
     def hooks(self):
-        with open(os.path.join(ROOT, ".pre-commit-hooks.yaml")) as f:
+        with open(hooks_yaml(self.root)[0]) as f:
             text = f.read()
         return [dict(re.findall(r"^\s+(\w+): (.*)$", "  id: " + block, re.M))
                 for block in text.split("- id: ")[1:]]
 
     def test_ids_entries_and_files(self):
+        f, prefix = hooks_yaml(self.root)
+        check = os.path.join(prefix, "hooks", "kicad-check.py")
         got = {h["id"]: (h["entry"], h.get("files")) for h in self.hooks()}
-        self.assertEqual(got["kicad-erc"], ("hooks/kicad-check.py erc", r"\.kicad_sch$"))
-        self.assertEqual(got["kicad-drc"], ("hooks/kicad-check.py drc", r"\.kicad_pcb$"))
+        self.assertEqual(got["kicad-erc"], (f"{check} erc", r"\.kicad_sch$"))
+        self.assertEqual(got["kicad-drc"], (f"{check} drc", r"\.kicad_pcb$"))
         self.assertEqual(set(got), {"kicad-erc", "kicad-drc", "no-fab-outputs", "no-stray-files",
                                     "kicad-dru-composed"})
         for h in self.hooks():
-            self.assertTrue(os.access(os.path.join(ROOT, h["entry"].split()[0]), os.X_OK), h["id"])
+            entry = os.path.join(os.path.dirname(f), h["entry"].split()[0])
+            self.assertTrue(os.access(entry, os.X_OK), h["id"])
 
     def test_readme_lists_every_hook(self):
-        with open(os.path.join(ROOT, "README.md")) as f:
+        with open(os.path.join(self.root, "README.md")) as f:
             table = set(re.findall(r"^\| `([a-z-]+)` \|", f.read(), re.M))
         self.assertEqual(table, {h["id"] for h in self.hooks()})
+
+
+class _InLayout:
+    """Runs HookDefinitions on a copy of this checkout's hooks in one toolkit layout (`layout`)."""
+
+    layout = "today"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.mkdtemp()
+        f, prefix = hooks_yaml(ROOT)
+        with open(f) as fh:
+            text = re.sub(r"^(\s+entry: )" + re.escape(f"{prefix}/" if prefix else ""), r"\1", fh.read(), flags=re.M)
+        if cls.layout == "merged":
+            top, cls.root = os.path.join(cls.tmp, "tools"), os.path.join(cls.tmp, "tools", "hooks")
+            text = re.sub(r"^(\s+entry: )", r"\1hooks/", text, flags=re.M)
+        else:
+            top = cls.root = os.path.join(cls.tmp, "hooks")
+        shutil.copytree(os.path.join(ROOT, "hooks"), os.path.join(cls.root, "hooks"))
+        shutil.copy2(os.path.join(ROOT, "README.md"), os.path.join(cls.root, "README.md"))
+        with open(os.path.join(top, ".pre-commit-hooks.yaml"), "w") as fh:
+            fh.write(text)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp)
+
+
+class HookDefinitionsOwnRepository(_InLayout, HookDefinitions):
+    layout = "today"
+
+
+class HookDefinitionsMergedToolsRoot(_InLayout, HookDefinitions):
+    layout = "merged"
 
 
 if __name__ == "__main__":
