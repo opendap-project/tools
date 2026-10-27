@@ -39,4 +39,10 @@ repos:
         entry: tests/cli.sh
         language: system
         pass_filenames: false
-        files: ^(bin|tests)/|^tools\.toml$
+        files: ^(bin|tools|tests)/|^tools\.toml$
+      - id: motion-tests
+        name: odapkit motion engine tests (tests/test_motion.py; a synthetic recording through ffmpeg)
+        entry: python3 -m unittest discover tests
+        language: system
+        pass_filenames: false
+        files: ^(bin|tools|tests)/|^tools\.toml$

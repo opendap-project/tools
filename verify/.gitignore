@@ -7,3 +7,6 @@
 # Rust
 target
 # <<< odapkit sync
+
+# Python (tools/)
+__pycache__/
