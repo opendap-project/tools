@@ -28,8 +28,8 @@ RULES = os.path.join(TOOLS, "craft", "rules.toml")
 SCHEMA = os.path.join(ROOT, "schemas", "craft-rules.schema.json")
 SPEC = os.path.join(HERE, "fixtures", "craft-rules", "pcb-craft-standard.md")
 TOOL = os.path.join(ROOT, "bin", "odapkit-craft")
-# sha256 of docs/specs/pcb-craft-standard.md at kicad-lib commit 6a0270d
-SPEC_SHA256 = "85e5cf18942640bda5be4fb066f4d02b1826b1359c0e6e69988bed90953fa5d4"
+# sha256 of kicad/docs/specs/pcb-craft-standard.md at libs v0.1.1 (52fe7dd)
+SPEC_SHA256 = "9386df44dc23d2ba00330d19c2591f2c867f0b611adc4c5fa72dae45ccb92349"
 
 sys.path.insert(0, os.path.join(TOOLS, "craft"))
 import craftrules  # noqa: E402
