@@ -70,8 +70,32 @@ def test_cli_import_and_render(tmp_path, capsys):
     assert requirements.main(["render", str(tmp_path / "requirements.toml"), "--check"]) == 0
 
 
+def workspace_readmes(ws):
+    """Every public requirements README of the workspace, outside linked worktrees and submodules (a folder whose
+    .git is a file): other sessions create and remove those while the tests run."""
+    ws = pathlib.Path(ws)
+    out = []
+    for p in sorted(ws.glob("public/**/docs/requirements/README.md")):
+        parents = p.relative_to(ws).parents
+        if not any((ws / d / ".git").is_file() for d in parents if d != pathlib.Path(".")):
+            out.append(p)
+    return out
+
+
+def test_readmes_skip_linked_worktrees(tmp_path):
+    for repo, git in (("public/a", "dir"), ("public/a-T-01", "file")):
+        (tmp_path / repo / "docs/requirements").mkdir(parents=True)
+        (tmp_path / repo / "docs/requirements/README.md").write_text("x\n")
+        if git == "dir":
+            (tmp_path / repo / ".git").mkdir()
+        else:
+            (tmp_path / repo / ".git").write_text("gitdir: elsewhere\n")
+    assert [p.relative_to(tmp_path).as_posix() for p in workspace_readmes(tmp_path)] == [
+        "public/a/docs/requirements/README.md"]
+
+
 WS = workspace.root(pathlib.Path(__file__))
-REAL = sorted(WS.glob("public/**/docs/requirements/README.md")) if WS else []
+REAL = workspace_readmes(WS) if WS else []
 
 
 @pytest.mark.skipif(not REAL, reason="no workspace checkout")
