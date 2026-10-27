@@ -33,7 +33,7 @@ A directory path is searched for Markdown, leaving out build trees (`target/`, `
 An accepted RFC becomes Implemented when every repository it affects has recorded the outcome. The tool reads each RFC in the rfcs repository's `text/` and reports one row per affected repository:
 
 - **Affected repositories.** The header item `Affected repositories`, inline or as a bullet list under it: repository names as in `repos.tsv` (`workspace` for the workspace root), separated by commas, semicolons or "and". A note in parentheses after a name is ignored, except `(formerly X)`, `(from X)` and `(becomes Y)`, which declare a rename that every RFC may use. Text before a colon is ignored.
-- **Recorded.** A Markdown or TOML file under the repository's `docs/requirements/`, `docs/adr/` or `docs/specs/` cites the RFC by number (`RFC 0004`, `RFCs 0008 and 0009`) or by its GitHub URL. A repository without `docs/` (the workspace root, rfcs) records it in its `README.md` or `CONTRIBUTING.md` instead, with the same citation forms.
+- **Recorded.** A Markdown or TOML file under the repository's `docs/requirements/`, `docs/adr/` or `docs/specs/` cites the RFC by number (`RFC 0004`, `RFCs 0008 and 0009`) or by its GitHub URL. A repository without `docs/` (the workspace root, rfcs) records it in its `README.md` or `CONTRIBUTING.md` instead, with the same citation forms; a generated index (`<!-- index:start -->` to `<!-- index:end -->`) lists every RFC and does not count.
 
 | Row state | Meaning |
 |---|---|

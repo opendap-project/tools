@@ -5,7 +5,7 @@ separated by commas, semicolons or "and"; a note in parentheses after a name is 
 `(from X)` and `(becomes Y)`, which declare a rename that every RFC's list may use. A name resolves through the
 workspace's repos.tsv files (`workspace` is the workspace root). A repository recorded the outcome when a Markdown
 or TOML file under its `docs/requirements/`, `docs/adr/` or `docs/specs/` cites the RFC by number (`RFC 0004`) or by its GitHub URL;
-a repository without docs/ (the workspace root, rfcs) records it in its README.md or CONTRIBUTING.md.
+a repository without docs/ (the workspace root, rfcs) records it in its README.md or CONTRIBUTING.md, outside a generated index.
 Spec: docs/specs/docs-gates.md.
 """
 import dataclasses
@@ -21,6 +21,7 @@ NUMBER = re.compile(r"(?:^|/)(\d{4})-[^/]*\.md$")
 FAILING_STATUSES = ("accepted", "implemented")
 RECORD_DIRS = ("requirements", "adr", "specs")
 ROOT_RECORDS = ("README.md", "CONTRIBUTING.md")  # where a repository without docs/ records
+GENERATED_INDEX = re.compile(r"<!-- index:start -->.*?<!-- index:end -->", re.S)  # lists every RFC; not a record
 
 
 @dataclasses.dataclass
@@ -125,7 +126,9 @@ def _cites(number):
 
 def _citations(repo_dir, rx):
     if not (repo_dir / "docs").is_dir():
-        return [n for n in ROOT_RECORDS if (repo_dir / n).is_file() and rx.search((repo_dir / n).read_text(errors="replace"))]
+        texts = {n: GENERATED_INDEX.sub("", (repo_dir / n).read_text(errors="replace"))
+                 for n in ROOT_RECORDS if (repo_dir / n).is_file()}
+        return [n for n, t in texts.items() if rx.search(t)]
     found = []
     for kind in RECORD_DIRS:
         for f in sorted((repo_dir / "docs" / kind).rglob("*")):

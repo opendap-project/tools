@@ -123,6 +123,14 @@ def test_a_repository_without_docs_and_no_citation_is_missing(ws):
     assert row["state"] == "missing" and row["citations"] == []
 
 
+def test_a_generated_index_in_the_readme_is_not_a_record(ws):
+    write_rfc(ws, "0001", rfc("0001", "rfcs"))
+    cite(ws, "rfcs", "README.md", "# RFCs\n\n<!-- index:start -->\n| [RFC 0001: Thing](text/0001-thing.md) |\n<!-- index:end -->\n")
+    assert rfcstatus.status(ws)["rfcs"][0]["rows"][0]["state"] == "missing"
+    cite(ws, "rfcs", "README.md", "# RFCs\n\nThe process follows RFC 0001.\n\n<!-- index:start -->\n<!-- index:end -->\n")
+    assert rfcstatus.status(ws)["rfcs"][0]["rows"][0]["citations"] == ["README.md"]
+
+
 def test_the_workspace_root_without_docs_records_in_its_contributing(ws):
     write_rfc(ws, "0001", rfc("0001", "workspace"))
     cite(ws, "..", "CONTRIBUTING.md", "Cross-repository changes follow RFC 0001.\n")
