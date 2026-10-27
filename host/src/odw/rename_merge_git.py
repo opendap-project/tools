@@ -92,8 +92,15 @@ def pack_kib(repo):
 
 
 def lfs_pointers(repo, rev):
+    """Files at `rev` that are Git LFS pointers: their first line is the pointer's version line (a file that only
+    mentions it, such as this module, is not one)."""
     out = git(repo, "grep", "-l", "-I", "--fixed-strings", "-e", LFS_POINTER, rev, check=False)
-    return len([line for line in out.splitlines() if line])
+    paths = [line for line in out.splitlines() if line]
+    if not paths:
+        return 0
+    batch = git(repo, "cat-file", "--batch-check=%(objectname)", inp="".join(f"{p}\n" for p in paths))
+    return sum(1 for oid in batch.split()
+               if git(repo, "cat-file", "blob", oid, check=False).startswith(LFS_POINTER + "\n"))
 
 
 def gitlinks(repo, rev):

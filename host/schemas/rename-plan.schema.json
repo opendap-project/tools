@@ -84,6 +84,15 @@
         }
       }
     },
+    "structure_only": {"type": "boolean", "description": "Each source kept its paths under its landing folder: no path row moved, no identifier row applied"},
+    "generated": {
+      "type": "array",
+      "description": "Generated files rendered again from their rewritten source, never rewritten themselves",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["path", "source"],
+        "properties": {"path": {"$ref": "#/$defs/path"}, "source": {"$ref": "#/$defs/path"}}
+      }
+    },
     "base": {"type": "string", "pattern": "^[0-9a-f]{40}$", "description": "apply: HEAD before the cut; git reset --keep <base> undoes it"},
     "commits": {"type": "array", "items": {"type": "string", "pattern": "^[0-9a-f]{40}$"}}
   }

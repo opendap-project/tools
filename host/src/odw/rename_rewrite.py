@@ -14,6 +14,14 @@ LINK = re.compile(r"(\]\()(<?)([^)\s>]+)(>?)((?:\s+\"[^\"]*\")?\))")
 REFDEF = re.compile(r"^(\s{0,3}\[[^\]]+\]:\s*)(<?)(\S+?)(>?)(\s.*)?$")
 SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*:", re.I)
 MOVABLE_REFS = {"main", "master", "HEAD"}
+PIN_LINE = re.compile(r"^\s*(?:-\s+)?repo:\s")  # a pre-commit pin: it moves with its rev, after the cut
+METADATA_LINE = re.compile(r"^\s*(?:repository|homepage|documentation|Repository|Homepage|Source)\s*=")
+FROZEN = ("tests/fixtures/",)  # fixtures are compared byte for byte (sha256 goldens): never rewritten
+
+
+def frozen(path):
+    """True for a file no rewrite touches: test fixtures, which tests pin by content."""
+    return any(f"/{d}" in f"/{path}" for d in FROZEN)
 
 
 @dataclasses.dataclass
@@ -105,12 +113,14 @@ def links(text, src, dst, paths):
     return "\n".join(out), edits
 
 
-def urls(text, sources, root, paths_of):
+def urls(text, sources, root, paths_of, path=""):
     """Rewrite GitHub URLs to source repositories of cut roots (`sources`: name → Source) into URLs of their root.
-    Pinned refs (tags, commits) stay: the archived repository keeps serving them."""
+    Pinned refs (tags, commits) stay: the archived repository keeps serving them. A pre-commit `repo:` pin stays
+    (its `rev` is a tag of the old repository); package metadata (`repository = `) gets the root's own URL."""
     edits = []
+    pins = posixpath.basename(path) == ".pre-commit-config.yaml"
 
-    def sub(m, n):
+    def sub(m, n, bare):
         name, kind, ref, path = m.group(1), m.group(2), m.group(3), (m.group(4) or "").lstrip("/")
         s = sources.get(name.removesuffix(".git"))
         if s is None or s.landing is None or (kind and ref not in MOVABLE_REFS):
@@ -121,7 +131,7 @@ def urls(text, sources, root, paths_of):
             return m.group(0)
         if name.endswith(".git") and not kind:
             new = f"{ORG}{s.root}.git"
-        elif not new_path:
+        elif not new_path or (bare and not kind):  # a repository URL in package metadata
             new = f"{ORG}{s.root}"
         else:
             new = f"{ORG}{s.root}/{kind or 'tree'}/main/{new_path}"
@@ -130,7 +140,10 @@ def urls(text, sources, root, paths_of):
         edits.append(Edit("url", n, m.group(0), new))
         return new
 
-    out = [URL.sub(lambda m: sub(m, n), line) for n, line in enumerate(text.split("\n"), start=1)]
+    out = []
+    for n, line in enumerate(text.split("\n"), start=1):
+        bare = bool(METADATA_LINE.match(line))
+        out.append(line if pins and PIN_LINE.match(line) else URL.sub(lambda m: sub(m, n, bare), line))
     return "\n".join(out), edits
 
 

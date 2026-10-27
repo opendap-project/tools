@@ -1,8 +1,9 @@
 """odw rename: one root's cut from the rename map (RFC 0017 §7 steps 3 and 4).
 
 Usage: odapkit rename merge ROOT --into DIR [...]   (step 2, the history merge: odw/rename_merge.py)
+       odapkit rename config ROOT [...]             (step 4, the shared configuration: odw/rename_config.py)
        odapkit rename (plan | apply | check) ROOT [--workspace DIR] [--map TSV] [--root-dir DIR] [--cut ROOTS]
-       [--landing REPO=DIR] [--kind KINDS] [--dry-run] [--json | --text]
+       [--landing REPO=DIR] [--kind KINDS] [--structure-only] [--dry-run] [--json | --text]
 
 plan (a dry run, the default) lists every move, delete, identifier rewrite and link or URL rewrite the root needs;
 apply performs them in the merged root checkout with `git mv` and two local commits (moves, then references) and
@@ -18,7 +19,7 @@ import pathlib
 import subprocess
 import sys
 
-from odw import audit, clikit, rename_keys as rk, rename_map, rename_rewrite as rw, workspace
+from odw import audit, clikit, rename_generated, rename_keys as rk, rename_map, rename_rewrite as rw, workspace
 
 TOOL = "odapkit rename"
 
@@ -44,6 +45,8 @@ class Plan:
     conflicts: list = dataclasses.field(default_factory=list)
     identifiers: list = dataclasses.field(default_factory=list)
     edits: list = dataclasses.field(default_factory=list)
+    generated: list = dataclasses.field(default_factory=list)
+    structure_only: bool = False
     texts: dict = dataclasses.field(default_factory=dict)  # new path -> new content (not reported)
 
 
@@ -181,12 +184,19 @@ def _identifiers(m, root, cut, kinds=None):
     return [(o, n) for o, n, _ in apply], keys, scan
 
 
-def build(m, root, ws, root_dir, cut, kinds=None):
+def build(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
+    """The plan. `structure_only`: each source keeps its paths under its landing folder, so no path row moves or
+    deletes and no identifier row applies; rows into other roots are still listed, and URLs and links follow."""
     kind, files = view(m, root, ws, root_dir)
-    plan = Plan(root, cut, kind)
-    prefixes = _rows(m, root, files, plan)
+    plan = Plan(root, cut, kind, structure_only=structure_only)
+    if structure_only:
+        rows_only = Plan(root, cut, kind)
+        _rows(m, root, files, rows_only)
+        plan.cross_root, prefixes, pairs, keys, scan = rows_only.cross_root, [], [], [], []
+    else:
+        prefixes = _rows(m, root, files, plan)
+        pairs, keys, scan = _identifiers(m, root, cut, kinds)
     moves = {mv["from"]: mv["to"] for mv in plan.moves}
-    pairs, keys, scan = _identifiers(m, root, cut, kinds)
     key_table = {o: n for o, n, _ in keys}
     rk.plan_moves(plan, files, moves, key_table, {o: line for o, _, line in keys})
     key_patterns = rk.patterns(key_table)
@@ -198,15 +208,16 @@ def build(m, root, ws, root_dir, cut, kinds=None):
             cache[r] = _paths_from_rows(m, r)
         return cache[r]
 
-    sources = {s.name: s for s in m.sources.values() if s.root in cut}
+    sources = {s.name: s for s in m.sources.values() if s.root in cut and s.kind != "root"}
     table = dict(pairs)
     pattern = rw.identifier_pattern(pairs)
     values = {v: (i, st) for i, st in scan for v in i.old}
     scan_pattern = rw.identifier_pattern([(v, v) for v in values])
     seen = {}
     deleted = {d["path"] for d in plan.deletes}
+    generated = rename_generated.outputs(files)
     for src in sorted(files):
-        if src in deleted:
+        if src in deleted or src in generated or rw.frozen(src):
             continue
         text = _read_text(files[src])
         if text is None:
@@ -214,7 +225,7 @@ def build(m, root, ws, root_dir, cut, kinds=None):
         dst = moves.get(src, src)
         for n, v in rw.count(text, scan_pattern) if scan_pattern else []:
             seen.setdefault(values[v][0].row.line, []).append(f"{src}:{n}")
-        new, edits = rw.urls(text, sources, root, paths_of)
+        new, edits = rw.urls(text, sources, root, paths_of, src)
         if src.endswith(".md"):
             new, e2 = rw.links(new, src, dst, own)
             new, e3 = rw.to_relative(new, root, dst)
@@ -226,6 +237,14 @@ def build(m, root, ws, root_dir, cut, kinds=None):
             plan.edits.append({"path": dst, "source": src, "kind": e.kind, "line": e.line, "old": e.old, "new": e.new})
         if new != text:
             plan.texts[dst] = new
+
+    def text_of(p):
+        dst = moves.get(p, p)
+        return plan.texts[dst] if dst in plan.texts else _read_text(files[p])
+
+    for path, src, text in rename_generated.render(generated, text_of, lambda p: moves.get(p, p)):
+        plan.generated.append({"path": path, "source": src})
+        plan.texts[path] = text
     for i, status in scan:
         where = seen.get(i.row.line)
         if not where:
@@ -239,7 +258,8 @@ def build(m, root, ws, root_dir, cut, kinds=None):
 
 
 def document(plan, mode="plan", **extra):
-    keys = ["moves", "deletes", "done", "missing", "pending", "cross_root", "conflicts", "identifiers", "edits"]
+    keys = ["moves", "deletes", "done", "missing", "pending", "cross_root", "conflicts", "identifiers", "edits",
+            "generated"]
     summary = {k: len(getattr(plan, k)) for k in keys}
     for k in ("link", "url", "identifier"):
         summary[f"edits_{k}"] = sum(1 for e in plan.edits if e["kind"] == k)
@@ -247,7 +267,7 @@ def document(plan, mode="plan", **extra):
         summary[f"identifiers_{s}"] = sum(1 for i in plan.identifiers if i["status"] == s)
     summary["files_rewritten"] = len(plan.texts)
     return {"schema": "opendap.rename-plan/v1", "mode": mode, "root": plan.root, "cut": plan.cut, "view": plan.view,
-            "summary": summary, **{k: getattr(plan, k) for k in keys}, **extra}
+            "structure_only": plan.structure_only, "summary": summary, **{k: getattr(plan, k) for k in keys}, **extra}
 
 
 def _inside(root_dir, rel):
@@ -266,7 +286,7 @@ def _prune(root_dir, rels):
             d = d.parent
 
 
-def apply(m, root, ws, root_dir, cut, kinds=None):
+def apply(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
     if root_dir is None or not (root_dir / ".git").exists():
         raise Refused("rename.no-root", f"no root checkout at {root_dir}",
                       "apply runs in the root repository after its sources are merged into it with history "
@@ -287,7 +307,7 @@ def apply(m, root, ws, root_dir, cut, kinds=None):
                       + ", ".join(l[3:] for l in dirty[:5]),
                       "apply never runs over uncommitted work, yours or someone else's; commit, or ask its owner",
                       f"git -C {root_dir} status")
-    plan = build(m, root, ws, root_dir, cut, kinds)
+    plan = build(m, root, ws, root_dir, cut, kinds, structure_only)
     if plan.conflicts:
         raise Refused("rename.conflict", f"{len(plan.conflicts)} conflicting targets, first {plan.conflicts[0]['path']}",
                       "two rows move files to one path, or a target exists; fix the rename map",
@@ -313,7 +333,8 @@ def apply(m, root, ws, root_dir, cut, kinds=None):
             _inside(root_dir, rel).write_text(text)
         _git(root_dir, "add", "--", *plan.texts)
         _git(root_dir, "commit", "-q", "-m", f"{root}: references from the rename map\n\n"
-             f"{len(plan.edits)} link, URL and identifier rewrites in {len(plan.texts)} files "
+             f"{len(plan.edits)} link, URL and identifier rewrites and {len(plan.generated)} generated files "
+             f"rendered again, in {len(plan.texts)} files "
              f"(odapkit rename apply {root}).")
         commits.append(_git(root_dir, "rev-parse", "HEAD").strip())
     return document(plan, "apply", base=base, commits=commits)
@@ -324,8 +345,8 @@ def _rel(p, root_dir):
     return p
 
 
-def check(m, root, ws, root_dir, cut, kinds=None):
-    plan = build(m, root, ws, root_dir, cut, kinds)
+def check(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
+    plan = build(m, root, ws, root_dir, cut, kinds, structure_only)
     res = []
 
     def add(id_, verdict, message, path=None, line=None, **kw):
@@ -348,6 +369,8 @@ def check(m, root, ws, root_dir, cut, kinds=None):
                 i["first"].rsplit(":", 1)[0], int(i["first"].rsplit(":", 1)[1]), value=i["occurrences"])
     for c in plan.conflicts:
         add(f"rename.conflict:{c['path']}", "fail", c["reason"], c["path"])
+    for x in plan.generated:
+        add(f"rename.generated:{x['path']}", "fail", f"not rendered from {x['source']}", x["path"])
     for x in plan.missing:
         add(f"rename.missing:{x['from']}", "warn", f"the map moves {x['from']}, which does not exist", x["from"])
     add("rename.pending", "warn" if plan.pending else "pass", f"{len(plan.pending)} rows need their own tool or a hand "
@@ -387,8 +410,8 @@ def _parser():
                "  odapkit rename plan libs --map rename-map.tsv --json\n"
                "  odapkit rename apply libs --map rename-map.tsv --root-dir ../libs\n"
                "  odapkit rename check libs --map rename-map.tsv --root-dir ../libs --json")
-    ap.add_argument("verb", choices=["plan", "apply", "check"], help="plan, apply or check; `merge` has its own "
-                    "options (odapkit rename merge --help)")
+    ap.add_argument("verb", choices=["plan", "apply", "check"], help="plan, apply or check; `merge` and `config` "
+                    "have their own options (odapkit rename merge --help, odapkit rename config --help)")
     ap.add_argument("root")
     ap.add_argument("--workspace")
     ap.add_argument("--map", help="the rename map (default: $ODAP_RENAME_MAP)")
@@ -398,6 +421,8 @@ def _parser():
                     help="where a source repository lands in the root, when the map does not say")
     ap.add_argument("--kind", help="only identifier rows of these kinds, comma-separated (`mfr`, `env`); path "
                     "rows, links and URLs still apply")
+    ap.add_argument("--structure-only", action="store_true", help="each source keeps its paths under its landing "
+                    "folder: no path row moves or deletes, no identifier row applies; URLs and links follow")
     ap.add_argument("--dry-run", action="store_true", help="apply: print the plan and change nothing")
     fmt = ap.add_mutually_exclusive_group()
     fmt.add_argument("--json", action="store_true", help="JSON (the default when stdout is not a terminal)")
@@ -414,6 +439,9 @@ def main(argv=None):
     if argv[:1] == ["merge"]:
         from odw import rename_merge
         return rename_merge.main(argv[1:])
+    if argv[:1] == ["config"]:
+        from odw import rename_config
+        return rename_config.main(argv[1:])
     return clikit.main(TOOL, _main, argv)
 
 
@@ -439,15 +467,15 @@ def _main(argv):
         cut = m.cut(args.root, [c for c in (args.cut or "").split(",") if c], ws)
         kinds = {k for k in (args.kind or "").split(",") if k}
         if args.verb == "check":
-            doc = check(m, args.root, ws, root_dir, cut, kinds)
+            doc = check(m, args.root, ws, root_dir, cut, kinds, args.structure_only)
             fails = [r for r in doc["results"] if r["verdict"] == "fail"]
             _emit(doc, as_json, "\n".join(f"{r['verdict']} {r['id']}: {r['message']}" for r in doc["results"]
                                           if r["verdict"] != "pass"))
             return 1 if fails else 0
         if args.verb == "plan" or args.dry_run:
-            doc = document(build(m, args.root, ws, root_dir, cut, kinds))
+            doc = document(build(m, args.root, ws, root_dir, cut, kinds, args.structure_only))
         else:
-            doc = apply(m, args.root, ws, root_dir, cut, kinds)
+            doc = apply(m, args.root, ws, root_dir, cut, kinds, args.structure_only)
         _emit(doc, as_json, _text_plan(doc))
         return 0
     except Refused as e:

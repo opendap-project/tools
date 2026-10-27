@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/rename-config.schema.json",
+  "title": "opendap.rename-config/v1: a cut root's shared configuration (odapkit rename config)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "mode", "root", "folders", "hoisted", "removed", "written", "kept", "stripped", "hooks",
+               "warnings", "base", "commits"],
+  "$defs": {
+    "path": {"type": "string", "minLength": 1},
+    "paths": {"type": "array", "items": {"$ref": "#/$defs/path"}}
+  },
+  "properties": {
+    "schema": {"const": "opendap.rename-config/v1"},
+    "mode": {"enum": ["plan", "apply"]},
+    "root": {"type": "string", "minLength": 1},
+    "folders": {"$ref": "#/$defs/paths", "description": "The landing folders of the root's sources"},
+    "hoisted": {
+      "type": "array",
+      "description": "Shared files moved to the root: the first copy with git mv, the others removed",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["to", "from"],
+        "properties": {"to": {"$ref": "#/$defs/path"}, "from": {"$ref": "#/$defs/paths"}}
+      }
+    },
+    "removed": {"$ref": "#/$defs/paths"},
+    "written": {"$ref": "#/$defs/paths", "description": "Root files the step writes"},
+    "kept": {"$ref": "#/$defs/paths", "description": "Root files that exist and stay as they are"},
+    "stripped": {"$ref": "#/$defs/paths", "description": "Folder CLAUDE.md files whose managed block leaves for the root's"},
+    "hooks": {
+      "type": "object", "additionalProperties": false, "required": ["shared", "scoped", "provided", "dropped"],
+      "properties": {
+        "shared": {"type": "integer", "minimum": 0, "description": "Remote hooks every folder pinned the same way, kept once"},
+        "scoped": {"type": "integer", "minimum": 0, "description": "Hooks scoped to the folders that had them"},
+        "provided": {"type": "integer", "minimum": 0, "description": "Hooks the root serves itself, run from the providing folder"},
+        "dropped": {"type": "array", "items": {"type": "string"}, "description": "<repository> <hook id> pins to one of the root's own sources"}
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["code", "message"],
+        "properties": {"code": {"type": "string", "pattern": "^config\\."}, "message": {"type": "string"}}
+      }
+    },
+    "base": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "commits": {"type": "array", "items": {"type": "string", "pattern": "^[0-9a-f]{40}$"}}
+  }
+}

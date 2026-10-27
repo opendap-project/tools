@@ -317,6 +317,8 @@ def run(a):
     if problems:
         raise problems[0]
     created = not into.exists()
+    if a.work:
+        pathlib.Path(a.work).mkdir(parents=True, exist_ok=True)
     work = pathlib.Path(tempfile.mkdtemp(prefix="odw-merge-", dir=a.work))
     try:
         head = merge(a.root, srcs, into, a.branch, engine, work)

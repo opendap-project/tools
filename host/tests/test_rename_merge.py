@@ -162,6 +162,21 @@ def test_merge_joins_every_source_with_history(ws, tmp_path, capsys, engine):
     assert git(ws / "public/libs/kicad", "remote").split() == ["origin"]
 
 
+def test_a_missing_work_folder_is_created(ws, tmp_path, capsys):
+    work = tmp_path / "cut/work"  # the tools rehearsal passed a folder that did not exist yet: a traceback
+    code, out, err = run(capsys, "libs", *args(ws, "--into", str(tmp_path / "libs"), "--work", str(work), "--json"))
+    assert code == 0, err
+    assert work.is_dir() and not any(work.iterdir())  # the temporary clones inside it are removed
+
+
+def test_lfs_counts_only_files_that_are_pointers(tmp_path):
+    """A file that only mentions the pointer line (the merge tool, its tests) is not an LFS pointer."""
+    repo = tmp_path / "r"
+    make_repo(repo, [({"model.FCStd": LFS, "tool.py": f'LFS_POINTER = "{LFS.splitlines()[0]}"\n',
+                       "test_tool.py": f'TEXT = """\n{LFS}"""\n', "empty.txt": ""}, "start")])
+    assert rename_merge_git.lfs_pointers(repo, "HEAD") == 1
+
+
 def test_both_engines_give_the_same_trees(ws, tmp_path, capsys):
     if len(ENGINES) < 2:
         pytest.skip("git filter-repo is not installed")

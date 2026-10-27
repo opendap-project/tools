@@ -33,10 +33,11 @@ class Row:
 @dataclasses.dataclass
 class Source:
     """A repository listed in a repos.tsv, and where its files land inside its root after the history merge."""
-    path: str  # workspace path, e.g. public/libs/kicad
+    path: str  # workspace path, e.g. public/libs/kicad; "" for an archived source no repos.tsv lists any more
     name: str  # GitHub name, e.g. kicad-lib
     root: str = ""
     landing: str | None = None  # folder inside the root; None when the map does not say
+    kind: str = "source"  # source; archived (its root is cut, only its repository row is left); root (public/<root>)
 
 
 @dataclasses.dataclass
@@ -52,7 +53,7 @@ class Map:
     def __init__(self, rows, sources):
         self.rows = rows
         self.sources = sources  # name -> Source
-        self.by_path = sorted(sources.values(), key=lambda s: -len(s.path))
+        self.by_path = sorted((s for s in sources.values() if s.path), key=lambda s: -len(s.path))
         self.roots = sorted(set(ORDER) | {s.root for s in sources.values() if s.root} | {r.new.split("/")[0] for r in rows
                                                                              if is_path_row(self, r) and r.new})
 
@@ -63,7 +64,7 @@ class Map:
         return None
 
     def sources_of(self, root):
-        return [s for s in self.sources.values() if s.root == root]
+        return [s for s in self.sources.values() if s.root == root and s.kind == "source"]
 
     def in_root(self, ws_path):
         """(root, path inside the root) of a workspace path, or (root, None) when its landing is unknown."""
@@ -151,11 +152,15 @@ def load(ws, map_path, landings=None):
             continue
         name = m.group(1)
         n = REPO_ROW.match(r.new.split(";")[0]) if r.new.startswith("repo:") else None
-        if name not in sources or not n:
+        if not n:
             continue
-        s = sources[name]
+        s = sources.setdefault(name, Source("", name, kind="archived"))  # URLs to it still follow its root
         s.root = n.group(1)
         s.landing = "" if s.root == name else _landing(n.group(2), s.root, r.notes)
+    roots = set(ORDER) | {s.root for s in sources.values()}
+    for s in sources.values():
+        if not s.root and s.name in roots and s.path == f"public/{s.name}":
+            s.root, s.landing, s.kind = s.name, "", "root"  # a root already cut: its paths are root paths
     for name, sub in (landings or {}).items():
         if name in sources:
             sources[name].landing = sub
