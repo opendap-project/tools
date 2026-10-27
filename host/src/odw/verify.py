@@ -96,7 +96,9 @@ def collect(doc, dirs):
         col = {}
         for v, rs in sorted(by_variant.items()):
             verdicts = {x["verdict"] for x in rs}
-            state = "missing" if not rs else "fail" if verdicts & {"fail", "error"} else "warn" if "warn" in verdicts else "pass"
+            # info: a value measured with no limit to pass or fail against; it records, it never passes.
+            state = ("missing" if not rs else "fail" if verdicts & {"fail", "error"} else "warn" if "warn" in verdicts
+                     else "measured" if verdicts <= {"info"} else "pass")
             col[v] = {"state": state, "results": sorted(rs, key=lambda x: (x["id"], x["path"]))}
         c["collected"] = col
     return doc

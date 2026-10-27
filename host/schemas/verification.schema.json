@@ -181,6 +181,7 @@
                     "pass",
                     "fail",
                     "warn",
+                    "measured",
                     "missing"
                   ]
                 },

@@ -83,3 +83,10 @@ def test_coverage_lists_requirements_without_a_case():
     reqs = [{"id": "SYS-046", "status": "confirmed"}, {"id": "SYS-047", "status": "confirmed"}, {"id": "SYS-048", "status": "withdrawn"}]
     doc = {"case": [{"id": "tap", "verifies": ["SYS-046"]}]}
     assert verify.uncovered(doc, reqs) == ["SYS-047"]
+
+
+def test_a_measurement_without_a_limit_is_measured_never_pass(matrix, tmp_path):
+    results = result(tmp_path, "info")
+    doc = verify.collect(verify.load(matrix), [results])
+    assert doc["case"][0]["collected"]["virtual-t1"]["state"] == "measured"
+    assert schemas.errors(doc, "verification") == []
