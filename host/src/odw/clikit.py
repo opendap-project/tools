@@ -6,7 +6,8 @@
   on stdout; returns its exit status.
 - `Parser`: argparse whose `--help` starts `<front> <tool>: <summary>` and ends with examples, and whose usage
   errors (an unknown flag, a bad argument, an unknown subcommand) are `CliError("input.invalid", status=2)`.
-- `summary(name)`: the tool's summary from this root's `tools.toml`, the one source of that first line.
+- `summary(name, tools_toml=None)`: the tool's summary from a root's `tools.toml` (this one by default), the one
+  source of that first line. The module loads on Python 3.9 (KiCad's); `summary` needs 3.11 (tomllib).
 - `main(tool, body, argv)`: runs `body(argv)` and turns `--help` into 0 and a `CliError` into its report.
 
 Shell tools use the same contract through `lib/cli.sh`. Spec: docs/specs/cli-conformance.md (Shared helper).
@@ -16,7 +17,6 @@ import functools
 import json
 import pathlib
 import sys
-import tomllib
 
 ERROR_SCHEMA = "opendap.error/v1"
 # Installed, tools.toml ships inside the package (odw/tools.toml); in a checkout it is at the repository root.
@@ -24,10 +24,13 @@ _HERE = pathlib.Path(__file__).resolve().parent
 TOOLS_TOML = _HERE / "tools.toml" if (_HERE / "tools.toml").is_file() else _HERE.parents[1] / "tools.toml"
 
 
-@functools.cache
-def summary(name):
-    """The summary tools.toml declares for tool `name` (the one source of the --help first line)."""
-    tools = tomllib.loads(TOOLS_TOML.read_text()).get("tool", []) if TOOLS_TOML.is_file() else []
+@functools.lru_cache(maxsize=None)
+def summary(name, tools_toml=None):
+    """The summary a tools.toml (this root's by default) declares for tool `name`: the one source of the --help
+    first line. tomllib is imported here, so the module itself loads on Python 3.9 (KiCad's)."""
+    import tomllib
+    f = pathlib.Path(tools_toml) if tools_toml else TOOLS_TOML
+    tools = tomllib.loads(f.read_text()).get("tool", []) if f.is_file() else []
     return next((t["summary"] for t in tools if t["name"] == name), None)
 
 

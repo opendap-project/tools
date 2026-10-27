@@ -44,7 +44,7 @@ WRITES = {
     "sh": re.compile(r"(?:^|[\s;|&(])(rm|mv|cp|mkdir|ln|tee|install)\s+-?[\w\"$]|\bgit\s+(commit|push|add|mv)\b"
                      r"|(?:^|[\s;|&(])>{1,2}\s*[\"$~/.A-Za-z_]", re.M),
 }
-NO_WRITE_TARGETS = re.compile(r">\s*/dev/null|>&2|2>&1")
+NO_WRITE_TARGETS = re.compile(r">\s*/dev/null|>&2|2>&1|open\(os\.devnull")
 NETWORK = re.compile(r"\blimactl\b|qemu-syste[m]|\bssh\b|\bscp\b|\brsync\b|urllib\.request|\brequests\b|\bcurl\b|\bwget\b"
                      r"|\bsudo\b|socket_vmne[t]|launchct[l]|\bodapkit-sysroot\b"
                      r"|\bhdiutil\b|\bdiskutil\b|\bosascript\b|\bpkill\b|\bkillall\b")

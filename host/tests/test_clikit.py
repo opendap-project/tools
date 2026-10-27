@@ -107,3 +107,19 @@ def test_shell_helper_json_string_escapes():
 
 def test_shell_helper_never_prompts_without_a_tty():
     assert _sh("cli_interactive && echo yes || echo no").stdout.strip() == "no"
+
+
+def test_summary_reads_another_roots_tools_toml(tmp_path):
+    f = tmp_path / "tools.toml"
+    f.write_text('schema = "opendap.tools/v1"\nfront = "odw"\n\n[[tool]]\nname = "x"\nsummary = "Does x"\n'
+                 'entry = "bin/odapkit-x"\naudience = "maintainer"\nstability = "preview"\n')
+    assert clikit.summary("x", f) == "Does x" and clikit.summary("y", f) is None
+
+
+def test_clikit_imports_on_python_3_9_syntax_and_stdlib():
+    # KiCad's bundled Python is 3.9: no tomllib at import time, no 3.10+ syntax.
+    import ast
+    src = (HOST / "src/odw/clikit.py").read_text()
+    tree = ast.parse(src, feature_version=(3, 9))
+    top = [n for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom))]
+    assert not any(a.name == "tomllib" for n in top for a in n.names)

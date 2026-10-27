@@ -276,3 +276,8 @@ def test_closure_follows_modules_named_by_from_imports(tmp_path):
     assert [p for p, _ in sources] == ["bin/odapkit-x", "src/pkg/tool.py", "src/pkg/__init__.py", "src/pkg/helper.py"]
     f = cli_inventory.facts(sources)
     assert f["parser"] == "argparse" and f["error_code"] and f["hint"]
+
+
+def test_writing_to_os_devnull_is_not_a_state_change():
+    f = cli_inventory.facts([("tools/x.py", 'import os\nnull = open(os.devnull, "w")\n')])
+    assert f["writes"] == []
