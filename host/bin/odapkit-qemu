@@ -1,0 +1,87 @@
+#!/bin/sh
+# QEMU for virtual OpenDAP devices, with the patches OpenDAP carries (virtual-devices ADR 0003).
+#
+# Usage: odapkit qemu [install|status]   (default: status)
+#
+# install fetches QEMU's pinned source release, checks its SHA-256, applies qemu/patches/ in order,
+# builds the aarch64 system emulator and installs it to ~/.local/opt/opendap/qemu-<version>-<build>,
+# then links qemu-system-aarch64 into ~/.local/bin, ahead of Homebrew's on PATH. No administrator
+# rights. The build says what it is in its version line (`--with-pkgversion`), which is how
+# odap-vdev tells it from a stock QEMU. ODAP_JOBS sets the build's parallelism (default 4: the
+# machine is shared).
+#
+# The patches fix QEMU 11.1's sound for a D-Bus display client: a mono stream through the mixing
+# engine is no longer doubled, the input is paced without the mixing engine, and a stream's last
+# partial block is sent when the stream stops.
+#
+# Exit status: 0 success (status: installed and linked), 1 failure (status: not installed),
+# 2 usage error.
+set -eu
+
+die() { echo "odapkit qemu: $1" >&2; exit "${2:-1}"; }
+
+here="$(cd "$(dirname "$0")/.." && pwd)"
+# The pinned release: https://download.qemu.org (the same SHA-256 as Homebrew's formula for 11.1.2).
+version=11.1.2
+sha256=731b5681e4bb18be313231579b8efd0296c5b015fa36dc533874b639ba838016
+# The patch set's name, carried in the version line; change it whenever qemu/patches/ changes.
+build=opendap1
+
+prefix="$HOME/.local/opt/opendap/qemu-$version-$build"
+link="$HOME/.local/bin/qemu-system-aarch64"
+work="${XDG_CACHE_HOME:-$HOME/.cache}/opendap/qemu.noindex"
+
+status() {
+  if [ -x "$prefix/bin/qemu-system-aarch64" ] && [ "$(readlink "$link" 2>/dev/null)" = "$prefix/bin/qemu-system-aarch64" ]; then
+    "$link" --version | head -1
+    case ":$PATH:" in
+      *":$HOME/.local/bin:"*) ;;
+      *) echo "odapkit qemu: add ~/.local/bin to PATH (before Homebrew) so odap-vdev finds it" >&2 ;;
+    esac
+    found="$(command -v qemu-system-aarch64 || true)"
+    [ "$found" = "$link" ] || echo "odapkit qemu: qemu-system-aarch64 on PATH is $found, not $link" >&2
+    return 0
+  fi
+  echo "not installed (odapkit qemu install)"
+  return 1
+}
+
+install() {
+  for t in curl shasum tar patch ninja meson pkg-config; do
+    command -v "$t" >/dev/null || die "$t is missing: run toolkit host setup.sh"
+  done
+  mkdir -p "$work"
+  tarball="$work/qemu-$version.tar.xz"
+  if [ ! -f "$tarball" ] || ! echo "$sha256  $tarball" | shasum -a 256 -c - >/dev/null 2>&1; then
+    curl -fsSL -o "$tarball.part" "https://download.qemu.org/qemu-$version.tar.xz"
+    echo "$sha256  $tarball.part" | shasum -a 256 -c - >/dev/null || die "qemu-$version.tar.xz: SHA-256 mismatch"
+    mv "$tarball.part" "$tarball"
+  fi
+  src="$work/qemu-$version-$build"
+  rm -rf "$src"
+  mkdir -p "$src"
+  tar -xJf "$tarball" -C "$src" --strip-components 1
+  for p in "$here"/qemu/patches/*.patch; do
+    patch -d "$src" -p1 --quiet --forward < "$p" || die "$(basename "$p") does not apply to $version"
+  done
+  # aarch64 only, with what the virtual devices use: HVF, the D-Bus display and its audio, Cocoa,
+  # CoreAudio, user networking. apple-gfx does not build against the macOS 27 SDK and is not used.
+  mkdir -p "$src/build"
+  (cd "$src/build" && ../configure --prefix="$prefix" --target-list=aarch64-softmmu \
+      --with-pkgversion="$build" --enable-hvf --enable-slirp --enable-cocoa --enable-coreaudio \
+      --enable-dbus-display --disable-pvg --disable-docs >configure.log 2>&1) ||
+    die "configure failed: $src/build/configure.log"
+  (cd "$src/build" && nice ninja -j "${ODAP_JOBS:-4}" install >build.log 2>&1) ||
+    die "build failed: $src/build/build.log"
+  mkdir -p "$(dirname "$link")"
+  ln -sf "$prefix/bin/qemu-system-aarch64" "$link"
+  rm -rf "$src"
+  status
+}
+
+case "${1:-status}" in
+  install) install ;;
+  status) status ;;
+  -h|--help|help) sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  *) die "unknown command: $1 (install, status)" 2 ;;
+esac

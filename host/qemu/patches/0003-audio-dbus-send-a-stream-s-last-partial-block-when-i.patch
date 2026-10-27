@@ -1,0 +1,110 @@
+From a7fb5480edfeb72e132f71b6baa47c48aacd3a09 Mon Sep 17 00:00:00 2001
+From: The OpenDAP Project <noreply@opendap.cc>
+Date: Mon, 26 Oct 2026 21:40:45 -0600
+Subject: [PATCH 3/3] audio/dbus: send a stream's last partial block when it
+ stops
+
+dbus_put_buffer_out() sends the output in blocks of nsamples frames and
+kept a partial block in the buffer when the stream stopped, so it went
+out at the start of the next stream: each stream reached the listeners
+late, the next one began with the previous one's end, and the last
+stream's end was lost. Flush the partial block before SetEnabled(false)
+and before Fini; calls on one connection arrive in order.
+---
+ audio/dbusaudio.c | 53 +++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 40 insertions(+), 13 deletions(-)
+
+diff --git a/audio/dbusaudio.c b/audio/dbusaudio.c
+index aed877d4a..29e815a1d 100644
+--- a/audio/dbusaudio.c
++++ b/audio/dbusaudio.c
+@@ -100,25 +100,14 @@ static void *dbus_get_buffer_out(HWVoiceOut *hw, size_t *size)
+ 
+ }
+ 
+-static size_t dbus_put_buffer_out(HWVoiceOut *hw, void *buf, size_t size)
++/* Sends @bytes to every output listener. */
++static void dbus_write_out(HWVoiceOut *hw, GBytes *bytes)
+ {
+     AudioDbus *da = AUDIO_DBUS(hw->s);
+-    DBusVoiceOut *vo = container_of(hw, DBusVoiceOut, hw);
+     GHashTableIter iter;
+     QemuDBusDisplay1AudioOutListener *listener = NULL;
+-    g_autoptr(GBytes) bytes = NULL;
+     g_autoptr(GVariant) v_data = NULL;
+ 
+-    assert(buf == vo->buf + vo->buf_pos && vo->buf_pos + size <= vo->buf_size);
+-    vo->buf_pos += size;
+-
+-    trace_dbus_audio_put_buffer_out(vo->buf_pos, vo->buf_size);
+-
+-    if (vo->buf_pos < vo->buf_size) {
+-        return size;
+-    }
+-
+-    bytes = g_bytes_new_take(g_steal_pointer(&vo->buf), vo->buf_size);
+     v_data = g_variant_new_from_bytes(G_VARIANT_TYPE("ay"), bytes, TRUE);
+     g_variant_ref_sink(v_data);
+ 
+@@ -130,6 +119,41 @@ static size_t dbus_put_buffer_out(HWVoiceOut *hw, void *buf, size_t size)
+             v_data,
+             G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);
+     }
++}
++
++/*
++ * Sends what the buffer holds of a partial block, so a stream's end
++ * reaches the listeners when the stream stops, not with the next one.
++ */
++static void dbus_flush_out(HWVoiceOut *hw)
++{
++    DBusVoiceOut *vo = container_of(hw, DBusVoiceOut, hw);
++    g_autoptr(GBytes) bytes = NULL;
++
++    if (!vo->buf || !vo->buf_pos) {
++        return;
++    }
++    bytes = g_bytes_new(vo->buf, vo->buf_pos);
++    vo->buf_pos = 0;
++    dbus_write_out(hw, bytes);
++}
++
++static size_t dbus_put_buffer_out(HWVoiceOut *hw, void *buf, size_t size)
++{
++    DBusVoiceOut *vo = container_of(hw, DBusVoiceOut, hw);
++    g_autoptr(GBytes) bytes = NULL;
++
++    assert(buf == vo->buf + vo->buf_pos && vo->buf_pos + size <= vo->buf_size);
++    vo->buf_pos += size;
++
++    trace_dbus_audio_put_buffer_out(vo->buf_pos, vo->buf_size);
++
++    if (vo->buf_pos < vo->buf_size) {
++        return size;
++    }
++
++    bytes = g_bytes_new_take(g_steal_pointer(&vo->buf), vo->buf_size);
++    dbus_write_out(hw, bytes);
+ 
+     return size;
+ }
+@@ -197,6 +221,7 @@ dbus_fini_out(HWVoiceOut *hw)
+     GHashTableIter iter;
+     QemuDBusDisplay1AudioOutListener *listener = NULL;
+ 
++    dbus_flush_out(hw);
+     g_hash_table_iter_init(&iter, da->out_listeners);
+     while (g_hash_table_iter_next(&iter, NULL, (void **)&listener)) {
+         qemu_dbus_display1_audio_out_listener_call_fini(
+@@ -219,6 +244,8 @@ dbus_enable_out(HWVoiceOut *hw, bool enable)
+     vo->enabled = enable;
+     if (enable) {
+         audio_rate_start(&vo->rate);
++    } else {
++        dbus_flush_out(hw);
+     }
+ 
+     g_hash_table_iter_init(&iter, da->out_listeners);
+-- 
+2.56.0
+

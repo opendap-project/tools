@@ -33,6 +33,7 @@ Code is built and tested on the host; the build VM only builds images and the sy
 - `setup.sh` — installs and checks everything; safe to run again
 - `bin/odapkit` — the Developer Toolkit's one command (RFC 0009): `odapkit <tool>` runs the `odapkit-<tool>` of any toolkit repository; `odapkit help` lists them. `setup.sh` links it into `~/.local/bin`
 - `bin/odapkit-vmnet` — a LAN address for virtual devices: `odapkit vmnet install` once, as yourself (it asks for administrator rights only for the socket_vmnet daemon); `status`, `uninstall`
+- `bin/odapkit-qemu` — the QEMU that virtual devices run: `odapkit qemu install` builds QEMU's pinned release with the patches in `qemu/patches/` into `~/.local/opt/opendap` and links it into `~/.local/bin` (no administrator rights); `status`
 - `bin/odapkit-noindex` — keeps generated trees (`target/`, `.venv/`, test caches) out of the Spotlight index: `odapkit noindex --apply <path>` ([development workflow](docs/specs/development-workflow.md), Generated trees)
 - `bin/odapkit-plan` — a maintainers' programme as data (tasks, decisions, claims, generated index): [programme plan](docs/specs/programme-plan.md)
 - `bin/odapkit-audit` — workspace metrics from every repository's tracked files, with dated snapshots: [workspace audit](docs/specs/workspace-audit.md)

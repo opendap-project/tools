@@ -1,0 +1,55 @@
+From 0337c27aa13743bcd7b85f26c0ffa298967f6b81 Mon Sep 17 00:00:00 2001
+From: The OpenDAP Project <noreply@opendap.cc>
+Date: Mon, 26 Oct 2026 21:40:12 -0600
+Subject: [PATCH 2/3] audio/dbus: pace the input with its rate control
+
+dbus_read() had its rate control commented out, so with
+in.mixing-engine=off the audio timer callback read in a tight loop,
+calling the listeners' synchronous Read for a few bytes each; the main
+loop starved and the guest's capture overran and failed with EIO.
+
+Ask the listeners only for what is due in real time, as the output
+does, and only once a whole block (nsamples frames) is due: Read is a
+synchronous call, so a few frames are always due by the next one, and
+without the block the caller's loop never sees 0.
+---
+ audio/dbusaudio.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/audio/dbusaudio.c b/audio/dbusaudio.c
+index e9bdf6adb..aed877d4a 100644
+--- a/audio/dbusaudio.c
++++ b/audio/dbusaudio.c
+@@ -361,13 +361,27 @@ static size_t
+ dbus_read(HWVoiceIn *hw, void *buf, size_t size)
+ {
+     AudioDbus *da = AUDIO_DBUS(hw->s);
+-    /* DBusVoiceIn *vo = container_of(hw, DBusVoiceIn, hw); */
++    DBusVoiceIn *vo = container_of(hw, DBusVoiceIn, hw);
+     GHashTableIter iter;
+     QemuDBusDisplay1AudioInListener *listener = NULL;
+ 
+     trace_dbus_audio_read(size);
+ 
+-    /* size = audio_rate_get_bytes(&vo->rate, &hw->info, size); */
++    /*
++     * Without the mixing engine nothing else paces the input: ask the
++     * listeners only for what is due in real time, as the output does, and
++     * only once a whole block is due. Read is a synchronous call, so a few
++     * frames are always due by the next one: without the block, the
++     * caller's loop never sees 0 and spins on the main loop.
++     */
++    if (audio_rate_peek_bytes(&vo->rate, &hw->info) <
++        dbus_audio_get_nsamples(da) * hw->info.bytes_per_frame) {
++        return 0;
++    }
++    size = audio_rate_get_bytes(&vo->rate, &hw->info, size);
++    if (!size) {
++        return 0;
++    }
+ 
+     g_hash_table_iter_init(&iter, da->in_listeners);
+     while (g_hash_table_iter_next(&iter, NULL, (void **)&listener)) {
+-- 
+2.56.0
+

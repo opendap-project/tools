@@ -23,3 +23,10 @@ path = "schemas/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 The OpenDAP Project"
 SPDX-License-Identifier = "MPL-2.0"
+
+# Patches to QEMU files under the MIT licence (audio/), carried until QEMU has the fixes.
+[[annotations]]
+path = "qemu/patches/**"
+precedence = "override"
+SPDX-FileCopyrightText = ["2026 The OpenDAP Project", "2021 Red Hat, Inc.", "2004-2005 Vassili Karpov (malc)", "1998 Fabrice Bellard"]
+SPDX-License-Identifier = "MIT"

@@ -31,6 +31,10 @@ brew "zig"
 
 # Emulation, and the Linux VM that builds images and the sysroot
 brew "qemu"
+# Building the patched QEMU (bin/odapkit-qemu); QEMU's own libraries come with brew "qemu"
+brew "meson"
+brew "ninja"
+brew "pkgconf"
 brew "lima"
 # The LAN for virtual devices (socket_vmnet) is installed by bin/odapkit-vmnet, not Homebrew
 

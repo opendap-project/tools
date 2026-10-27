@@ -58,6 +58,10 @@ for pattern in '*.noindex' target .venv .pytest_cache .ruff_cache .mypy_cache; d
 done
 echo "global Git ignore: $ignore; run odapkit noindex --apply <workspace> after builds create new trees"
 
+echo "== QEMU for virtual devices"
+# A source build with the patches OpenDAP carries (about ten minutes); not run automatically.
+"$here/bin/odapkit-qemu" status || echo "run: odapkit qemu install"
+
 echo "== Virtual T1 network"
 # The LAN for the virtual T1 needs administrator rights once; it is not run automatically.
 "$here/bin/odapkit-vmnet" status || true
