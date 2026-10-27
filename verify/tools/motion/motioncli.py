@@ -59,9 +59,27 @@ TOOL = "odapkit motion"
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
+def _sibling_host(start):
+    """host/ of the same repository when `start` is one of its folders (the merged tools root): the nearest
+    folder at or above `start` with a .git is the repository's top, and its host/ holds odw.clikit."""
+    d = start = os.path.realpath(start)
+    while not os.path.exists(os.path.join(d, ".git")):
+        if d == os.path.dirname(d):
+            return None
+        d = os.path.dirname(d)
+    helper = os.path.join(d, "host", "src", "odw", "clikit.py")
+    if d != start and os.path.isfile(helper) and os.stat(helper).st_uid == os.getuid():
+        return os.path.join(d, "host")
+    return None
+
+
 def _host_dir():
-    """toolkit-host: ODAP_TOOLKIT_HOST_DIR (odapkit sets it), else the workspace's repos.tsv."""
+    """toolkit-host: host/ of this repository (the merged tools root), else ODAP_TOOLKIT_HOST_DIR (odapkit sets
+    it), else the workspace's repos.tsv."""
     d = HERE
+    sibling = _sibling_host(os.path.join(HERE, "..", ".."))
+    if sibling:
+        return sibling
     if os.environ.get("ODAP_TOOLKIT_HOST_DIR"):
         return os.environ["ODAP_TOOLKIT_HOST_DIR"]
     while d != os.path.dirname(d):
