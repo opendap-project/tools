@@ -13,13 +13,15 @@ _cli_mine() { [ -n "$(find "$1" -prune -user "$(id -u)" 2>/dev/null)" ]; }
 
 # host/ beside this folder in the same repository (the merged tools root): the nearest folder at or above
 # cli_root with a .git is the repository's top; when that is not cli_root itself, its host/ holds the helpers.
+# The .git and the helpers must belong to this user.
 _cli_sibling() {
   d="$cli_root"
   while [ ! -e "$d/.git" ]; do
     [ "$d" = / ] && return 1
     d="$(dirname "$d")"
   done
-  [ "$d" != "$cli_root" ] && [ -f "$d/host/lib/cli.sh" ] && _cli_mine "$d/host/lib/cli.sh" && echo "$d/host"
+  [ "$d" != "$cli_root" ] && _cli_mine "$d/.git" && [ -f "$d/host/lib/cli.sh" ] && _cli_mine "$d/host/lib/cli.sh" &&
+    echo "$d/host"
 }
 
 _cli_host() {
