@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/check.schema.json",
+  "title": "A root's lifecycle checks (check.toml), run by the umbrella command's check",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "stage"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opendap.check/v1"
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "fast": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "run"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$"
+              },
+              "run": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "emits": {
+                "enum": [
+                  "check-result",
+                  "none"
+                ]
+              },
+              "verifies": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$"
+                }
+              }
+            }
+          },
+          "minItems": 1
+        },
+        "full": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "run"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$"
+              },
+              "run": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "emits": {
+                "enum": [
+                  "check-result",
+                  "none"
+                ]
+              },
+              "verifies": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$"
+                }
+              }
+            }
+          },
+          "minItems": 1
+        },
+        "release": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "run"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$"
+              },
+              "run": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "emits": {
+                "enum": [
+                  "check-result",
+                  "none"
+                ]
+              },
+              "verifies": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$"
+                }
+              }
+            }
+          },
+          "minItems": 1
+        }
+      }
+    }
+  }
+}

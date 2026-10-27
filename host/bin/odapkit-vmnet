@@ -1,0 +1,106 @@
+#!/bin/sh
+# Give virtual OpenDAP devices a NIC on this Mac's network (virtual-devices VD-003).
+#
+# Usage: odapkit vmnet [install|uninstall|status]   (default: status)
+#
+# macOS bridges a VM to the LAN only through vmnet.framework, which needs root. socket_vmnet (Lima
+# project) is the small root daemon that holds vmnet; QEMU connects to it as the user.
+#
+# install fetches the pinned upstream release of socket_vmnet, checks its SHA-256, unpacks it to
+# /opt/socket_vmnet owned by root (upstream's binary install, the layout Lima expects), and runs it
+# as a launchd daemon bridged to the interface of the default route (ODAP_LAN_INTERFACE overrides
+# it). Run it as yourself or through sudo; as yourself it asks for your password only for the
+# steps that need administrator rights. odap-vdev finds the daemon by its socket,
+# /var/run/socket_vmnet.bridged.<interface>.
+#
+# Exit status: 0 success (status: running), 1 failure (status: not running), 2 usage error.
+set -eu
+
+die() { echo "odapkit vmnet: $1" >&2; exit "${2:-1}"; }
+
+[ "$(uname -s)" = Darwin ] || die "macOS only; on Linux, bridge a tap device instead" 2
+
+iface="${ODAP_LAN_INTERFACE:-$(route -n get default 2>/dev/null | awk '/interface:/{print $2}')}"
+label="org.opendap.socket_vmnet.bridged.$iface"
+plist="/Library/LaunchDaemons/$label.plist"
+sock="/var/run/socket_vmnet.bridged.$iface"
+log="/var/log/socket_vmnet.bridged.$iface.log"
+
+# Privileged steps: directly when already root, through sudo otherwise.
+as_root() { if [ "$(id -u)" = 0 ]; then "$@"; else sudo "$@"; fi; }
+
+# The pinned upstream release: https://github.com/lima-vm/socket_vmnet/releases
+version=1.2.2
+case "$(uname -m)" in
+  arm64) sha256=c7bf62308fbcfdc29bdfb8373c9b1951f7ac2396446e4390919796a94972e6dc ;;
+  x86_64) sha256=2968a82c97e692c2d36f87230152e8018e00589c1b598e8257775adfe83800a1 ;;
+  *) die "no socket_vmnet release for $(uname -m)" ;;
+esac
+bin=/opt/socket_vmnet/bin
+
+install_binaries() {
+  file="socket_vmnet-$version-$(uname -m).tar.gz"
+  tmp="$(mktemp -d)"
+  trap 'rm -rf "$tmp"' EXIT
+  curl -fsSL -o "$tmp/$file" "https://github.com/lima-vm/socket_vmnet/releases/download/v$version/$file" \
+    || die "could not download $file"
+  echo "$sha256  $tmp/$file" | shasum -a 256 -c -s || die "$file does not match its pinned SHA-256"
+  tar -xzf "$tmp/$file" -C "$tmp" ./opt/socket_vmnet
+  if cmp -s "$tmp/opt/socket_vmnet/bin/socket_vmnet" "$bin/socket_vmnet" && cmp -s "$tmp/opt/socket_vmnet/bin/socket_vmnet_client" "$bin/socket_vmnet_client"; then
+    return 0
+  fi
+  # Root checks and unpacks its own copy: never the user-writable file it would re-read.
+  rtmp="$(as_root mktemp -d)"
+  as_root cp "$tmp/$file" "$rtmp/$file"
+  echo "$sha256  $rtmp/$file" | as_root shasum -a 256 -c -s \
+    || { as_root rm -rf "$rtmp"; die "$file does not match its pinned SHA-256"; }
+  as_root tar -xzf "$rtmp/$file" -C / ./opt/socket_vmnet
+  as_root rm -rf "$rtmp"
+  as_root chown -R root:wheel /opt/socket_vmnet
+  echo "socket_vmnet $version installed in /opt/socket_vmnet"
+}
+
+install_daemon() {
+  [ -n "$iface" ] || die "no default-route interface; set ODAP_LAN_INTERFACE"
+  [ "$(id -u)" = 0 ] || echo "Administrator rights are needed for /opt/socket_vmnet and the daemon:"
+  install_binaries
+  as_root tee "$plist" >/dev/null <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>$label</string>
+  <key>ProgramArguments</key><array>
+    <string>$bin/socket_vmnet</string>
+    <string>--vmnet-mode=bridged</string>
+    <string>--vmnet-interface=$iface</string>
+    <string>--socket-group=staff</string>
+    <string>$sock</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardErrorPath</key><string>$log</string>
+</dict></plist>
+PLIST
+  as_root chown root:wheel "$plist"
+  as_root chmod 0644 "$plist"
+  as_root launchctl bootout system "$plist" 2>/dev/null || true
+  as_root launchctl bootstrap system "$plist"
+  i=0
+  while [ ! -S "$sock" ] && [ "$i" -lt 10 ]; do sleep 0.5; i=$((i + 1)); done
+  [ -S "$sock" ] || die "socket_vmnet did not start; see $log"
+  echo "socket_vmnet bridged to $iface: $sock"
+  echo "Restart a running virtual device to give it the LAN: odap-vdev stop && odap-vdev start"
+}
+
+case "${1:-status}" in
+  install) install_daemon ;;
+  uninstall)
+    as_root launchctl bootout system "$plist" 2>/dev/null || true
+    as_root rm -f "$plist" "$sock"
+    echo "removed $label (the binaries stay in /opt/socket_vmnet)" ;;
+  status)
+    if [ -S "$sock" ]; then echo "running: $sock"
+    else echo "not running ($sock missing); to install: odapkit vmnet install"; exit 1; fi ;;
+  -h|--help) sed -n '2,15s/^# \{0,1\}//p' "$0" ;;
+  *) die "usage: odapkit vmnet [install|uninstall|status]" 2 ;;
+esac

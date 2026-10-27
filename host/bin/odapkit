@@ -1,0 +1,68 @@
+#!/bin/sh
+# The OpenDAP Developer Toolkit's command: one entry point to every maintainer tool (rfcs 0009).
+#
+# Usage: odapkit TOOL [ARGS…]     run the tool odapkit-TOOL with ARGS
+#        odapkit [help]           list the tools this host has, with their summaries
+#        odapkit help TOOL        the tool's help (odapkit-TOOL --help)
+#
+# Tools are independent executables named odapkit-TOOL, each in its own repository. They are
+# found in the bin/ folders of the workspace's toolkit repositories (repos.tsv), then on PATH.
+# The device's own odap-* programs and the user-side opendap CLI are not toolkit tools.
+#
+# Exit status: the tool's; 2 when there is no such tool.
+set -eu
+
+die() { echo "odapkit: $1" >&2; exit "${2:-1}"; }
+
+# The workspace: the folder above this checkout that has repos.tsv (through a link in PATH too).
+self="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+workspace=""
+d="$(cd "$(dirname "$self")/.." && pwd)"
+while [ "$d" != / ]; do
+  [ -f "$d/repos.tsv" ] && { workspace="$d"; break; }
+  d="$(dirname "$d")"
+done
+
+# Every folder that may hold tools, in search order.
+dirs() {
+  if [ -n "$workspace" ]; then
+    awk -F'\t' 'NR > 1 && $2 ~ /\/toolkit-/ { print $1 }' "$workspace/repos.tsv" |
+      while read -r p; do [ -d "$workspace/$p/bin" ] && echo "$workspace/$p/bin"; done
+  fi
+  echo "$PATH" | tr ':' '\n'
+}
+
+find_tool() {
+  dirs | while read -r dir; do
+    if [ -x "$dir/odapkit-$1" ]; then echo "$dir/odapkit-$1"; break; fi
+  done
+}
+
+# A tool's summary: the first line of its header comment, or of its docstring.
+summary() {
+  awk 'NR == 1 { next } /^# ?[^ ]/ || /^"""/ { sub(/^# ?/, ""); sub(/^"""/, ""); sub(/^odapkit [a-z-]+: /, ""); print; exit }' "$1"
+}
+
+list() {
+  echo "Usage: odapkit TOOL [ARGS…]   (odapkit help TOOL for a tool's help)"
+  echo
+  dirs | while read -r dir; do
+    for t in "$dir"/odapkit-*; do if [ -x "$t" ]; then echo "$t"; fi; done
+  done | awk -F/ '!seen[$NF]++' | while read -r t; do
+    printf '  %-16s %s\n' "${t##*/odapkit-}" "$(summary "$t")"
+  done
+}
+
+case "${1:-help}" in
+  help|-h|--help)
+    if [ $# -ge 2 ]; then
+      t="$(find_tool "$2")"; [ -n "$t" ] || die "no tool $2 (odapkit help lists them)" 2
+      exec "$t" --help
+    fi
+    list ;;
+  *)
+    name="$1"; shift
+    case "$name" in */*|.*|-*) die "no tool $name (odapkit help lists them)" 2 ;; esac
+    t="$(find_tool "$name")"; [ -n "$t" ] || die "no tool $name (odapkit help lists them)" 2
+    exec "$t" "$@" ;;
+esac

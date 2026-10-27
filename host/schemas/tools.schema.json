@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/tools.schema.json",
+  "title": "Tools a root contributes to an umbrella command (tools.toml)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "front",
+    "tool"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opendap.tools/v1"
+    },
+    "front": {
+      "enum": [
+        "opendap",
+        "odw"
+      ]
+    },
+    "tool": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "summary",
+          "entry",
+          "audience",
+          "stability"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "entry": {
+            "type": "string",
+            "minLength": 1
+          },
+          "audience": {
+            "enum": [
+              "maintainer",
+              "developer",
+              "user"
+            ]
+          },
+          "stability": {
+            "enum": [
+              "internal",
+              "preview",
+              "stable",
+              "deprecated"
+            ]
+          },
+          "replaces": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

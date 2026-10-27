@@ -1,0 +1,55 @@
+schema = "opendap.verification/v2"
+
+[matrix]
+title = "Example matrix"
+intro = "One case per row."
+done = ["verified", "unit"]
+manual = ["L3m"]
+
+[[matrix.status]]
+id = "verified"
+meaning = "verified in the running product"
+
+[[matrix.status]]
+id = "unit"
+meaning = "tests only"
+
+[[matrix.status]]
+id = "open"
+meaning = "not tried yet"
+
+[[matrix.level]]
+id = "L0"
+meaning = "unit"
+
+[[matrix.level]]
+id = "L3m"
+meaning = "tried by hand"
+
+[[case]]
+id = "tap"
+area = "gestures"
+primitive = "tap"
+conditions = ["touch"]
+case = "Tap on the pad"
+expected = "tap"
+observed = "tap"
+evidence = "testbed"
+status = "verified"
+levels = ["L0", "L3m"]
+date = "2026-10-24"
+verifies = ["SYS-046"]
+checks = ["gesture-tap"]
+
+[[case]]
+id = "long"
+area = "gestures"
+primitive = "long press"
+conditions = []
+case = "Hold 800 ms"
+expected = "long press"
+observed = "—"
+evidence = "—"
+status = "open"
+levels = []
+date = "2026-10-24"

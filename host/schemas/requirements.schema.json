@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/requirements.schema.json",
+  "title": "opendap.requirements/v1: a component's requirements as data, rendered to docs/requirements/README.md",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "block"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opendap.requirements/v1"
+    },
+    "block": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "markdown"
+            ],
+            "properties": {
+              "markdown": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "requirement"
+            ],
+            "properties": {
+              "requirement": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "text",
+                    "priority",
+                    "status"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$"
+                    },
+                    "text": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "priority": {
+                      "enum": [
+                        "must",
+                        "should"
+                      ]
+                    },
+                    "status": {
+                      "enum": [
+                        "confirmed",
+                        "draft",
+                        "withdrawn",
+                        "moved"
+                      ]
+                    },
+                    "note": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

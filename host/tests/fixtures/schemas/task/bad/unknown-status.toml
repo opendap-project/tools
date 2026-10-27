@@ -1,0 +1,14 @@
+id = "HL-08"
+phase = 0
+title = "Unify the hooks pin"
+source = "baseline"
+repos = ["public/devices/t1/board"]
+files = []
+depends_on = ["WS-02"]
+blocked_by = ["D-NAMING"]
+status = "finished"
+visibility = "public"
+tests = []
+docs = []
+evidence = {}
+notes = ""
