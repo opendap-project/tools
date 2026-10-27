@@ -148,3 +148,14 @@ def test_the_recommendation_rule_names_the_aggregation():
     rule = lambda o, by: ("pass", "ok") if by["G1"]["state"] == "pass" else ("fail", "no")
     assert "rule" in study(aggregation="rule", rule=rule).run()["recommendation"]["rule"]
     assert "hard criterion" in study().run()["recommendation"]["rule"]
+
+
+def test_a_matrix_that_recommends_nothing_ranks_only_by_soft_criteria():
+    hard_only = [CRITERIA[0]]
+    m = evaluate.Study(id="t", question="q", options=OPTIONS, criteria=hard_only, recommend=False).run()
+    assert all("rank" not in v for v in m["verdicts"])
+    d = {"summary": "s", "by": "maintainers", "date": "2026-10-25"}
+    m = evaluate.Study(id="t", question="q", options=OPTIONS, criteria=hard_only, status="decision-cited", decision=d).run()
+    assert all("rank" not in v for v in m["verdicts"])
+    assert any("rank" in v for v in study(recommend=False).run()["verdicts"])
+    assert schemas.errors(m, "matrix") == []

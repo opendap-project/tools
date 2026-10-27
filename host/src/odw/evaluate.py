@@ -114,8 +114,11 @@ class Study:
         verdicts = [self._verdict(o, cells) for o in self.options]
         passing = [v for v in verdicts if v["verdict"] == "pass"]
         order = {o["id"]: i for i, o in enumerate(self.options)}
-        for rank, v in enumerate(sorted(passing, key=lambda v: (-v.get("score", 0), order[v["option"]])), 1):
-            v["rank"] = rank
+        # A matrix that recommends nothing ranks only on a soft criterion: option order alone is no ranking.
+        recommends = self.recommend and self.decision is None
+        if recommends or any(c["kind"] == "soft" for c in self.criteria):
+            for rank, v in enumerate(sorted(passing, key=lambda v: (-v.get("score", 0), order[v["option"]])), 1):
+                v["rank"] = rank
         m = {"schema": "opendap.matrix/v1", "id": self.id, "question": self.question, "status": self.status,
              "options": copy.deepcopy(self.options),
              "criteria": [{k: c[k] for k in SCHEMA_CRITERION_KEYS if k in c} for c in self.criteria],
