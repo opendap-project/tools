@@ -107,7 +107,8 @@ def test_public_title_replaces_the_title_and_the_private_one_never_leaves(ws):
 
 @pytest.mark.parametrize("title", ["Move notes to private/engineering", "Ask o/engineering first",
                                    "Write it in engineering", "From drafts/rfc.md", "Per D-SECRET",
-                                   "Move notes to Private/Engineering", "Ask O/ENGINEERING", "ｅｎｇｉｎｅｅｒｉｎｇ notes"])
+                                   "Move notes to Private/Engineering", "Ask O/ENGINEERING", "ｅｎｇｉｎｅｅｒｉｎｇ notes",
+                                   "engi\u200bneering notes", "pri\u00advate/x"])
 def test_private_facts_are_refused(ws, title):
     task(ws / "programme", "T-01", title)
     with pytest.raises(clikit.CliError) as e:

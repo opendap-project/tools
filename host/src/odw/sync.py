@@ -166,6 +166,10 @@ def _generated_drift(ws, templates, repos):
             raise clikit.CliError("sync.invalid", f"unknown generator {g.get('generator')!r} in sync.toml",
                                   f"the generators are {', '.join(GENERATORS)}", f"{TOOL} --check --json")
         load, render = GENERATORS[g["generator"]]
+        if not (ws / g["source"]).is_file():
+            raise clikit.CliError("sync.source_missing", f"no {ws / g['source']} (the source of {g['target']})",
+                                  "a [[generated]] entry renders from a file at the workspace root",
+                                  f"git -C {ws} pull --ff-only", status=2)
         data = load(ws / g["source"])
         for r in owners.candidates(ws, repos):
             if not any(fnmatch.fnmatch(r, p) for p in g["repos"]) or any(fnmatch.fnmatch(r, p) for p in g.get("exclude", [])):

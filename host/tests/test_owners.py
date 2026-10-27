@@ -75,3 +75,9 @@ def test_sync_cli_refuses_an_invalid_owners_file(ws, capsys):
     (ws / "owners.tsv").write_text("path\towner\nprivate/x\t@m\n")
     assert sync.main(["--workspace", str(ws), "--templates", str(ws / "templates"), "--check", "--json"]) == 1
     assert '"code": "owners.invalid"' in capsys.readouterr().out
+
+
+def test_a_missing_source_is_an_error_with_a_code(ws, capsys):
+    (ws / "owners.tsv").unlink()
+    assert sync.main(["--workspace", str(ws), "--templates", str(ws / "templates"), "--check", "--json"]) == 2
+    assert '"code": "sync.source_missing"' in capsys.readouterr().out

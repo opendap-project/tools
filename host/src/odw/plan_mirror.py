@@ -161,7 +161,8 @@ def guard(doc, ws, programme):
     found = []
     terms = private_terms(ws, programme)
     for issue in doc["issues"]:
-        text = unicodedata.normalize("NFKC", issue["title"] + "\n" + issue["body"])
+        raw = unicodedata.normalize("NFKC", issue["title"] + "\n" + issue["body"])
+        text = "".join(c for c in raw if unicodedata.category(c) != "Cf")  # zero-width and soft hyphens
         for rx, what in terms:
             for m in rx.finditer(text):
                 line = next(ln for ln in text.splitlines() if m.group(0) in ln)
