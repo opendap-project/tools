@@ -1,6 +1,6 @@
 # Component export contract
 
-Every OpenDAP component (board, case core, faceplates, HATs, the HAT Case Standard, …) keeps its own internal sources: KiCad, FreeCAD, Blender, simulations, code. Towards everyone else it publishes itself **as a single unit**, through its `export/` folder.
+Every OpenDAP component (board, case core, faceplates, HATs, the OpenDAP HAT Standard, …) keeps its own internal sources: KiCad, FreeCAD, Blender, simulations, code. Towards everyone else it publishes itself **as a single unit**, through its `export/` folder.
 
 Composition is hierarchical, and not only at the top: any component may consume another component's export wherever that makes sense (a HAT consumes the device-side piece from `hat-standard`; a faceplate consumes the faceplate interface from `case`), and the product integration (`t1`) consumes them all. At every level, an imported component behaves as one part, not as its internal pieces.
 
