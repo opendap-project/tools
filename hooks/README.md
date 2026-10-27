@@ -8,8 +8,8 @@ Part of the [OpenDAP](https://github.com/opendap-project) Developer Toolkit, whi
 
 | ID | What it checks |
 |---|---|
-| `kicad-erc` | ERC on changed KiCad schematics |
-| `kicad-drc` | DRC on changed KiCad boards |
+| `kicad-erc` | ERC on changed KiCad schematics (errors only) |
+| `kicad-drc` | DRC, with schematic parity, on changed KiCad boards (errors only) |
 | `no-fab-outputs` | No generated fab outputs (Gerbers, drill files, packages) are committed |
 | `no-stray-files` | No PDFs, and no HTML outside `renders/web/` |
 | `kicad-dru-composed` | Every `<project>.kicad_dru` with a `<project>.dru.toml` manifest equals the composition of the rule sources it lists; no duplicate rule names |
@@ -18,10 +18,14 @@ Use them from a repository's `.pre-commit-config.yaml`, pinned to a tag:
 
 ```yaml
   - repo: https://github.com/opendap-project/toolkit-hooks
-    rev: v0.4.1
+    rev: v0.5.0
     hooks:
       - id: no-stray-files
 ```
+
+## KiCad ERC and DRC
+
+`kicad-erc` and `kicad-drc` run `hooks/kicad-check.py erc|drc FILE…` on the changed files. Only a file with a same-named `.kicad_pro` next to it is checked, with `kicad-cli` at error severity; a failing project prints `KiCad ERC failed: FILE` (or DRC) and the first 60 lines of the report. `--json` also prints an [`opendap.check-result/v1`](https://github.com/opendap-project/toolkit-host/blob/main/schemas/check-result.schema.json) document on stdout: one result per file (`pass`, `fail`, `skip` outside a project, `error` when `kicad-cli` gave no report) and one per violation, with its KiCad type as `rule`. `kicad-cli` is `$KICAD_CLI`, else KiCad.app's (`$KICAD_APP`, default `/Applications/KiCad/KiCad.app`), else the first on `PATH`. Python 3.9 or later, standard library only. `hooks/kicad-check.sh` is the former entry point and runs the same engine.
 
 ## Composed KiCad rule files
 

@@ -3,14 +3,14 @@
 - id: kicad-erc
   name: KiCad ERC (changed schematics)
   description: Runs kicad-cli ERC on every KiCad project whose schematic changed; fails on errors.
-  entry: hooks/kicad-check.sh erc
+  entry: hooks/kicad-check.py erc
   language: script
   files: \.kicad_sch$
   require_serial: true
 - id: kicad-drc
   name: KiCad DRC (changed boards)
   description: Runs kicad-cli DRC, with schematic parity, on every KiCad project whose board changed; fails on errors.
-  entry: hooks/kicad-check.sh drc
+  entry: hooks/kicad-check.py drc
   language: script
   files: \.kicad_pcb$
   require_serial: true
