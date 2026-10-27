@@ -34,6 +34,7 @@ HOST = {
     ".pre-commit-config.yaml": (f"repos:\n  - repo: {ORG}/toolkit-hooks\n    rev: v0.4.1\n    hooks:\n"
                                 f"      - id: no-stray-files\n# docs: {ORG}/toolkit-hooks/blob/main/README.md\n"),
     "tests/fixtures/pinned.md": f"# Pinned (sha256 in a test)\n\n{ORG}/toolkit-hooks/blob/main/README.md\n",
+    "tests/test_audit.py": f'HOOKS = "{ORG}/toolkit-hooks"  # test input: the old pin must still be read\n',
     "docs/requirements/requirements.toml": REQ_TOML,
 }
 HOOKS = {"README.md": "# Hooks\n\nBack to [host](https://github.com/opendap-project/toolkit-host).\n"}
@@ -113,9 +114,9 @@ def test_urls_of_a_root_cut_earlier_follow_its_map(cut, capsys):
 
 def test_fixtures_and_pre_commit_pins_stay(cut, capsys):
     ws, top = cut
-    pinned = (top / "host/tests/fixtures/pinned.md").read_bytes()
+    pinned = {p: (top / p).read_bytes() for p in ("host/tests/fixtures/pinned.md", "host/tests/test_audit.py")}
     assert run(capsys, "apply", ws, top, "--structure-only")[0] == 0
-    assert (top / "host/tests/fixtures/pinned.md").read_bytes() == pinned
+    assert {p: (top / p).read_bytes() for p in pinned} == pinned  # tests and their fixtures are inputs
     cfg = (top / "host/.pre-commit-config.yaml").read_text()
     assert f"  - repo: {ORG}/toolkit-hooks\n" in cfg  # the pin moves with its rev, after the unfreeze
     assert f"# docs: {ORG}/tools/blob/main/hooks/README.md" in cfg  # other lines of the file still follow

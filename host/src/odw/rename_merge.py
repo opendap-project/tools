@@ -262,7 +262,7 @@ def _parser():
         epilog="examples:\n  odapkit rename merge libs --map rename-map.tsv --dry-run\n"
                "  odapkit rename merge libs --map rename-map.tsv --into ../cut/libs --json\n"
                "  odapkit rename merge libs --map rename-map.tsv --into ../cut/libs "
-               "--source kicad-lib=https://github.com/opendap-project/kicad-lib")
+               "--source kicad-lib=../kicad-lib.bundle")
     ap.add_argument("root")
     ap.add_argument("--into", help="the new root repository (a new or empty folder); not needed with --dry-run")
     ap.add_argument("--workspace")

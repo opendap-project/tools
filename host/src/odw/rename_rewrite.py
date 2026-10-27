@@ -16,11 +16,11 @@ SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*:", re.I)
 MOVABLE_REFS = {"main", "master", "HEAD"}
 PIN_LINE = re.compile(r"^\s*(?:-\s+)?repo:\s")  # a pre-commit pin: it moves with its rev, after the cut
 METADATA_LINE = re.compile(r"^\s*(?:repository|homepage|documentation|Repository|Homepage|Source)\s*=")
-FROZEN = ("tests/fixtures/",)  # fixtures are compared byte for byte (sha256 goldens): never rewritten
+FROZEN = ("tests/",)  # tests and their fixtures are inputs (URLs as test data, sha256 goldens): never rewritten
 
 
 def frozen(path):
-    """True for a file no rewrite touches: test fixtures, which tests pin by content."""
+    """True for a file no rewrite touches: anything under a `tests/` folder, whose text is test input."""
     return any(f"/{d}" in f"/{path}" for d in FROZEN)
 
 
