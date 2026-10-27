@@ -16,7 +16,7 @@ Workspace health is measured, never estimated: `odapkit audit` reads every repos
 |---|---|
 | `repositories.total`, `.missing` | Cloned repositories; listed ones without a clone |
 | `repositories.pre_commit_variants` | Distinct `.pre-commit-config.yaml` contents |
-| `repositories.hooks_pins` | Distinct pinned versions of the shared hooks repository |
+| `repositories.hooks_pins` | Distinct pinned versions of the shared hooks repository (`toolkit-hooks`, or `tools` after the tools cut) |
 | `repositories.repos_without_pre_commit` | Repositories with no pre-commit configuration |
 | `repositories.claude_rules_copies` | Tracked `.claude/rules/*` files |
 | `repositories.claude_md_lowercase_open_source` | `CLAUDE.md` files that write `open source` in lower case |

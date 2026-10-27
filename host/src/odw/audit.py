@@ -23,7 +23,8 @@ from odw import clikit, workspace
 TOOL = "odapkit audit"
 SCHEMA = "opendap.workspace-audit/v1"
 
-HOOKS_REPO = re.compile(r"repo:\s*https://github\.com/opendap-project/toolkit-hooks\s*\n\s*rev:\s*(\S+)")
+# The shared hooks: toolkit-hooks, or the merged tools root that serves them after the tools cut.
+HOOKS_REPO = re.compile(r"repo:\s*https://github\.com/opendap-project/(?:toolkit-hooks|tools)\s*\n\s*rev:\s*(\S+)")
 LOWER_OPEN_SOURCE = re.compile(r"\bopen source\b")
 INLINE_HISTORY = re.compile(r"\(v\d+\.\d+[:,]|\bformerly\b|\bwas renamed\b|\bpreviously\b|\bsuperseded\b", re.I)
 WORKING_NOTE = re.compile(r"\bfor now\b|\bnext step\b|\bnot started\b|\bTODO\b|\bwill take this over\b", re.I)

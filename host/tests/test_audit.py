@@ -67,6 +67,20 @@ def test_pre_commit_pins_and_variants(ws):
     assert r["repos_without_pre_commit"] == []
 
 
+@pytest.mark.parametrize("hooks_repo", ["toolkit-hooks", "tools"])
+def test_hooks_pins_of_either_layout(tmp_path, hooks_repo):
+    """The shared hooks come from toolkit-hooks today and from the merged tools root after its cut."""
+    (tmp_path / "repos.tsv").write_text("path\trepository\npublic/a\to/a\npublic/b\to/b\n")
+    pin = PRECOMMIT.replace("toolkit-hooks", hooks_repo)
+    repo(tmp_path, "public/a", {".pre-commit-config.yaml": pin.format(rev="v0.1.0")})
+    other = PRECOMMIT.replace("toolkit-hooks", "tools-extra")  # another repository is no hooks pin
+    repo(tmp_path, "public/b", {".pre-commit-config.yaml": other.format(rev="v9.9.9")})
+    r = audit.audit(tmp_path)
+    assert r["repositories"]["hooks_pins"] == ["v0.1.0"]
+    assert r["conformance"]["public/a"]["hooks_pin"] == "v0.1.0"
+    assert r["conformance"]["public/b"]["hooks_pin"] == ""
+
+
 def test_claude_files(ws):
     r = audit.audit(ws)["repositories"]
     assert r["claude_md_lowercase_open_source"] == 1
