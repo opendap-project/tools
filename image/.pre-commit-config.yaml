@@ -1,0 +1,39 @@
+# Local checks for every commit. Install once per clone: pre-commit install
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-added-large-files
+        args: ["--maxkb=5120"]
+  - repo: https://github.com/fsfe/reuse-tool
+    rev: v6.2.0
+    hooks:
+      - id: reuse
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.24.0
+    hooks:
+      - id: markdownlint-cli2
+  - repo: https://github.com/opendap-project/toolkit-hooks
+    rev: v0.3.0
+    hooks:
+      - id: no-stray-files
+  # Shell scripts (found by their shebang): shellcheck, pinned through shellcheck-py.
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: ["-x", "--source-path=SCRIPTDIR"]
+  # The requirements README is rendered from requirements.toml and checked.
+  - repo: local
+    hooks:
+      - id: requirements-current
+        name: requirements README rendered (odapkit req render --check)
+        entry: odapkit req render docs/requirements/requirements.toml --check
+        language: system
+        pass_filenames: false
+        files: ^docs/requirements/

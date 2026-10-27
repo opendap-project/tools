@@ -1,0 +1,14 @@
+{
+  "extraKnownMarketplaces": {
+    "opendap": {
+      "source": {
+        "source": "github",
+        "repo": "opendap-project/claude-plugins"
+      },
+      "autoUpdate": true
+    }
+  },
+  "enabledPlugins": {
+    "opendap@opendap": true
+  }
+}

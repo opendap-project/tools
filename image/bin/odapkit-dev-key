@@ -1,0 +1,31 @@
+#!/bin/sh
+# The development SSH key that Blackbird OS qemu images accept for root (never device images).
+# Usage: odapkit dev-key [create|path|tree]
+#   create  make the key if there is none (the default); prints its path
+#   path    the private key's path
+#   tree    the file tree that puts its public half in an image (an mkosi extra tree)
+# Kept host-wide in $XDG_DATA_HOME/opendap/dev-ssh, so every checkout and tool uses one key.
+set -eu
+. "$(dirname "$0")/../lib/odapkit.sh"
+dir="$(odap_data)/dev-ssh"
+key="$dir/id_ed25519"
+
+create() {
+  if [ ! -f "$key" ]; then
+    mkdir -p "$dir"
+    # A key made by an earlier layout (blackbird-os build/dev-ssh) is moved here, so images built
+    # with it keep working.
+    old="$(repo_dir blackbird-os 2>/dev/null)/build/dev-ssh/id_ed25519" || true
+    if [ -f "$old" ]; then cp "$old" "$old.pub" "$dir/"; else ssh-keygen -q -t ed25519 -N "" -C "opendap development" -f "$key"; fi
+  fi
+  mkdir -p "$dir/tree/root/.ssh"
+  cp "$key.pub" "$dir/tree/root/.ssh/authorized_keys"
+  chmod 700 "$dir/tree/root/.ssh"; chmod 600 "$dir/tree/root/.ssh/authorized_keys" "$key"
+}
+
+case "${1:-create}" in
+  create) create; echo "$key";;
+  path) echo "$key";;
+  tree) create; echo "$dir/tree";;
+  *) die "usage: odapkit dev-key [create|path|tree]" 2;;
+esac

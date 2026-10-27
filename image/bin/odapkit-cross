@@ -1,0 +1,33 @@
+#!/bin/sh
+# Cross-build the Cargo workspace in the current directory for Blackbird OS on aarch64.
+# Usage: odapkit cross <cargo subcommand args…>      e.g. odapkit cross build --release -p odap-composer
+# Subcommands that link (build, test, run, rustc) link with zig (cargo-zigbuild) against the
+# image's own glibc and libraries, the sysroot of odapkit sysroot; the others (check, clippy, doc…)
+# need no linker and run as plain cargo for the same target and sysroot. Environment: ODAP_SYSROOT_DIR, ODAP_GLIBC (default 2.41, Debian trixie's libc6).
+# Tests for aarch64 do not run on the host: `odapkit cross test --no-run -p CRATE` builds them
+# (their paths with --message-format json), and they run on a device or the virtual T1.
+set -eu
+here="$(cd "$(dirname "$0")" && pwd)"
+. "$here/../lib/odapkit.sh"
+[ $# -ge 1 ] || die "usage: odapkit cross <cargo subcommand args…>" 2
+sysroot="$("$here/odapkit-sysroot" path)"
+glibc="${ODAP_GLIBC:-2.41}"
+target=aarch64-unknown-linux-gnu
+lib="$sysroot/usr/lib/aarch64-linux-gnu"
+[ -d "$lib" ] || die "no sysroot at $sysroot: run odapkit sysroot install" 1
+command -v cargo-zigbuild >/dev/null || die "cargo-zigbuild not found: run toolkit-host setup.sh" 1
+
+export PKG_CONFIG_ALLOW_CROSS=1
+export PKG_CONFIG_SYSROOT_DIR="$sysroot"
+export PKG_CONFIG_LIBDIR="$lib/pkgconfig:$sysroot/usr/share/pkgconfig"
+export PKG_CONFIG_PATH=""
+# The sysroot's libraries; glibc itself comes from zig's stubs for that version.
+export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS="-L native=$lib ${RUSTFLAGS:-}"
+
+cmd="$1"; shift
+case "$cmd" in
+  # cargo-zigbuild builds as `cargo zigbuild`; test, run and rustc are its own subcommands.
+  build) exec cargo zigbuild --target "$target.$glibc" "$@";;
+  test|run|rustc) exec cargo-zigbuild "$cmd" --target "$target.$glibc" "$@";;
+  *) exec cargo "$cmd" --target "$target" "$@";;
+esac

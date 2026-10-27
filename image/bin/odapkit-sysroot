@@ -1,0 +1,41 @@
+#!/bin/sh
+# The cross-compilation sysroot of Blackbird OS images, installed on the host for odapkit cross.
+# It holds the image's own Debian packages plus their -dev packages (blackbird-os profile `sysroot`).
+# Usage: odapkit sysroot install [--no-build] | path
+#   install  build the profile (odapkit image build sysroot) and unpack it; --no-build unpacks the
+#            last build
+#   path     where it is: $ODAP_SYSROOT_DIR, default ~/.cache/opendap/sysroot/trixie-arm64
+# macOS volumes are case-insensitive and Linux headers are not (ipt_ecn.h and ipt_ECN.h), so on
+# macOS the sysroot lives in a case-sensitive APFS sparse image mounted at ~/.cache/opendap/sysroot.
+set -eu
+here="$(cd "$(dirname "$0")" && pwd)"
+. "$here/../lib/odapkit.sh"
+mnt="$(odap_cache)/sysroot"
+dest="${ODAP_SYSROOT_DIR:-$mnt/trixie-arm64}"
+
+# The sparse image mounted, made first when `create` is given. A reboot unmounts it: every use
+# attaches it again, so a sysroot installed once stays usable.
+attach() {
+  [ "$(uname)" = Darwin ] && [ -z "${ODAP_SYSROOT_DIR:-}" ] || return 0
+  img="$(odap_cache)/sysroot.sparseimage"
+  [ -f "$img" ] || [ "${1:-}" = create ] || return 0
+  mkdir -p "$mnt"
+  [ -f "$img" ] || hdiutil create -quiet -size 8g -type SPARSE -fs "Case-sensitive APFS" -volname opendap-sysroot "$img"
+  mount | grep -q " on $mnt " || hdiutil attach -quiet -nobrowse -mountpoint "$mnt" "$img"
+  mdutil -i off "$mnt" >/dev/null 2>&1 || true
+}
+
+case "${1:-}" in
+  path) attach; echo "$dest";;
+  install)
+    tarball="$(odapkit image path sysroot 2>/dev/null || "$here/odapkit-image" path sysroot)"
+    [ "${2:-}" = --no-build ] || tarball="$("$here/odapkit-image" build sysroot)"
+    [ -f "$tarball" ] || die "no sysroot build at $tarball: run odapkit sysroot install" 1
+    attach create
+    rm -rf "$dest.new"; mkdir -p "$dest.new"
+    # Device nodes and ownership are not needed to link; unpack as the current user.
+    tar -xf "$tarball" -C "$dest.new" --exclude './dev/*'
+    rm -rf "$dest"; mv "$dest.new" "$dest"
+    echo "$dest";;
+  *) die "usage: odapkit sysroot install [--no-build] | path" 2;;
+esac
