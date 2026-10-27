@@ -2,26 +2,31 @@
 
 Usage:
     odapkit docs check [--strict] [--json] PATH...   Markdown files or folders
-    odapkit docs index DOCS_DIR [--readme R] [--check] the table between <!-- index:start --> and <!-- index:end -->
-    odapkit docs rfc-status [--workspace DIR] [--write DIR] [--json]   which affected repositories recorded each RFC
+    odapkit docs index DOCS_DIR [--readme R] [--check | --dry-run]   the table between <!-- index:start --> and
+                                                     <!-- index:end -->
+    odapkit docs rfc-status [--workspace DIR] [--write DIR [--dry-run]] [--json]   which affected repositories
+                                                     recorded each RFC
 
 Errors: broken relative links, relative links that leave the repository (links between repositories are GitHub
 URLs), links from a public repository to a private one (names from the private overlay's repos.tsv), lower-case project terms outside
 code. Warnings (errors with --strict): working-note phrases outside an `## Open items` section, a status outside
 the vocabulary (draft, accepted, confirmed, superseded, withdrawn, implemented). The header is the bullet list of
-`**Key:**` items right after the title. Exit status: 0 clean, 1 findings that fail, 2 usage. rfc-status
+`**Key:**` items right after the title. check --json prints opendap.check-result/v1 (an error fails, a warning
+warns); rfc-status --json prints opendap.rfc-status/v1; --dry-run names the file it would write. Exit status: 0 clean, 1 findings that fail, 2 usage. rfc-status
 (odw.rfcstatus) fails when an accepted or implemented RFC has an affected repository that has not recorded it.
 Spec: docs/specs/docs-gates.md.
 """
-import argparse
 import dataclasses
+import datetime as dt
 import json
 import os
 import pathlib
 import re
 import sys
 
-from odw import rfcstatus, workspace
+from odw import clikit, rfcstatus, workspace
+
+TOOL = "odapkit docs"
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 GITHUB_REPO = re.compile(r"https://github\.com/opendap-project/([A-Za-z0-9._-]+)")
@@ -189,25 +194,44 @@ def _files(paths):
         yield from sorted(out)
 
 
+def check_result(findings, strict=False):
+    """Findings as opendap.check-result/v1: an error fails, a warning warns (fails with --strict)."""
+    results = [{"id": f"{f.path}:{f.line}#{f.rule}", "rule": f.rule,
+                "verdict": "fail" if f.severity == "error" or strict else "warn", "message": f.message,
+                "location": {"path": f.path, "line": f.line}} for f in findings]
+    return {"schema": "opendap.check-result/v1", "tool": {"name": f"{TOOL} check"}, "subject": {"repo": "workspace"},
+            "generated": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "results": results}
+
+
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="odapkit docs", description="Docs gates and the docs index.")
-    sub = ap.add_subparsers(dest="cmd", required=True)
+    return clikit.main(TOOL, _main, argv)
+
+
+def _parser():
+    ap = clikit.Parser(prog=TOOL, summary=clikit.summary("docs"), description="Docs gates and the docs index.",
+                       examples=["odapkit docs check --strict docs/", "odapkit docs check --json README.md",
+                                 "odapkit docs index docs --dry-run", "odapkit docs rfc-status --json"])
+    sub = ap.add_subparsers(dest="cmd", required=True, parser_class=clikit.Parser)
     ck = sub.add_parser("check")
     ck.add_argument("paths", nargs="+")
     ck.add_argument("--strict", action="store_true")
     ck.add_argument("--json", action="store_true")
     ix = sub.add_parser("index")
     ix.add_argument("docs_dir")
-    ix.add_argument("--check", action="store_true")
+    mode = ix.add_mutually_exclusive_group()
+    mode.add_argument("--check", action="store_true")
+    mode.add_argument("--dry-run", action="store_true", help="say whether the index would change; write nothing")
     ix.add_argument("--readme", help="the README that holds the index (default: DOCS_DIR/README.md)")
     rs = sub.add_parser("rfc-status")
     rs.add_argument("--workspace")
     rs.add_argument("--write", metavar="DIR", help="write DIR/rfc-application.toml")
+    rs.add_argument("--dry-run", action="store_true", help="with --write: name the file and write nothing")
     rs.add_argument("--json", action="store_true")
-    try:
-        args = ap.parse_args(argv)
-    except SystemExit as e:
-        return 2 if e.code else 0
+    return ap
+
+
+def _main(argv):
+    args = _parser().parse_args(argv)
     if args.cmd == "rfc-status":
         return _rfc_status(args)
     if args.cmd == "index":
@@ -218,6 +242,10 @@ def main(argv=None):
                 return 0
             print(f"{readme} index is not current: run odapkit docs index {d}", file=sys.stderr)
             return 1
+        if args.dry_run:
+            state = "unchanged" if index_is_current(d, readme) else "changed"
+            print(f"{TOOL}: would write {readme} ({state})", file=sys.stderr)
+            return 0
         readme.write_text(render_index(d, readme))
         return 0
     ws = workspace.root()
@@ -229,7 +257,7 @@ def main(argv=None):
         findings += check_file(p, repo_root=root, private_repos=private, repo_is_private=str(root) in private_paths)
     failing = [f for f in findings if f.severity == "error" or args.strict]
     if args.json:
-        print(json.dumps([dataclasses.asdict(f) for f in findings], indent=1))
+        print(json.dumps(check_result(findings, args.strict), ensure_ascii=False, indent=1))
     else:
         for f in findings:
             print(f"{f.path}:{f.line}: {f.severity}: {f.rule}: {f.message}")
@@ -240,11 +268,16 @@ def _rfc_status(args):
     ws = pathlib.Path(args.workspace) if args.workspace else workspace.root()
     report = rfcstatus.status(ws) if ws else None
     if report is None:
-        print("odapkit docs rfc-status: no workspace with an rfcs repository (repos.tsv); use --workspace", file=sys.stderr)
-        return 2
+        raise clikit.CliError("workspace.no_rfcs", "no workspace with an rfcs repository (repos.tsv)",
+                              "run it inside a workspace whose repos.tsv lists rfcs, or name one",
+                              f"{TOOL} rfc-status --workspace DIR", status=2)
     if args.write:
-        rfcstatus.write(report, args.write)
-    print(json.dumps(report, ensure_ascii=False, indent=1) if args.json else rfcstatus.render(report))
+        if args.dry_run:
+            print(f"{TOOL}: would write {pathlib.Path(args.write) / 'rfc-application.toml'}", file=sys.stderr)
+        else:
+            rfcstatus.write(report, args.write)
+    print(json.dumps({"schema": "opendap.rfc-status/v1", **report}, ensure_ascii=False, indent=1) if args.json
+          else rfcstatus.render(report))
     return 1 if report["failing"] else 0
 
 

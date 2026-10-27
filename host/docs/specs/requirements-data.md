@@ -18,11 +18,11 @@ The rendered table is `| ID | Requirement | Priority | Status |`. Rendering a RE
 
 | Command | Does |
 |---|---|
-| `odapkit req import README.md [--write]` | Parses the README's tables into `requirements.toml` (stdout, or beside the README); reports schema errors and duplicate ids |
-| `odapkit req render requirements.toml [--check]` | Writes the README beside it, or fails when the README is not what the TOML renders |
+| `odapkit req import README.md [--write [--dry-run]]` | Parses the README's tables into `requirements.toml` (stdout, or beside the README); reports schema errors and duplicate ids; `--dry-run` names the file and writes nothing |
+| `odapkit req render requirements.toml [--check \| --dry-run]` | Writes the README beside it, or fails when the README is not what the TOML renders; `--dry-run` says whether it would change and writes nothing |
 | `odapkit req prefixes` | Every id prefix in use is registered in an `id-prefixes.tsv` (the workspace's, and a private overlay's for private repositories) for the folder that uses it |
 | `odapkit req refs [--strict]` | Citations, in docs and code, of ids with a registered prefix: unknown ids are errors, withdrawn or moved ids are warnings (`--strict` fails on them) |
-| `odapkit req index [--json]` | Every requirement of every repository listed in a `repos.tsv` (TOML source when present, README otherwise), skipping nested repositories |
+| `odapkit req index [--json]` | Every requirement of every repository listed in a `repos.tsv` (TOML source when present, README otherwise), skipping nested repositories; `--json` prints `opendap.requirements-index/v1` (`requirements`) |
 
 ## Rules
 

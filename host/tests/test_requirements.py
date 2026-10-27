@@ -1,4 +1,5 @@
 """odw req: requirements as data (opendap.requirements/v1), rendered to the README they come from."""
+import json
 import pathlib
 
 import pytest
@@ -136,3 +137,21 @@ def test_refs_report_unknown_and_withdrawn_ids(tmp_path):
 def test_refs_ignore_the_requirements_files_themselves(tmp_path):
     ws = ws_with(tmp_path)
     assert requirements.check_refs(ws) == ([], [])
+
+
+def test_render_and_import_dry_run_write_nothing(tmp_path, capsys):
+    md = tmp_path / "README.md"
+    md.write_text(README)
+    assert requirements.main(["import", str(md), "--write", "--dry-run"]) == 0
+    assert not (tmp_path / "requirements.toml").exists()
+    requirements.main(["import", str(md), "--write"])
+    md.write_text("stale\n")
+    assert requirements.main(["render", str(tmp_path / "requirements.toml"), "--dry-run"]) == 0
+    assert md.read_text() == "stale\n" and "(changed)" in capsys.readouterr().err
+
+
+def test_index_json_carries_a_schema(tmp_path, capsys):
+    ws = ws_with(tmp_path)
+    assert requirements.main(["index", "--workspace", str(ws), "--json"]) == 0
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["schema"] == "opendap.requirements-index/v1" and doc["requirements"]

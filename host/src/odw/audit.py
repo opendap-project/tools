@@ -1,13 +1,13 @@
 """odw audit: workspace metrics measured from every repository's tracked files.
 
-Usage: odapkit audit [--workspace DIR] [--rename-map TSV] [--write DIR] [--json]
+Usage: odapkit audit [--workspace DIR] [--rename-map TSV] [--write DIR [--dry-run]] [--json]
 
 Repositories come from every repos.tsv at the workspace root or two levels below it (the public list and any
 overlay). Metrics keep the keys of a programme's baseline so snapshots compare over time; --write appends a dated
 snapshot to DIR/drift.toml and rewrites DIR/conformance.toml (one table per repository). With --rename-map, tracked
-files that no row covers are listed. Exit status: 0 measured, 2 usage (no workspace).
+files that no row covers are listed; --dry-run with --write names the files and writes nothing. --json prints
+opendap.workspace-audit/v1. Exit status: 0 measured, 2 usage (no workspace).
 """
-import argparse
 import datetime as dt
 import fnmatch
 import hashlib
@@ -18,7 +18,10 @@ import re
 import subprocess
 import sys
 
-from odw import workspace
+from odw import clikit, workspace
+
+TOOL = "odapkit audit"
+SCHEMA = "opendap.workspace-audit/v1"
 
 HOOKS_REPO = re.compile(r"repo:\s*https://github\.com/opendap-project/toolkit-hooks\s*\n\s*rev:\s*(\S+)")
 LOWER_OPEN_SOURCE = re.compile(r"\bopen source\b")
@@ -138,8 +141,12 @@ def _toml_value(v):
     return json.dumps(v, ensure_ascii=False)
 
 
-def write(result, out, date=None):
+def write(result, out, date=None, dry_run=False):
     out = pathlib.Path(out)
+    if dry_run:
+        for name in ("drift.toml", "conformance.toml"):
+            print(f"{TOOL}: would write {out / name}", file=sys.stderr)
+        return
     out.mkdir(parents=True, exist_ok=True)
     date = date or dt.date.today().isoformat()
     snap = [f"\n[[snapshot]]", f'date = "{date}"']
@@ -160,24 +167,26 @@ def write(result, out, date=None):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="odapkit audit", description="Workspace metrics from tracked files.")
+    return clikit.main(TOOL, _main, argv)
+
+
+def _main(argv):
+    ap = clikit.Parser(prog=TOOL, summary=clikit.summary("audit"), description="Workspace metrics from tracked files.",
+                       examples=["odapkit audit --json", "odapkit audit --write baseline --dry-run"])
     ap.add_argument("--workspace")
     ap.add_argument("--rename-map")
     ap.add_argument("--write", metavar="DIR")
+    ap.add_argument("--dry-run", action="store_true", help="with --write: name the files and write nothing")
     ap.add_argument("--json", action="store_true")
-    try:
-        args = ap.parse_args(argv)
-    except SystemExit as e:
-        return 2 if e.code else 0
+    args = ap.parse_args(argv)
     ws = pathlib.Path(args.workspace) if args.workspace else workspace.root()
     if ws is None:
-        print("odapkit audit: not inside a workspace (no repos.tsv); use --workspace", file=sys.stderr)
-        return 2
+        raise clikit.no_workspace(TOOL)
     result = audit(ws, rename_map=args.rename_map)
     if args.write:
-        write(result, args.write)
+        write(result, args.write, dry_run=args.dry_run)
     if args.json:
-        print(json.dumps(result, ensure_ascii=False, indent=1))
+        print(json.dumps({"schema": SCHEMA, **result}, ensure_ascii=False, indent=1))
     else:
         for section in ("repositories", "software", "docs", "identifiers"):
             for k, v in result[section].items():

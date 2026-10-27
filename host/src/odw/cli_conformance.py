@@ -21,24 +21,24 @@ Exit status: 0 no executable fails (or list succeeded), 1 one fails, 2 usage err
 Errors: a dotted code, a hint and a fix on stderr; with --json, also an opendap.error/v1 document on stdout.
 Spec: docs/specs/cli-conformance.md.
 """
-import argparse
 import datetime as dt
 import json
 import pathlib
 import sys
 import tomllib
 
-from odw import cli_inventory, cli_probe, cli_rules, evaluate, workspace
+from odw import cli_inventory, cli_probe, cli_rules, clikit, evaluate, workspace
 
 TOOL = "odapkit cli"
 SUMMARY = __doc__.splitlines()[0].split(": ", 1)[1]
 VERDICT = {"pass": "pass", "fail": "fail", "warning": "warn", "unverified": "skip", "info": "info"}
 
 
-class UsageError(Exception):
+class UsageError(clikit.CliError):
+    """A usage error: a stable code, a hint and a fix; exit 2 (odw.clikit)."""
+
     def __init__(self, code, message, hint, fix):
-        super().__init__(message)
-        self.code, self.message, self.hint, self.fix = code, message, hint, fix
+        super().__init__(code, message, hint, fix, status=2)
 
 
 def summaries(ws, items):
@@ -115,10 +115,7 @@ def write(m, out, dry_run=False):
     return [str(p) for p in files]
 
 
-class Parser(argparse.ArgumentParser):
-    def error(self, message):
-        raise UsageError("input.invalid", message, "the usage is in odapkit cli --help", f"{TOOL} --help")
-
+class Parser(clikit.Parser):
     def print_help(self, file=None):
         print(__doc__.rstrip(), file=file or sys.stdout)
 
@@ -138,14 +135,6 @@ def parser():
             p.add_argument("--write", metavar="DIR")
             p.add_argument("--dry-run", action="store_true")
     return ap
-
-
-def _fail(e, as_json):
-    print(f"{TOOL}: error {e.code}: {e.message}\n  hint: {e.hint}\n  fix: {e.fix}", file=sys.stderr)
-    if as_json:
-        print(json.dumps({"schema": "opendap.error/v1", "ok": False, "error": {
-            "code": e.code, "message": e.message, "hint": e.hint, "fix": [{"command": e.fix}]}}))
-    return 2
 
 
 def run(args):
@@ -191,8 +180,8 @@ def main(argv=None):
         return run(args)
     except SystemExit as e:
         return 0 if not e.code else 2
-    except UsageError as e:
-        return _fail(e, as_json)
+    except clikit.CliError as e:
+        return clikit.report(TOOL, e, as_json)
 
 
 if __name__ == "__main__":

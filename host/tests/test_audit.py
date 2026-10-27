@@ -1,4 +1,5 @@
 """odw audit: workspace metrics from the repositories' tracked files."""
+import json
 import subprocess
 import textwrap
 
@@ -120,3 +121,21 @@ def test_cli_json(ws, capsys):
     import json
     assert audit.main(["--workspace", str(ws), "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["repositories"]["total"] == 2
+
+
+def test_write_dry_run_names_the_files_and_writes_nothing(ws, tmp_path, capsys):
+    out = tmp_path / "snap"
+    assert audit.main(["--workspace", str(ws), "--write", str(out), "--dry-run"]) == 0
+    assert not out.exists()
+    assert f"would write {out / 'drift.toml'}" in capsys.readouterr().err
+
+
+def test_json_carries_a_schema(ws, capsys):
+    assert audit.main(["--workspace", str(ws), "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["schema"] == "opendap.workspace-audit/v1"
+
+
+def test_no_workspace_is_an_error_with_a_code(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    assert audit.main([]) == 2
+    assert "error workspace.not_found:" in capsys.readouterr().err

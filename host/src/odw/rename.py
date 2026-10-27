@@ -18,16 +18,16 @@ import pathlib
 import subprocess
 import sys
 
-from odw import audit, rename_map, rename_rewrite as rw, workspace
+from odw import audit, clikit, rename_map, rename_rewrite as rw, workspace
+
+TOOL = "odapkit rename"
 
 MAX_TEXT = 8 * 1024 * 1024
 TMP = ".odw-rename-tmp"
 
 
-class Refused(Exception):
-    def __init__(self, code, message, hint, fix, status=1):
-        super().__init__(message)
-        self.code, self.message, self.hint, self.fix, self.status = code, message, hint, fix, status
+class Refused(clikit.CliError):
+    """A refused step: a stable code, a hint and a fix (odw.clikit)."""
 
 
 @dataclasses.dataclass
@@ -373,8 +373,8 @@ def _text_plan(doc):
 
 
 def _parser():
-    ap = argparse.ArgumentParser(
-        prog="odapkit rename", description="odapkit rename: one root's cut from the rename map (moves, links, "
+    ap = clikit.Parser(
+        prog=TOOL, summary=clikit.summary("rename"), description="One root's cut from the rename map (moves, links, "
         "identifiers).", formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="examples:\n  odapkit rename merge libs --map rename-map.tsv --into ../libs   (step 2: history merge)\n"
                "  odapkit rename plan libs --map rename-map.tsv\n"
@@ -406,10 +406,11 @@ def main(argv=None):
     if argv[:1] == ["merge"]:
         from odw import rename_merge
         return rename_merge.main(argv[1:])
-    try:
-        args = _parser().parse_args(argv)
-    except SystemExit as e:
-        return 2 if e.code else 0
+    return clikit.main(TOOL, _main, argv)
+
+
+def _main(argv):
+    args = _parser().parse_args(argv)
     as_json = args.json or (not args.text and not sys.stdout.isatty())
     try:
         ws = pathlib.Path(args.workspace) if args.workspace else workspace.root()
@@ -441,15 +442,10 @@ def main(argv=None):
         _emit(doc, as_json, _text_plan(doc))
         return 0
     except Refused as e:
-        print(f"odapkit rename: {e.code}: {e.message}\n  hint: {e.hint}\n  fix: {e.fix}", file=sys.stderr)
-        if as_json:
-            print(json.dumps({"schema": "opendap.error/v1", "error": {"code": e.code, "message": e.message,
-                                                                      "hint": e.hint, "fix": e.fix}}))
-        return e.status
+        return clikit.report(TOOL, e, as_json)
     except ValueError as e:
-        print(f"odapkit rename: rename.bad-map: {e}\n  hint: the map needs old, new, kind and action columns\n"
-              "  fix: head -1 <rename-map.tsv>", file=sys.stderr)
-        return 2
+        return clikit.report(TOOL, Refused("rename.bad-map", str(e), "the map needs old, new, kind and action columns",
+                                           "head -1 <rename-map.tsv>", 2), as_json)
 
 
 if __name__ == "__main__":

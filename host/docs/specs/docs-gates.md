@@ -22,13 +22,13 @@ A directory path is searched for Markdown, leaving out build trees (`target/`, `
 | `working-note` | warning | `for now`, `not started`, `TODO`, `FIXME`, `will take this over`, and `next step` when it announces the document's own work (`Next step:`, `the next step is`), outside an `## Open items` section. Wording in double quotes, and `next step` as what a message tells the user (`the reason and the next step`), is not a working note |
 | `status` | warning | A header status outside the vocabulary |
 
-`--strict` makes warnings fail. Code spans and fenced blocks are not checked for terms or working notes.
+`--strict` makes warnings fail. `--json` prints `opendap.check-result/v1`: one result per finding, `fail` for an error (and for a warning with `--strict`), `warn` otherwise, with the path and line. Code spans and fenced blocks are not checked for terms or working notes.
 
-## Index (`odapkit docs index DOCS_DIR [--check]`)
+## Index (`odapkit docs index DOCS_DIR [--check | --dry-run]`)
 
-`docs/README.md` keeps its own introduction; the table of documents (title and status of every Markdown file under `docs/`, requirements READMEs excepted) is generated between `<!-- index:start -->` and `<!-- index:end -->`. `--readme PATH` puts the table in another README (an RFC repository indexes `text/` from its root README); `--check` fails when it is stale.
+`docs/README.md` keeps its own introduction; the table of documents (title and status of every Markdown file under `docs/`, requirements READMEs excepted) is generated between `<!-- index:start -->` and `<!-- index:end -->`. `--readme PATH` puts the table in another README (an RFC repository indexes `text/` from its root README); `--check` fails when it is stale; `--dry-run` says whether the table would change and writes nothing.
 
-## RFC application (`odapkit docs rfc-status [--workspace DIR] [--write DIR] [--json]`)
+## RFC application (`odapkit docs rfc-status [--workspace DIR] [--write DIR [--dry-run]] [--json]`)
 
 An accepted RFC becomes Implemented when every repository it affects has recorded the outcome. The tool reads each RFC in the rfcs repository's `text/` and reports one row per affected repository:
 
@@ -42,7 +42,7 @@ An accepted RFC becomes Implemented when every repository it affects has recorde
 | `absent` | The repository is in `repos.tsv` but not cloned here |
 | `unresolved` | The name matches no repository and no declared rename |
 
-The check fails (exit status 1) when an RFC whose status is `accepted` or `implemented` has a `missing` or `unresolved` row, or no `Affected repositories` item; `absent` rows never fail, since checkouts differ in access. Accepted RFCs whose rows are all `recorded` are listed as ready to be marked Implemented. Exit status 2 is a usage error or a workspace without an rfcs repository. `--json` prints the report; `--write DIR` writes `DIR/rfc-application.toml` (generated, never edited by hand: one `[[rfc]]` table per RFC, one `[[rfc.row]]` per affected repository).
+The check fails (exit status 1) when an RFC whose status is `accepted` or `implemented` has a `missing` or `unresolved` row, or no `Affected repositories` item; `absent` rows never fail, since checkouts differ in access. Accepted RFCs whose rows are all `recorded` are listed as ready to be marked Implemented. Exit status 2 is a usage error or a workspace without an rfcs repository (`workspace.no_rfcs`). `--json` prints the report as `opendap.rfc-status/v1`; `--dry-run` with `--write` names the file and writes nothing; `--write DIR` writes `DIR/rfc-application.toml` (generated, never edited by hand: one `[[rfc]]` table per RFC, one `[[rfc.row]]` per affected repository).
 
 ## Accepted ADRs
 

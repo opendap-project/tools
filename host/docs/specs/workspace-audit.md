@@ -30,4 +30,4 @@ Workspace health is measured, never estimated: `odapkit audit` reads every repos
 
 ## Outputs
 
-`--write DIR` appends a dated `[[snapshot]]` to `DIR/drift.toml` and rewrites `DIR/conformance.toml` with one table per repository (pre-commit present, hooks pin, CLAUDE.md capitalisation, rule files, tracked files). Both are generated and never edited by hand. `--json` prints the full result.
+`--write DIR` appends a dated `[[snapshot]]` to `DIR/drift.toml` and rewrites `DIR/conformance.toml` with one table per repository (pre-commit present, hooks pin, CLAUDE.md capitalisation, rule files, tracked files). Both are generated and never edited by hand. `--dry-run` with `--write` names the two files and writes nothing. `--json` prints the full result as `opendap.workspace-audit/v1`.

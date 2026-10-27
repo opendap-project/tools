@@ -1,7 +1,8 @@
 """odw sync: shared boilerplate rendered from the workspace templates; drift is reported or repaired."""
+import json
 import pytest
 
-from odw import sync
+from odw import schemas, sync
 
 MANIFEST = """\
 schema = "opendap.sync/v1"
@@ -195,3 +196,23 @@ def test_a_repository_without_its_pre_commit_hook_is_drift(bws):
     hook.parent.mkdir(parents=True, exist_ok=True)
     hook.write_text("#!/bin/sh\n")
     assert ("public/r", ".git/hooks/pre-commit", "missing") not in [(d.repo, d.target, d.state) for d in sync.check(bws, bws / "templates")]
+
+
+def test_apply_dry_run_names_the_targets_and_writes_nothing(ws, capsys):
+    before = (ws / "public/b/.claude/settings.json").read_text()
+    assert sync.main(["--workspace", str(ws), "--templates", str(ws / "templates"), "--apply", "--dry-run"]) == 0
+    assert (ws / "public/b/.claude/settings.json").read_text() == before
+    assert "would write public/b/.claude/settings.json" in capsys.readouterr().out
+    assert sync.check(ws, ws / "templates")
+
+
+def test_check_json_is_a_check_result(ws, capsys):
+    assert sync.main(["--workspace", str(ws), "--templates", str(ws / "templates"), "--check", "--json"]) == 1
+    doc = json.loads(capsys.readouterr().out)
+    assert schemas.errors(doc, "check-result") == []
+    assert {r["verdict"] for r in doc["results"]} == {"fail"}
+
+
+def test_missing_templates_is_an_error_with_a_code(ws, tmp_path, capsys):
+    assert sync.main(["--workspace", str(ws), "--templates", str(tmp_path / "none"), "--check", "--json"]) == 2
+    assert json.loads(capsys.readouterr().out)["error"]["code"] == "templates.not_found"

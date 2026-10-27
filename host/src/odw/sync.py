@@ -1,15 +1,17 @@
 """odw sync: shared boilerplate rendered from the workspace templates.
 
-Usage: odapkit sync [--workspace DIR] [--templates DIR] (--check | --apply) [--json]
+Usage: odapkit sync [--workspace DIR] [--templates DIR] (--check | --apply [--dry-run]) [--json]
 
 `<templates>/sync.toml` (opendap.sync/v1) lists [[file]] entries: a `template` path, the `target` path inside each
 repository, the repository globs it applies to (`repos`, over the paths in every repos.tsv) and `when`: `always`
 (the file must exist and match) or `present` (it must match where a repository has it). --check reports every
-target that is missing or differs (exit 1); --apply writes them. Default templates: <workspace>/templates.
+target that is missing or differs (exit 1); --apply writes them, and with --dry-run only names them. --json prints
+opendap.check-result/v1: with --check each drift fails; with --apply each target written (or that would be) is
+`info`. Default templates: <workspace>/templates.
 Spec: docs/specs/workspace-sync.md.
 """
-import argparse
 import dataclasses
+import datetime as dt
 import fnmatch
 import json
 import pathlib
@@ -18,7 +20,9 @@ import subprocess
 import sys
 import tomllib
 
-from odw import audit, workspace
+from odw import audit, clikit, workspace
+
+TOOL = "odapkit sync"
 
 
 @dataclasses.dataclass
@@ -205,30 +209,46 @@ def apply(ws, templates):
     return changed
 
 
+def check_result(found, verdict, verb):
+    results = [{"id": f"{d.repo}/{d.target}", "rule": f"sync {d.template}", "verdict": verdict,
+                "message": f"{verb}{d.state} ({d.template})", "location": {"path": f"{d.repo}/{d.target}"}}
+               for d in found]
+    return {"schema": "opendap.check-result/v1", "tool": {"name": TOOL}, "subject": {"repo": "workspace"},
+            "generated": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "results": results}
+
+
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="odapkit sync", description="Shared boilerplate from the workspace templates.")
+    return clikit.main(TOOL, _main, argv)
+
+
+def _main(argv):
+    ap = clikit.Parser(prog=TOOL, summary=clikit.summary("sync"),
+                       description="Shared boilerplate from the workspace templates.",
+                       examples=["odapkit sync --check --json", "odapkit sync --apply --dry-run", "odapkit sync --apply"])
     ap.add_argument("--workspace")
     ap.add_argument("--templates")
     mode = ap.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check", action="store_true")
     mode.add_argument("--apply", action="store_true")
+    ap.add_argument("--dry-run", action="store_true", help="with --apply: name what it would write; write nothing")
     ap.add_argument("--json", action="store_true")
-    try:
-        args = ap.parse_args(argv)
-    except SystemExit as e:
-        return 2 if e.code else 0
+    args = ap.parse_args(argv)
     ws = pathlib.Path(args.workspace) if args.workspace else workspace.root()
     if ws is None:
-        print("odapkit sync: not inside a workspace", file=sys.stderr)
-        return 2
+        raise clikit.no_workspace(TOOL)
     templates = pathlib.Path(args.templates) if args.templates else ws / "templates"
-    found = apply(ws, templates) if args.apply else check(ws, templates)
+    if not (templates / "sync.toml").is_file():
+        raise clikit.CliError("templates.not_found", f"no {templates / 'sync.toml'}",
+                              "the templates folder holds sync.toml (the workspace's templates/)",
+                              f"{TOOL} --check --templates DIR", status=2)
+    dry = args.apply and args.dry_run
+    found = apply(ws, templates) if args.apply and not dry else check(ws, templates)
+    verb = "would write " if dry else "wrote " if args.apply else ""
     if args.json:
-        print(json.dumps([dataclasses.asdict(d) for d in found], indent=1))
+        print(json.dumps(check_result(found, "info" if args.apply else "fail", verb), indent=1))
     else:
-        verb = "wrote" if args.apply else ""
         for d in found:
-            print(f"{verb + ' ' if verb else ''}{d.repo}/{d.target}: {d.state} ({d.template})")
+            print(f"{verb}{d.repo}/{d.target}: {d.state} ({d.template})")
     return 1 if found and args.check else 0
 
 

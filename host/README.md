@@ -36,8 +36,8 @@ Every command-line surface, from the `opendap` and `odw` umbrellas and their plu
 
 - `setup.sh` — installs and checks everything; safe to run again
 - `bin/odapkit` — the Developer Toolkit's one command (RFC 0009): `odapkit <tool>` runs the `odapkit-<tool>` of any toolkit repository; `odapkit help` lists them. `setup.sh` links it into `~/.local/bin`
-- `bin/odapkit-vmnet` — a LAN address for virtual devices: `odapkit vmnet install` once, as yourself (it asks for administrator rights only for the socket_vmnet daemon); `status`, `uninstall`
-- `bin/odapkit-qemu` — the QEMU that virtual devices run: `odapkit qemu install` builds QEMU's pinned release with the patches in `qemu/patches/` into `~/.local/opt/opendap` and links it into `~/.local/bin` (no administrator rights); `status`
+- `bin/odapkit-vmnet` — a LAN address for virtual devices: `odapkit vmnet install` once, as yourself (it asks for administrator rights only for the socket_vmnet daemon, and only on a terminal); `status [--json]`, `uninstall`; `--dry-run` names the steps
+- `bin/odapkit-qemu` — the QEMU that virtual devices run: `odapkit qemu install` builds QEMU's pinned release with the patches in `qemu/patches/` into `~/.local/opt/opendap` and links it into `~/.local/bin` (no administrator rights); `status [--json]`; `install --dry-run` names the steps
 - `bin/odapkit-noindex` — keeps generated trees (`target/`, `.venv/`, test caches) out of the Spotlight index: `odapkit noindex --apply <path>` ([development workflow](docs/specs/development-workflow.md), Generated trees)
 - `bin/odapkit-plan` — a maintainers' programme as data (tasks, decisions, claims, generated index): [programme plan](docs/specs/programme-plan.md)
 - `bin/odapkit-audit` — workspace metrics from every repository's tracked files, with dated snapshots: [workspace audit](docs/specs/workspace-audit.md)
@@ -46,7 +46,8 @@ Every command-line surface, from the `opendap` and `odw` umbrellas and their plu
 - `bin/odapkit-sync` — shared boilerplate from the workspace templates: `--check` reports drift, `--apply` repairs it: [workspace sync](docs/specs/workspace-sync.md)
 - `bin/odapkit-rename` — one root's cut from the rename map ([RFC 0017](https://github.com/opendap-project/rfcs/blob/main/text/0017-naming-and-topology.md) §7): `merge` builds the root repository from its sources with their history, `plan` lists every move and link, URL and identifier rewrite, `apply` performs them with `git mv` and local commits, `check` lists the old names left: [rename](docs/specs/rename.md)
 - `bin/odapkit-cli` — every command-line surface of the public roots, inventoried and checked against the command standard (`list`, `check`); writes the conformance matrix: [command-line conformance](docs/specs/cli-conformance.md)
-- `tools.toml` — the tools this root declares to the maintainers' umbrella command (command standard §3)
+- `tools.toml` — the tools this root declares to the maintainers' umbrella command (command standard §3); `odapkit help --json` lists them
+- `src/odw/clikit.py`, `lib/cli.sh` — the command-line behaviour every tool shares: `--help` from `tools.toml`, errors with a code, a hint and a fix, exit status 0, 1, 2: [command-line conformance](docs/specs/cli-conformance.md)
 - `bin/odapkit-verify` — verification matrices as data: render, collect check results by variant, uncovered requirements: [verification matrices](docs/specs/verification.md)
 - `Brewfile` — Homebrew packages
 - `src/odw/evaluate.py` — the evaluation-matrix engine every study uses: [evaluation matrix](docs/specs/evaluation-matrix.md)

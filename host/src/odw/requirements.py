@@ -1,9 +1,11 @@
 """odw req: a component's requirements as data (opendap.requirements/v1) and the README rendered from them.
 
 Usage:
-    odapkit req import README.md [--write]        Markdown tables → requirements.toml (stdout, or beside it)
-    odapkit req render requirements.toml [--check] requirements.toml → README.md beside it, or check it is current
-    odapkit req index [--workspace DIR] [--json]  every requirement of every repository (README or TOML)
+    odapkit req import README.md [--write [--dry-run]]   Markdown tables → requirements.toml (stdout, or beside it)
+    odapkit req render requirements.toml [--check | --dry-run]   requirements.toml → README.md beside it, or check
+                                                  it is current; --dry-run says whether it would change
+    odapkit req index [--workspace DIR] [--json]  every requirement of every repository (README or TOML);
+                                                  --json prints opendap.requirements-index/v1
     odapkit req prefixes [--workspace DIR]        every id prefix is registered in an id-prefixes.tsv for its folder
     odapkit req refs [--workspace DIR] [--strict] citations of unknown ids (error) and withdrawn or moved ids (warning)
 
@@ -12,7 +14,6 @@ The document is a list of blocks: Markdown prose kept as written, and requiremen
 draft, withdrawn, moved) and an optional note (the status cell's parenthesis). Rendering a parsed README gives it
 back byte for byte. Exit status: 0 ok, 1 stale or invalid, 2 usage. Spec: docs/specs/requirements-data.md.
 """
-import argparse
 import json
 import os
 import pathlib
@@ -20,7 +21,9 @@ import re
 import sys
 import tomllib
 
-from odw import schemas, workspace
+from odw import clikit, schemas, workspace
+
+TOOL = "odapkit req"
 
 HEADER = "| ID | Requirement | Priority | Status |"
 RULE = "|---|---|---|---|"
@@ -210,14 +213,23 @@ def check_refs(ws):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="odapkit req", description="Requirements as data.")
-    sub = ap.add_subparsers(dest="cmd", required=True)
+    return clikit.main(TOOL, _main, argv)
+
+
+def _parser():
+    ap = clikit.Parser(prog=TOOL, summary=clikit.summary("req"), description="Requirements as data.",
+                       examples=["odapkit req render docs/requirements/requirements.toml --check",
+                                 "odapkit req index --json", "odapkit req refs --strict"])
+    sub = ap.add_subparsers(dest="cmd", required=True, parser_class=clikit.Parser)
     im = sub.add_parser("import")
     im.add_argument("readme")
     im.add_argument("--write", action="store_true")
+    im.add_argument("--dry-run", action="store_true", help="with --write: name the file and write nothing")
     rd = sub.add_parser("render")
     rd.add_argument("toml")
-    rd.add_argument("--check", action="store_true")
+    mode = rd.add_mutually_exclusive_group()
+    mode.add_argument("--check", action="store_true")
+    mode.add_argument("--dry-run", action="store_true", help="say whether README.md would change; write nothing")
     ix = sub.add_parser("index")
     ix.add_argument("--workspace")
     ix.add_argument("--json", action="store_true")
@@ -226,17 +238,20 @@ def main(argv=None):
     rf = sub.add_parser("refs")
     rf.add_argument("--workspace")
     rf.add_argument("--strict", action="store_true", help="warnings fail too")
-    try:
-        args = ap.parse_args(argv)
-    except SystemExit as e:
-        return 2 if e.code else 0
+    return ap
+
+
+def _main(argv):
+    args = _parser().parse_args(argv)
     if args.cmd == "import":
         md = pathlib.Path(args.readme)
         doc = parse(md.read_text())
         errs = schemas.errors(doc, "requirements") + problems(doc)
         for e in errs:
             print(f"{md}: {e}", file=sys.stderr)
-        if args.write:
+        if args.write and args.dry_run:
+            print(f"{TOOL}: would write {md.parent / 'requirements.toml'}", file=sys.stderr)
+        elif args.write:
             (md.parent / "requirements.toml").write_text(dumps(doc))
         else:
             print(dumps(doc), end="")
@@ -254,12 +269,15 @@ def main(argv=None):
                     print(f"{readme} is not current: run odapkit req render {src}", file=sys.stderr)
                 return 1
             return 0
+        if args.dry_run:
+            state = "unchanged" if is_current(src, readme) else "changed"
+            print(f"{TOOL}: would write {readme} ({state})", file=sys.stderr)
+            return 1 if errs else 0
         readme.write_text(render(doc))
         return 1 if errs else 0
     ws = pathlib.Path(args.workspace) if args.workspace else workspace.root()
     if ws is None:
-        print("odapkit req: not inside a workspace", file=sys.stderr)
-        return 2
+        raise clikit.no_workspace(f"{TOOL} {args.cmd}")
     if args.cmd == "prefixes":
         problems_ = check_prefixes(ws)
         for p in problems_:
@@ -274,7 +292,7 @@ def main(argv=None):
         return 1 if errors or (args.strict and warnings) else 0
     idx = index(ws)
     if args.json:
-        print(json.dumps(idx, ensure_ascii=False, indent=1))
+        print(json.dumps({"schema": "opendap.requirements-index/v1", "requirements": idx}, ensure_ascii=False, indent=1))
     else:
         for r in idx:
             print(f"{r['id']:10} {r['priority']:6} {r['status']:9} {r['file']}")

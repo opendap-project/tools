@@ -1,4 +1,5 @@
 """odw docs: the docs gates (links, private mentions, terms, working notes, status vocabulary) and the docs index."""
+import json
 import pytest
 
 from odw import docs
@@ -167,3 +168,22 @@ def test_files_skip_linked_worktrees_and_test_fixtures(tmp_path):
     found = [f.relative_to(tmp_path).as_posix() for f in docs._files([tmp_path])]
     assert found == ["repo/docs/a.md"]
     assert [f.name for f in docs._files([tmp_path / "repo-task"])] == ["a.md"]
+
+
+def test_check_json_is_a_check_result(tmp_path, capsys):
+    from odw import schemas
+    f = tmp_path / "x.md"
+    f.write_text("# X\n\nSee [gone](missing.md).\n")
+    assert docs.main(["check", "--json", str(f)]) == 1
+    doc = json.loads(capsys.readouterr().out)
+    assert schemas.errors(doc, "check-result") == [] and doc["results"][0]["verdict"] == "fail"
+
+
+def test_index_dry_run_writes_nothing(tmp_path, capsys):
+    d = tmp_path / "docs"
+    d.mkdir()
+    (d / "README.md").write_text("# Docs\n\n<!-- index:start -->\n<!-- index:end -->\n")
+    (d / "a.md").write_text("# A\n")
+    before = (d / "README.md").read_text()
+    assert docs.main(["index", str(d), "--dry-run"]) == 0
+    assert (d / "README.md").read_text() == before and "would write" in capsys.readouterr().err

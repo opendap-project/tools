@@ -188,3 +188,29 @@ def test_check_refuses_private_facts_in_public_tasks(prog):
     problems = "\n".join(prog.check())
     assert "PB-01.toml: a public task names a private path" in problems
     assert "PB-02.toml: a public task whose repositories are all private" in problems
+
+
+def test_dry_run_validates_and_writes_nothing(prog, capsys):
+    root, claims = str(prog.root), str(prog.claims_dir)
+    before = (prog.root / "tasks/AA-02.toml").read_text()
+    assert plan.main(["--programme", root, "--claims", claims, "claim", "AA-02", "--dry-run"]) == 0
+    assert (prog.root / "tasks/AA-02.toml").read_text() == before and not prog.claims_dir.exists()
+    assert "would write" in capsys.readouterr().err
+    assert plan.main(["--programme", root, "--claims", claims, "claim", "AA-03", "--dry-run"]) == 1
+    assert "error task.not_ready:" in capsys.readouterr().err
+    assert plan.main(["--programme", root, "render", "--dry-run"]) == 0
+    assert not (prog.root / "tasks/INDEX.md").exists()
+
+
+def test_get_is_the_verb_and_show_still_works(prog, capsys):
+    root = str(prog.root)
+    assert plan.main(["--programme", root, "--json", "get", "AA-01"]) == 0
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["schema"] == "opendap.task/v1" and doc["id"] == "AA-01"
+    assert plan.main(["--programme", root, "show", "AA-01"]) == 0
+
+
+def test_refusals_carry_a_code_a_hint_and_a_fix(prog, capsys):
+    assert plan.main(["--programme", str(prog.root), "--json", "get", "ZZ-99"]) == 1
+    out, err = capsys.readouterr()
+    assert json.loads(out)["error"]["code"] == "task.not_found" and "hint: " in err and "fix: " in err

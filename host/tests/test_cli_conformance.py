@@ -262,3 +262,17 @@ def test_the_tool_passes_its_own_test(tmp_path):
     m = cli_conformance.conformance(tmp_path, items, cli_probe.probe_all(items, tmp_path, timeout=60))
     states = {c["criterion"]: (c["state"], c["why"]) for c in m["results"]}
     assert all(s in ("pass", "n/a") for s, _ in states.values()), states
+
+
+def test_closure_follows_modules_named_by_from_imports(tmp_path):
+    (tmp_path / "bin").mkdir()
+    (tmp_path / "src/pkg").mkdir(parents=True)
+    (tmp_path / "bin/odapkit-x").write_text('#!/bin/sh\nexec python3 -m pkg.tool "$@"\n')
+    (tmp_path / "src/pkg/tool.py").write_text("from pkg import helper, other as o\n")
+    (tmp_path / "src/pkg/helper.py").write_text('import argparse\nCODE = "input.invalid"  # hint\n')
+    (tmp_path / "src/pkg/__init__.py").write_text("")
+    files = ["bin/odapkit-x", "src/pkg/tool.py", "src/pkg/helper.py", "src/pkg/__init__.py"]
+    sources = cli_inventory._closure(tmp_path, files, "bin/odapkit-x")
+    assert [p for p, _ in sources] == ["bin/odapkit-x", "src/pkg/tool.py", "src/pkg/__init__.py", "src/pkg/helper.py"]
+    f = cli_inventory.facts(sources)
+    assert f["parser"] == "argparse" and f["error_code"] and f["hint"]

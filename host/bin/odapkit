@@ -2,17 +2,19 @@
 # The OpenDAP Developer Toolkit's command: one entry point to every maintainer tool (rfcs 0009).
 #
 # Usage: odapkit TOOL [ARGS…]     run the tool odapkit-TOOL with ARGS
-#        odapkit [help]           list the tools this host has, with their summaries
+#        odapkit [help] [--json]  list the tools this host has, with their summaries (--json:
+#                                 opendap.toolkit-tools/v1: name, summary, path)
 #        odapkit help TOOL        the tool's help (odapkit-TOOL --help)
 #
 # Tools are independent executables named odapkit-TOOL, each in its own repository. They are
 # found in the bin/ folders of the workspace's toolkit repositories (repos.tsv), then on PATH.
+# A tool's summary is the one its root's tools.toml declares, else its header's first line. The
+# tools find this checkout as ODAP_TOOLKIT_HOST_DIR (set for them when unset), and with it the
+# shared command-line helpers (lib/cli.sh, odw.clikit).
 # The device's own odap-* programs and the user-side opendap CLI are not toolkit tools.
 #
-# Exit status: the tool's; 2 when there is no such tool.
+# Exit status: the tool's; 2 when there is no such tool (error tool.not_found, with a hint and a fix).
 set -eu
-
-die() { echo "odapkit: $1" >&2; exit "${2:-1}"; }
 
 # The workspace: the folder above this checkout that has repos.tsv (through a link in PATH too).
 self="$(readlink -f "$0" 2>/dev/null || echo "$0")"
@@ -22,6 +24,12 @@ while [ "$d" != / ]; do
   [ -f "$d/repos.tsv" ] && { workspace="$d"; break; }
   d="$(dirname "$d")"
 done
+host="$(cd "$(dirname "$self")/.." && pwd)"
+CLI_TOOL=odapkit
+. "$host/lib/cli.sh"
+export ODAP_TOOLKIT_HOST_DIR="${ODAP_TOOLKIT_HOST_DIR:-$host}"
+
+no_tool() { cli_fail "tool.not_found" "no tool $1" "odapkit help lists the tools this host has" "odapkit help" 2; }
 
 # Every folder that may hold tools, in search order.
 dirs() {
@@ -38,31 +46,52 @@ find_tool() {
   done
 }
 
-# A tool's summary: the first line of its header comment, or of its docstring.
+# A tool's summary: its root's tools.toml entry, else the first line of its header comment or docstring.
 summary() {
+  s="$(cli_summary "${1##*/odapkit-}" "$(dirname "$1")/../tools.toml")"
+  if [ -n "$s" ]; then echo "$s"; return; fi
   awk 'NR == 1 { next } /^# ?[^ ]/ || /^"""/ { sub(/^# ?/, ""); sub(/^"""/, ""); sub(/^odapkit [a-z-]+: /, ""); print; exit }' "$1"
 }
 
-list() {
-  echo "Usage: odapkit TOOL [ARGS…]   (odapkit help TOOL for a tool's help)"
-  echo
+tools() {
   dirs | while read -r dir; do
     for t in "$dir"/odapkit-*; do if [ -x "$t" ]; then echo "$t"; fi; done
-  done | awk -F/ '!seen[$NF]++' | while read -r t; do
+  done | awk -F/ '!seen[$NF]++'
+}
+
+list() {
+  echo "Usage: odapkit TOOL [ARGS…]   (odapkit help TOOL for a tool's help; odapkit help --json)"
+  echo
+  tools | while read -r t; do
     printf '  %-16s %s\n' "${t##*/odapkit-}" "$(summary "$t")"
   done
 }
 
+list_json() {
+  printf '{"schema": "opendap.toolkit-tools/v1", "tools": ['
+  sep=""
+  tools | while read -r t; do
+    printf '%s{"name": %s, "summary": %s, "path": %s}' "$sep" "$(cli_json_str "${t##*/odapkit-}")" \
+      "$(cli_json_str "$(summary "$t")")" "$(cli_json_str "$t")"
+    sep=", "
+  done
+  printf ']}\n'
+}
+
 case "${1:-help}" in
   help|-h|--help)
-    if [ $# -ge 2 ]; then
-      t="$(find_tool "$2")"; [ -n "$t" ] || die "no tool $2 (odapkit help lists them)" 2
-      exec "$t" --help
-    fi
-    list ;;
+    shift $(( $# > 0 ? 1 : 0 ))
+    case "${1:-}" in
+      "") list ;;
+      --json) CLI_JSON=1; [ $# -eq 1 ] || cli_usage "help --json takes no tool"; list_json ;;
+      -*) cli_usage "unknown flag $1" ;;
+      *) t="$(find_tool "$1")"; [ -n "$t" ] || no_tool "$1"; exec "$t" --help ;;
+    esac ;;
+  --json) CLI_JSON=1; list_json ;;
+  -*) cli_usage "unknown flag $1" ;;
   *)
     name="$1"; shift
-    case "$name" in */*|.*|-*) die "no tool $name (odapkit help lists them)" 2 ;; esac
-    t="$(find_tool "$name")"; [ -n "$t" ] || die "no tool $name (odapkit help lists them)" 2
+    case "$name" in */*|.*) no_tool "$name" ;; esac
+    t="$(find_tool "$name")"; [ -n "$t" ] || no_tool "$name"
     exec "$t" "$@" ;;
 esac

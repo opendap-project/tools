@@ -1,22 +1,26 @@
-"""Keep generated trees out of the macOS Spotlight index.
+"""odapkit noindex: keep generated trees out of the macOS Spotlight index.
 
 Spotlight skips any folder whose name ends in `.noindex`. Each generated tree `<name>` (a Cargo `target/`, a
 Python `.venv/`, test caches) is renamed `<name>.noindex` and replaced by a relative symlink `<name>`, so every tool keeps
 using the old path while builds stop feeding the indexer.
 
-Usage: odapkit noindex [--apply [--force] | --check] [--node-modules] [--json] [PATH...]   (default PATH: the current folder)
-Without --apply it lists what it would change; --check fails while a generated tree is not linked. --apply moves
+Usage: odapkit noindex [--apply [--force] | --check | --dry-run] [--node-modules] [--json] [PATH...]
+(default PATH: the current folder). Without --apply (or with --dry-run) it lists what it would change; --check fails while a generated tree is not linked. --apply moves
 nothing while a build runs (cargo, rustc, pytest), since moving a tree under a running build breaks it: it says
 it skipped and exits 0, so a check stage that ends with it never fails for that; --force moves anyway.
 Exit status: 0 done or skipped, 1 refused (a `<name>.noindex` already exists beside a real `<name>`) or, with
---check, a tree not linked, 2 usage.
+--check, a tree not linked, 2 usage. --json prints opendap.noindex/v1 (`applied`, `paths`).
 """
-import argparse
 import json
 import os
 import pathlib
 import subprocess
 import sys
+
+from odw import clikit
+
+TOOL = "odapkit noindex"
+SCHEMA = "opendap.noindex/v1"
 
 DEFAULT = frozenset({"target", ".venv", ".pytest_cache", ".ruff_cache", ".mypy_cache"})
 # mkosi output and cache trees are left out until a symlinked tree is verified inside the build VM.
@@ -78,37 +82,44 @@ def apply(root, names, dry_run=True):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="odapkit noindex", description="Keep generated trees out of the Spotlight index.")
+    return clikit.main(TOOL, _main, argv)
+
+
+def _main(argv):
+    ap = clikit.Parser(prog=TOOL, summary=clikit.summary("noindex"),
+                       description="Keep generated trees out of the Spotlight index.",
+                       examples=["odapkit noindex --dry-run --json .", "odapkit noindex --apply ."])
     ap.add_argument("paths", nargs="*", default=["."])
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument("--apply", action="store_true", help="rename and link (default: only list)")
     mode.add_argument("--check", action="store_true", help="fail while a generated tree is not linked")
+    mode.add_argument("--dry-run", action="store_true", help="only list what --apply would link (the default)")
     ap.add_argument("--force", action="store_true", help="with --apply: move even while a build runs")
     ap.add_argument("--node-modules", action="store_true", help="include node_modules (off by default)")
     ap.add_argument("--json", action="store_true")
-    try:
-        args = ap.parse_args(argv)
-    except SystemExit as e:
-        return 2 if e.code else 0
+    args = ap.parse_args(argv)
     names = DEFAULT | ({"node_modules"} if args.node_modules else set())
     if args.apply and not args.force and (running := busy()):
-        print(f"odapkit noindex: skipped, a build is running ({', '.join(running)}); run it again afterwards")
+        if args.json:
+            print(json.dumps({"schema": SCHEMA, "applied": False, "skipped": running, "paths": []}))
+        else:
+            print(f"{TOOL}: skipped, a build is running ({', '.join(running)}); run it again afterwards")
         return 0
     out = []
     try:
         for p in args.paths:
             out += [str(c) for c in apply(pathlib.Path(p), names, dry_run=not args.apply)]
     except NoindexError as e:
-        print(f"odapkit noindex: {e}", file=sys.stderr)
-        return 1
+        raise clikit.CliError("noindex.conflict", str(e), "a <name>.noindex already sits beside a real <name>/",
+                              "merge the two folders or remove one by hand, then run odapkit noindex --apply") from e
     if args.check:
         for p in out:
-            print(f"odapkit noindex: {p} is not linked: run odapkit noindex --apply", file=sys.stderr)
+            print(f"{TOOL}: {p} is not linked: run odapkit noindex --apply", file=sys.stderr)
         if args.json:
-            print(json.dumps({"applied": False, "paths": out}))
+            print(json.dumps({"schema": SCHEMA, "applied": False, "paths": out}))
         return 1 if out else 0
     if args.json:
-        print(json.dumps({"applied": args.apply, "paths": out}))
+        print(json.dumps({"schema": SCHEMA, "applied": args.apply, "paths": out}))
     else:
         verb = "linked" if args.apply else "would link"
         for p in out:

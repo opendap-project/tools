@@ -1,0 +1,14 @@
+id = "XX-01"
+phase = 0
+title = "Example task"
+source = "programme"
+repos = []
+files = []
+depends_on = []
+blocked_by = []
+status = "todo"
+visibility = "public"
+tests = []
+docs = []
+evidence = {}
+notes = ""

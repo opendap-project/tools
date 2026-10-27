@@ -90,3 +90,23 @@ def test_a_measurement_without_a_limit_is_measured_never_pass(matrix, tmp_path):
     doc = verify.collect(verify.load(matrix), [results])
     assert doc["case"][0]["collected"]["virtual-t1"]["state"] == "measured"
     assert schemas.errors(doc, "verification") == []
+
+
+def test_render_and_collect_dry_run_write_nothing(matrix, tmp_path, capsys):
+    assert verify.main(["render", str(matrix), "--dry-run"]) in (0, 1)
+    assert not matrix.with_suffix(".md").exists()
+    d = result(tmp_path, "pass")
+    assert verify.main(["collect", str(matrix), "--results", str(d), "--dry-run"]) == 0
+    assert not verify.sidecar(matrix).exists()
+    assert "would write" in capsys.readouterr().err
+
+
+def test_coverage_json_carries_a_schema(matrix, tmp_path, capsys):
+    (tmp_path / "repos.tsv").write_text("path\trepository\n")
+    verify.main(["coverage", str(matrix), "--workspace", str(tmp_path), "--json"])
+    assert json.loads(capsys.readouterr().out)["schema"] == "opendap.verify-coverage/v1"
+
+
+def test_a_missing_matrix_is_an_error_with_a_code(tmp_path, capsys):
+    assert verify.main(["render", str(tmp_path / "none.toml")]) == 2
+    assert "error matrix.not_found:" in capsys.readouterr().err

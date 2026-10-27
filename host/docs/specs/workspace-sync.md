@@ -27,7 +27,7 @@ A composed file (`.gitignore`, `.gitattributes`) is listed as a `[[block]]`: its
 
 ## Commands
 
-`odapkit sync --check` reports each target that is missing or differs and exits 1 when there is any; `odapkit sync --apply` writes them. The workspace's pre-commit runs `--check`.
+`odapkit sync --check` reports each target that is missing or differs and exits 1 when there is any; `odapkit sync --apply` writes them, and `--apply --dry-run` names them and writes nothing. `--json` prints `opendap.check-result/v1`: with `--check` each drift is a `fail`, with `--apply` each target written (or that would be) is `info`. A missing `sync.toml` is the error `templates.not_found` (exit 2). The workspace's pre-commit runs `--check`.
 
 ## Stages
 
