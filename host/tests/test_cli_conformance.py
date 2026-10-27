@@ -252,16 +252,46 @@ def test_cli_list_and_check(ws, capsys):
     assert json.loads(capsys.readouterr().out)["schema"] == "opendap.check-result/v1"
 
 
-def test_the_tool_passes_its_own_test(tmp_path):
-    """odapkit cli, inventoried and probed in a workspace that holds this checkout, conforms."""
-    (tmp_path / "repos.tsv").write_text("path\trepository\npublic/toolkit/host\to/h\n")
-    (tmp_path / "public" / "toolkit").mkdir(parents=True)
-    (tmp_path / "public" / "toolkit" / "host").symlink_to(HOST)
-    items = [e for e in cli_inventory.inventory(tmp_path) if e["name"] == "odapkit-cli"]
+def _git(args, cwd):
+    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True,
+                          env=audit.git_env()).stdout
+
+
+def _conforms(ws):
+    items = [e for e in cli_inventory.inventory(ws) if e["name"] == "odapkit-cli"]
     assert items and items[0]["probe"]
-    m = cli_conformance.conformance(tmp_path, items, cli_probe.probe_all(items, tmp_path, timeout=60))
+    m = cli_conformance.conformance(ws, items, cli_probe.probe_all(items, ws, timeout=60))
     states = {c["criterion"]: (c["state"], c["why"]) for c in m["results"]}
-    assert all(s in ("pass", "n/a") for s, _ in states.values()), states
+    assert all(s in ("pass", "n/a") for s, _ in states.values()), {k: v for k, v in states.items() if v[0] not in ("pass", "n/a")}
+
+
+def test_the_tool_passes_its_own_test(tmp_path):
+    """odapkit cli, inventoried and probed in a workspace that holds this checkout, conforms. The checkout's
+    git root is linked, so host/ is the root (toolkit-host) or a folder of it (the merged tools root)."""
+    top = pathlib.Path(_git(["rev-parse", "--show-toplevel"], HOST).strip()).resolve()
+    root = "public/toolkit/host" if top == HOST else "public/tools"
+    (tmp_path / "repos.tsv").write_text(f"path\trepository\n{root}\to/h\n")
+    (tmp_path / root).parent.mkdir(parents=True)
+    (tmp_path / root).symlink_to(top)
+    _conforms(tmp_path)
+
+
+@pytest.mark.parametrize("root,folder", [("public/toolkit/host", ""), ("public/tools", "host")])
+def test_the_tool_passes_its_own_test_in_either_layout(tmp_path, root, folder):
+    """The same, on a copy of this checkout's tracked files: a repository of its own, or host/ of the tools root."""
+    repo = tmp_path / root
+    dest = repo / folder
+    for f in _git(["ls-files", "-z"], HOST).split("\0"):
+        if f and (HOST / f).is_file():
+            (dest / f).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(HOST / f, dest / f)
+    _git(["init", "-q"], repo)
+    _git(["add", "-A"], repo)
+    _git(["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"], repo)
+    # The probe's sandbox writes only inside an existing .venv, as in a real checkout.
+    subprocess.run(["uv", "sync", "--quiet", "--frozen", "--project", str(dest)], check=True, env=audit.git_env())
+    (tmp_path / "repos.tsv").write_text(f"path\trepository\n{root}\to/h\n")
+    _conforms(tmp_path)
 
 
 def test_closure_follows_modules_named_by_from_imports(tmp_path):

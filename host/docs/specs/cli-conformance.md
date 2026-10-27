@@ -35,6 +35,8 @@ An executable is run only when its source handles `--help` and it is not a devic
 
 The probes are `--help`, an unknown flag (`--odw-no-such-flag`) and, for the tools listed in `JSON_PROBES` (`src/odw/cli_probe.py`) with a read-only call, that call with `--json`. A tool with no public input to read from is probed on a fixture under `tests/fixtures/` (`odapkit plan list` on `tests/fixtures/programme`, `odapkit verify coverage` on `tests/fixtures/verification`; toolkit-hardware's tools on that repository's own `tests/fixtures/`); `odapkit rename`, which has no public rename map, is probed on a refused call and its `opendap.error/v1` document. `--jobs` (4 by default) runs that many executables at a time.
 
+`odapkit cli` passes its own test in both toolkit layouts: toolkit-host as a repository of its own, and `host/` as a folder of the merged `tools` root (`tests/test_cli_conformance.py`).
+
 ## Rules
 
 | Criterion | Rule | Applies to |
@@ -49,7 +51,7 @@ The probes are `--help`, an unknown flag (`--odw-no-such-flag`) and, for the too
 | `dry-run` | a command that changes state takes `--dry-run` | umbrellas, plugins, device and host binaries |
 | `generator-check` | a script that writes files takes `--check` | scripts |
 | `verbs` | no subcommand named `info`, `show`, `ls`, `rm` or `remove` | umbrellas, plugins, device and host binaries |
-| `tools-toml` | declared in its root's `tools.toml` | plugins |
+| `tools-toml` | declared in its root's `tools.toml`, or in that of a folder directly below the root (the merged `tools` root) | plugins |
 | `hook-message` | reports on stderr | hooks |
 
 A cell says whether it comes from a probe or from source. A rule read from source with no parser that guarantees it is `unverified`. The verdict per executable follows the matrix's `worst-state` rule: `fail` when any cell fails, `incomplete` when one is a warning or unverified, `pass` otherwise.
