@@ -160,8 +160,8 @@ A test in `tools/workspace`, run in every root's `full` stage for the tools that
 | `opendap` plugins | specified (CLI spec §3), not implemented: the CLI has no external-subcommand dispatch yet | §2–§5 |
 | `opendap help` and plugins | RFC 0008 left open whether the CLI lists toolkit tools | `opendap help` lists `opendap` plugins only; maintainer tools are never listed |
 | `check.toml` | schema exists; no root declares one yet | every root |
-| Conformance test | none | §8 |
-| Other command-line surfaces | device binaries, scripts, generators and studies follow their own habits; no inventory | §5, inventoried and checked by the conformance test |
+| Conformance test | `odapkit cli check` ([command-line conformance](cli-conformance.md)): the inventory and the §5 rules, probed or read from source | §8, run in each root's `full` stage |
+| Other command-line surfaces | inventoried by `odapkit cli list` (generated) and graded by `odapkit cli check` | §5, checked by the conformance test |
 
 The 17 `odapkit-*` tools today (`toolkit-hardware`: component, craft, dru, parts, sim, stackup; `toolkit-host`: audit, noindex, plan, vmnet; `toolkit-image`: cross, deploy, dev-key, image, security-check, sysroot; `toolkit-verify`: motion), probed on 2026-10-26:
 

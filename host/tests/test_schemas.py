@@ -7,7 +7,7 @@ from odw import schemas
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures" / "schemas"
 NAMES = ["task", "decisions", "check", "tools", "check-result", "matrix", "requirements", "verification",
-         "rename-plan"]
+         "rename-plan", "cli-inventory"]
 
 
 def cases(kind):

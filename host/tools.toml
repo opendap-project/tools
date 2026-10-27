@@ -1,0 +1,10 @@
+# The tools this root adds to the maintainers' umbrella command (command standard §3).
+schema = "opendap.tools/v1"
+front = "odw"
+
+[[tool]]
+name = "cli"
+summary = "Inventory every command-line surface and check it against the command standard"
+entry = "bin/odapkit-cli"
+audience = "maintainer"
+stability = "preview"

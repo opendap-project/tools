@@ -1,0 +1,5 @@
+{"schema": "opendap.cli-inventory/v1", "counts": {"total": 1},
+ "items": [{"path": "public/x/bin/y", "root": "public/x", "name": "y", "kind": "daemon", "mode": "100755",
+   "probe": false, "probe_skipped": "",
+   "facts": {"lang": "sh", "help": false, "json": false, "prompt": false, "writes": [], "network": "",
+     "bad_exits": [], "forbidden_verbs": [], "sources": ["bin/y"]}}]}
