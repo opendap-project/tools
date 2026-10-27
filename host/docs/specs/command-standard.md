@@ -4,7 +4,7 @@
 - **Home:** this file; it moves to `tools/workspace/docs/specs/` at the `tools` cut (RFC 0017 §7).
 - **Schemas:** `opendap.tools/v1` (`tools.schema.json`), `opendap.check/v1` (`check.schema.json`), `opendap.check-result/v1`, in [`schemas/`](../../schemas/) ([workspace schemas](workspace-schemas.md)).
 - **Requirements:** TK-003, TK-009, TK-010, TK-011.
-- **References:** Cloudflare's `cf` CLI and Forge, the pipeline that generates `cf`'s commands from the API schemas (Cloudflare's announcement of `cf` on its blog, blog.cloudflare.com); the UNIX conventions (clig.dev).
+- **References:** Cloudflare's `cf` CLI and Forge, the pipeline that generates `cf`'s commands from the API schemas ([announcement](https://blog.cloudflare.com/cloudflare-cf-cli-launch/)); the UNIX conventions (clig.dev).
 
 OpenDAP has two umbrella commands, one per side of the audience boundary. Both dispatch to independent plugin executables, discover them from data, list them with their audience and stability, and hold every plugin to the same contract, checked by a conformance test.
 
