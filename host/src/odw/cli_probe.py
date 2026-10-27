@@ -17,9 +17,16 @@ UNKNOWN_FLAG = "--odw-no-such-flag"
 # Read-only invocations whose --json output the conformance test parses, by executable name ({workspace} is
 # replaced by the workspace folder). An executable that declares --json and is not listed here is unverified.
 HOST_FIX = "{workspace}/public/toolkit/host/tests/fixtures"
+HW = "{workspace}/public/toolkit/hardware"
 JSON_PROBES = {
     "odapkit": ["help", "--json"],
     "odapkit-audit": ["--workspace", "{workspace}", "--json"],
+    "odapkit-component": ["validate", "--json", f"{HW}/tests/fixtures/component/board"],
+    "odapkit-craft": ["check", "--json", f"{HW}/tests/fixtures/craft-sch/bad.kicad_sym"],
+    "odapkit-sim": ["list", "--json", f"{HW}/tests/fixtures/sim"],
+    "odapkit-stackup": ["stack", f"{HW}/tests/fixtures/stackup/fixture.toml", "--json"],
+    "sch-craft-check.py": ["--json", f"{HW}/tests/fixtures/craft-sch/bad.kicad_sym"],
+    "craftrules.py": ["render", f"{HW}/tests/fixtures/craft-rules/pcb-craft-standard.md", "--check", "--json"],
     "odapkit-cli": ["list", "--workspace", "{workspace}", "--root", "public/toolkit/host", "--json"],
     "odapkit-docs": ["check", "--json", "{workspace}/public/toolkit/host/README.md"],
     "odapkit-noindex": ["--dry-run", "--json", "{workspace}/public/toolkit/host"],

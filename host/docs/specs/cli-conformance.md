@@ -33,7 +33,7 @@ An executable is run only when its source handles `--help` and it is not a devic
 - has stdin at end of file and no terminal, `NO_COLOR=1`, an empty temporary working folder and a timeout (`--timeout`, 20 s by default);
 - on macOS runs inside a sandbox that denies the network and every file write outside that folder, the uv cache and Python virtual environments.
 
-The probes are `--help`, an unknown flag (`--odw-no-such-flag`) and, for the tools listed in `JSON_PROBES` (`src/odw/cli_probe.py`) with a read-only call, that call with `--json`. A tool with no public input to read from is probed on a fixture under `tests/fixtures/` (`odapkit plan list` on `tests/fixtures/programme`, `odapkit verify coverage` on `tests/fixtures/verification`); `odapkit rename`, which has no public rename map, is probed on a refused call and its `opendap.error/v1` document. `--jobs` (4 by default) runs that many executables at a time.
+The probes are `--help`, an unknown flag (`--odw-no-such-flag`) and, for the tools listed in `JSON_PROBES` (`src/odw/cli_probe.py`) with a read-only call, that call with `--json`. A tool with no public input to read from is probed on a fixture under `tests/fixtures/` (`odapkit plan list` on `tests/fixtures/programme`, `odapkit verify coverage` on `tests/fixtures/verification`; toolkit-hardware's tools on that repository's own `tests/fixtures/`); `odapkit rename`, which has no public rename map, is probed on a refused call and its `opendap.error/v1` document. `--jobs` (4 by default) runs that many executables at a time.
 
 ## Rules
 
