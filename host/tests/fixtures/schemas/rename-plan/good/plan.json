@@ -1,0 +1,12 @@
+{
+ "schema": "opendap.rename-plan/v1", "mode": "plan", "root": "libs", "cut": ["libs"], "view": "sources",
+ "summary": {"moves": 1, "deletes": 1, "edits": 1},
+ "moves": [{"row": 7, "from": "kicad/symbols/ECS.kicad_sym", "to": "kicad/symbols/ecs.kicad_sym"}],
+ "deletes": [{"row": 9, "path": "kicad/3dmodels/.gitkeep"}],
+ "done": [], "missing": [],
+ "pending": [{"row": 10, "old": "public/libs/parts/table.md", "new": "libs/parts/table.toml;libs/parts/table.md", "action": "convert", "reason": "action-convert"}],
+ "cross_root": [{"row": 11, "direction": "out", "from": "public/libs/kicad/check.py", "to": "tools/electronics/check.py"}],
+ "conflicts": [],
+ "identifiers": [{"row": 13, "old": "env:ODAP_KICAD_LIB_DIR", "new": "env:ODAP_LIBS_DIR", "owner": "libs", "status": "apply", "occurrences": 1, "first": "kicad/README.md:6"}],
+ "edits": [{"path": "kicad/README.md", "source": "kicad/README.md", "kind": "identifier", "line": 6, "old": "ODAP_KICAD_LIB_DIR", "new": "ODAP_LIBS_DIR"}]
+}

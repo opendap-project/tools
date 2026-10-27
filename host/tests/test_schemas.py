@@ -6,7 +6,8 @@ import pytest
 from odw import schemas
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures" / "schemas"
-NAMES = ["task", "decisions", "check", "tools", "check-result", "matrix", "requirements", "verification"]
+NAMES = ["task", "decisions", "check", "tools", "check-result", "matrix", "requirements", "verification",
+         "rename-plan"]
 
 
 def cases(kind):

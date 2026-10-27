@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/rename-plan.schema.json",
+  "title": "opendap.rename-plan/v1: what one root's cut moves and rewrites (odapkit rename plan and apply)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "mode", "root", "cut", "view", "summary", "moves", "deletes", "done", "missing", "pending",
+               "cross_root", "conflicts", "identifiers", "edits"],
+  "$defs": {
+    "row": {"type": "integer", "minimum": 2, "description": "Line of the rename map the item comes from"},
+    "path": {"type": "string", "minLength": 1},
+    "move": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["row", "from", "to"],
+      "properties": {"row": {"$ref": "#/$defs/row"}, "from": {"$ref": "#/$defs/path"}, "to": {"$ref": "#/$defs/path"}}
+    }
+  },
+  "properties": {
+    "schema": {"const": "opendap.rename-plan/v1"},
+    "mode": {"enum": ["plan", "apply"]},
+    "root": {"type": "string", "minLength": 1},
+    "cut": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "view": {"enum": ["root", "sources"], "description": "root: the merged root checkout; sources: the source repositories as they are"},
+    "summary": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+    "moves": {"type": "array", "items": {"$ref": "#/$defs/move"}},
+    "done": {"type": "array", "items": {"$ref": "#/$defs/move"}},
+    "missing": {"type": "array", "items": {"$ref": "#/$defs/move"}},
+    "deletes": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["row", "path"],
+        "properties": {"row": {"$ref": "#/$defs/row"}, "path": {"$ref": "#/$defs/path"}}
+      }
+    },
+    "pending": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["row", "old", "new", "action", "reason"],
+        "properties": {"row": {"$ref": "#/$defs/row"}, "old": {"type": "string"}, "new": {"type": "string"},
+                       "action": {"type": "string"}, "reason": {"type": "string"}}
+      }
+    },
+    "cross_root": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["row", "direction", "from", "to"],
+        "properties": {"row": {"$ref": "#/$defs/row"}, "direction": {"enum": ["in", "out"]},
+                       "from": {"type": "string"}, "to": {"type": "string"}}
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["path", "rows", "reason"],
+        "properties": {"path": {"type": "string"}, "rows": {"type": "array", "items": {"$ref": "#/$defs/row"}},
+                       "reason": {"type": "string"}}
+      }
+    },
+    "identifiers": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["row", "old", "new", "owner", "status", "occurrences"],
+        "properties": {
+          "row": {"$ref": "#/$defs/row"}, "old": {"type": "string"}, "new": {"type": "string"},
+          "owner": {"type": ["string", "null"]},
+          "status": {"enum": ["apply", "later", "manual"]},
+          "reason": {"type": "string"},
+          "occurrences": {"type": "integer", "minimum": 1},
+          "first": {"type": "string", "description": "path:line of the first occurrence"}
+        }
+      }
+    },
+    "edits": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["path", "source", "kind", "line", "old", "new"],
+        "properties": {
+          "path": {"$ref": "#/$defs/path", "description": "The file's path inside the root after the moves"},
+          "source": {"$ref": "#/$defs/path", "description": "Where the file is now (inside the root)"},
+          "kind": {"enum": ["link", "url", "identifier"]},
+          "line": {"type": "integer", "minimum": 1},
+          "old": {"type": "string"}, "new": {"type": "string"}
+        }
+      }
+    },
+    "base": {"type": "string", "pattern": "^[0-9a-f]{40}$", "description": "apply: HEAD before the cut; git reset --keep <base> undoes it"},
+    "commits": {"type": "array", "items": {"type": "string", "pattern": "^[0-9a-f]{40}$"}}
+  }
+}

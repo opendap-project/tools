@@ -1,0 +1,7 @@
+#!/bin/sh
+# One root's cut from the rename map: plan (dry run), apply (git mv, link and identifier rewrites, local commits), check.
+#
+# Usage: odapkit rename (plan | apply | check) ROOT [--workspace DIR] [--map TSV] [--root-dir DIR] [--json]
+# Spec: docs/specs/rename.md.
+here="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/.." && pwd)"
+exec uv run --quiet --project "$here" python -m odw.rename "$@"

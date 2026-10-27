@@ -44,6 +44,7 @@ Every command-line surface, from the `opendap` and `odw` umbrellas and their plu
 - `bin/odapkit-req` — requirements as data: import, render with `--check`, index every repository: [requirements as data](docs/specs/requirements-data.md)
 - `bin/odapkit-docs` — docs gates (links, private mentions, terms, working notes, status), the generated docs index and RFC application status: [docs gates](docs/specs/docs-gates.md)
 - `bin/odapkit-sync` — shared boilerplate from the workspace templates: `--check` reports drift, `--apply` repairs it: [workspace sync](docs/specs/workspace-sync.md)
+- `bin/odapkit-rename` — one root's cut from the rename map ([RFC 0017](https://github.com/opendap-project/rfcs/blob/main/text/0017-naming-and-topology.md) §7): `plan` lists every move and link, URL and identifier rewrite, `apply` performs them with `git mv` and local commits, `check` lists the old names left: [rename](docs/specs/rename.md)
 - `bin/odapkit-verify` — verification matrices as data: render, collect check results by variant, uncovered requirements: [verification matrices](docs/specs/verification.md)
 - `Brewfile` — Homebrew packages
 - `src/odw/evaluate.py` — the evaluation-matrix engine every study uses: [evaluation matrix](docs/specs/evaluation-matrix.md)
