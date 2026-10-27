@@ -41,8 +41,9 @@ def repo_dir(name):
     if ws:
         for line in open(os.path.join(ws, "repos.tsv")).read().splitlines()[1:]:
             path, _, slug = line.partition("\t")
-            if slug.split("/")[-1] == name and os.path.isdir(os.path.join(ws, path)):
-                return os.path.join(ws, path)
+            full = os.path.realpath(os.path.join(ws, path))  # only a folder inside the workspace
+            if slug.split("/")[-1] == name and full.startswith(os.path.realpath(ws) + os.sep) and os.path.isdir(full):
+                return full
     return None
 
 
