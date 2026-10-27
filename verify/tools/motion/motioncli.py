@@ -68,7 +68,8 @@ def _sibling_host(start):
             return None
         d = os.path.dirname(d)
     helper = os.path.join(d, "host", "src", "odw", "clikit.py")
-    if d != start and os.path.isfile(helper) and os.stat(helper).st_uid == os.getuid():
+    mine = d != start and os.lstat(os.path.join(d, ".git")).st_uid == os.getuid()  # this user's repository only
+    if mine and os.path.isfile(helper) and os.stat(helper).st_uid == os.getuid():
         return os.path.join(d, "host")
     return None
 
