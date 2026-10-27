@@ -363,16 +363,57 @@ def markdown(results, spec, generated=None, level=2):
     return out.getvalue()
 
 
-def write_all(results, spec, outdir, generated=None):
+SCHEMA = "opendap.sourcing-matrix/v1"
+
+
+def render_all(results, spec, outdir, generated=None):
+    """matrix.md, matrix.csv and listings.csv in outdir; returns the Markdown matrix."""
     os.makedirs(outdir, exist_ok=True)
     write_csv(results, spec, os.path.join(outdir, "matrix.csv"))
     write_listings_csv(results, os.path.join(outdir, "listings.csv"))
     md = markdown(results, spec, generated)
     with open(os.path.join(outdir, "matrix.md"), "w") as f:
         f.write(f"# {spec['title']}\n\n" + md)
-    with open(os.path.join(outdir, "matrix.json"), "w") as f:
-        json.dump({"schema": "opendap.sourcing-matrix/v1", "title": spec["title"],
-                   "generated": generated or now_iso(), "build_quantity": spec["build"],
-                   "price_quantities": spec["quantities"], "results": results}, f, indent=1,
-                  ensure_ascii=False)
     return md
+
+
+def document(results, spec, generated=None):
+    """matrix.json: everything, with the spec's column list so the matrix can be re-rendered."""
+    return {"schema": SCHEMA, "title": spec["title"], "generated": generated or now_iso(),
+            "build_quantity": spec["build"], "price_quantities": spec["quantities"],
+            "columns": spec["columns"], "results": results}
+
+
+def write_all(results, spec, outdir, generated=None):
+    generated = generated or now_iso()
+    md = render_all(results, spec, outdir, generated)
+    with open(os.path.join(outdir, "matrix.json"), "w") as f:
+        json.dump(document(results, spec, generated), f, indent=1, ensure_ascii=False)
+    return md
+
+
+def load_saved(path, columns=None):
+    """A saved matrix.json as (document, spec), for render_all. `columns` supplies the spec's
+    column list for a document that does not record it, or replaces the recorded one."""
+    with open(path, encoding="utf-8") as f:
+        try:
+            doc = json.load(f)
+        except json.JSONDecodeError as e:
+            raise MatrixError(f"{path}: not JSON ({e})") from e
+    if not isinstance(doc, dict) or doc.get("schema") != SCHEMA:
+        raise MatrixError(f"{path}: schema {SCHEMA} expected")
+    for key in ("title", "build_quantity", "price_quantities", "results"):
+        if key not in doc:
+            raise MatrixError(f"{path}: no {key}")
+    cols = list(columns) if columns is not None else doc.get("columns")
+    if cols is None:
+        raise MatrixError(f"{path}: no columns recorded; pass --columns a,b,c in the candidates "
+                          "file's order (the attribute columns of the matrix.md header)")
+    known = {k for r in doc["results"] for k in r.get("attrs", {})}
+    unknown = [c for c in cols if c not in known]
+    if unknown and doc["results"]:
+        raise MatrixError(f"{path}: no candidate has the attribute {', '.join(unknown)}")
+    doc["columns"] = cols
+    spec = {"title": doc["title"], "build": int(doc["build_quantity"]),
+            "quantities": [int(q) for q in doc["price_quantities"]], "columns": cols}
+    return doc, spec

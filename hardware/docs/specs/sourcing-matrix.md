@@ -84,7 +84,13 @@ In `--out DIR` (required; a private location):
 - `matrix.md`: the ranked table, the reasons per candidate and the channel coverage per query; URLs are autolinks (`<https://…>`), so the file passes markdownlint without exclusions;
 - `matrix.csv`: one row per candidate (prices with stock, list prices, LCSC prices, build price and its basis, first and last fetch time, reasons);
 - `listings.csv`: one row per listing (channel, seller, authorized, MPN as listed, stock, every price break, lifecycle wording, SKU, URL, source, fetch time);
-- `matrix.json`: everything, schema `opendap.sourcing-matrix/v1`.
+- `matrix.json`: everything, schema `opendap.sourcing-matrix/v1`: the title, the generation time, the build and price quantities, `columns` (the candidates file's column list, in its order) and every result with its listings.
+
+## Re-rendering a saved matrix
+
+`odapkit parts matrix --render DIR/matrix.json --out DIR2` rebuilds `matrix.md`, `matrix.csv` and `listings.csv` from a saved `matrix.json`, without fetching anything: the results, their order and the generation time are the saved ones, so only a change in the renderer changes the files. The JSON is read, never rewritten.
+
+The attribute columns come from the JSON's `columns`. A `matrix.json` written before it recorded them needs `--columns a,b,c`, in the candidates file's order (the attribute columns of its `matrix.md` header); `--columns` also replaces a recorded list. A column that no candidate has as an attribute, a JSON without columns and without `--columns`, or a file that is not an `opendap.sourcing-matrix/v1` document is a usage or file error (exit 2). `--json` prints the document used, with its columns; otherwise the Markdown matrix is printed.
 
 ## Limits
 

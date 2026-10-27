@@ -281,5 +281,105 @@ class EndToEnd(unittest.TestCase):
         self.assertEqual(r.returncode, 2)
 
 
+class Render(unittest.TestCase):
+    """--render: matrix.md, matrix.csv and listings.csv rebuilt from a saved matrix.json, no fetch."""
+
+    def saved(self, tmp):
+        """A matrix written by write_all from synthetic listings; returns its directory."""
+        a = cand("XM-A", soc="T/A", density_gbit=32)
+        a["comment"] = "see https://a.example/note."
+        rows = [Listing("mouser", "Mouser", True, "XM-A", stock=5000, breaks=[(1, 3.5), (1000, 2.25)],
+                        lifecycle="Active", url="https://a.example/xm-a", fetched="2026-10-25T00:00:00+00:00")]
+        b = cand("XM-B", soc="S/A", density_gbit=16)
+        spec = {"title": "Synthetic", "build": 1000, "quantities": [1, 1000], "columns": ["soc", "density_gbit"],
+                "gates": [], "candidates": [a, b], "notes": ""}
+        results = matrix.score([matrix.evaluate(dict(a, _gates=[]), rows, {"digikey": "page"}, 1000, [1, 1000]),
+                                matrix.evaluate(dict(b, _gates=[]), [], {"digikey": "error: https://b.example/x"},
+                                                1000, [1, 1000])])
+        out = os.path.join(tmp, "saved")
+        matrix.write_all(results, spec, out, generated="2026-10-25T00:00:00+00:00")
+        return out
+
+    def files(self, d):
+        out = {}
+        for name in ("matrix.md", "matrix.csv", "listings.csv"):
+            with open(os.path.join(d, name), encoding="utf-8") as fh:
+                out[name] = fh.read()
+        return out
+
+    def run_tool(self, *args):
+        return subprocess.run([sys.executable, TOOL, "matrix", *args], capture_output=True, text=True,
+                              stdin=subprocess.DEVNULL)
+
+    def test_json_records_the_columns(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with open(os.path.join(self.saved(tmp), "matrix.json")) as fh:
+                self.assertEqual(json.load(fh)["columns"], ["soc", "density_gbit"])
+
+    def test_render_reproduces_every_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = self.saved(tmp)
+            out = os.path.join(tmp, "again")
+            r = self.run_tool("--render", os.path.join(src, "matrix.json"), "--out", out)
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(self.files(out), self.files(src))
+            self.assertFalse(os.path.exists(os.path.join(out, "matrix.json")))   # the input, never rewritten
+            self.assertIn("| 1 | XM-A |", r.stdout)
+            md = self.files(out)["matrix.md"]
+            self.assertIn("2026-10-25T00:00:00+00:00", md)                       # the saved date, not today
+            self.assertIn("<https://a.example/note>.", md)
+            self.assertEqual(re.findall(r"(?<!<)https?://", md), [])
+
+    def test_json_without_columns_needs_them(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = self.saved(tmp)
+            path = os.path.join(src, "matrix.json")
+            with open(path) as fh:
+                doc = json.load(fh)
+            del doc["columns"]
+            with open(path, "w") as fh:
+                json.dump(doc, fh)
+            out = os.path.join(tmp, "again")
+            r = self.run_tool("--render", path, "--out", out)
+            self.assertEqual(r.returncode, 2)
+            self.assertIn("--columns", r.stderr)
+            r = self.run_tool("--render", path, "--out", out, "--columns", "soc,density_gbit")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertEqual(self.files(out), self.files(src))
+
+    def test_columns_must_be_attributes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(self.saved(tmp), "matrix.json")
+            r = self.run_tool("--render", path, "--out", os.path.join(tmp, "o"), "--columns", "soc,nope")
+            self.assertEqual(r.returncode, 2)
+            self.assertIn("nope", r.stderr)
+
+    def test_json_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(self.saved(tmp), "matrix.json")
+            r = self.run_tool("--render", path, "--out", os.path.join(tmp, "o"), "--json")
+            self.assertEqual(r.returncode, 0, r.stderr)
+            doc = json.loads(r.stdout)
+            self.assertEqual((doc["schema"], doc["columns"]), ("opendap.sourcing-matrix/v1", ["soc", "density_gbit"]))
+
+    def test_usage_errors(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(self.saved(tmp), "matrix.json")
+            o = os.path.join(tmp, "o")
+            toml = os.path.join(tmp, "c.toml")
+            with open(toml, "w") as fh:
+                fh.write('version = 1\n[[candidate]]\nmpn = "X"\n')
+            for args in (["--render", path],                                  # no --out
+                         ["--render", path, "--out", o, toml],                # and a candidates file
+                         ["--render", path, "--out", o, "--offline"],         # fetch options
+                         ["--render", os.path.join(tmp, "missing.json"), "--out", o],
+                         [toml, "--out", o, "--offline", "--cache", os.path.join(tmp, "c"),
+                          "--columns", "soc"]):                               # --columns without --render
+                self.assertEqual(self.run_tool(*args).returncode, 2, args)
+            with open(os.path.join(tmp, "bad.json"), "w") as fh:
+                fh.write('{"schema": "other"}')
+            self.assertEqual(self.run_tool("--render", os.path.join(tmp, "bad.json"), "--out", o).returncode, 2)
+
+
 if __name__ == "__main__":
     unittest.main()
