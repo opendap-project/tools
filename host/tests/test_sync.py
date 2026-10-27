@@ -184,3 +184,14 @@ def test_markdown_block_goes_after_the_intro_and_stays_in_place(mws):
     again = (mws / "public/r/CLAUDE.md").read_text()
     assert again.startswith("# R\n\nWhat R is,") and "the new guide" in again and again.count(">>> odapkit sync") == 1
     assert not (mws / "public/bare/CLAUDE.md").exists()
+
+
+def test_a_repository_without_its_pre_commit_hook_is_drift(bws):
+    r = bws / "public/r"
+    (r / ".pre-commit-config.yaml").write_text("repos: []\n")
+    found = [(d.repo, d.target, d.state) for d in sync.check(bws, bws / "templates")]
+    assert ("public/r", ".git/hooks/pre-commit", "missing") in found
+    hook = r / ".git/hooks/pre-commit"
+    hook.parent.mkdir(parents=True, exist_ok=True)
+    hook.write_text("#!/bin/sh\n")
+    assert ("public/r", ".git/hooks/pre-commit", "missing") not in [(d.repo, d.target, d.state) for d in sync.check(bws, bws / "templates")]

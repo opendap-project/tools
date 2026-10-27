@@ -17,6 +17,10 @@ The boilerplate every repository shares (agent settings and rules, lint configur
 | `exclude` | Globs left out (a repository with a variant of its own on purpose) |
 | `when` | `always`: the file must exist and match; `present`: it must match where the repository has it |
 
+## Installed hooks
+
+A repository with a `.pre-commit-config.yaml` must have its pre-commit hook installed: a fresh clone carries no hooks, so its commits would skip every check. `--check` reports a missing hook (`.git/hooks/pre-commit`, linked worktrees included); `--apply` runs `pre-commit install` there.
+
 ## Managed blocks
 
 A composed file (`.gitignore`, `.gitattributes`) is listed as a `[[block]]`: its `[[block.fragment]]` templates are joined into one block between `>>> odapkit sync` and `<<< odapkit sync` comment lines at the top of the file. A fragment applies to a repository when one of its `when_tracked` patterns matches a tracked file name (KiCad, FreeCAD, Blender, Rust, Python, CAD binaries for LFS); without matching fragments no file is needed. Lines outside the block are the repository's own; applying a block drops the outside lines it already covers (equal up to a trailing `/`) and the section headers it leaves empty. A block takes its target's comment syntax: `comment` (default `#`) and, for Markdown, `comment_end` (`<!--` … `-->`). Its `place` is `top` (default) or `after-intro`: a Markdown block sits after the document's title and first paragraph, stays where it is once present, and is never written into a repository that has no such document.

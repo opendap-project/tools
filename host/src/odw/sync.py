@@ -13,6 +13,8 @@ import dataclasses
 import fnmatch
 import json
 import pathlib
+import shutil
+import subprocess
 import sys
 import tomllib
 
@@ -161,7 +163,25 @@ def check(ws, templates):
                     out.append(Drift(r, e["target"], e["template"], "missing"))
             elif path.read_bytes() != want:
                 out.append(Drift(r, e["target"], e["template"], "differs"))
-    return out + [d for d, *_ in _block_drift(ws, templates)]
+    return out + [d for d, *_ in _block_drift(ws, templates)] + _hook_drift(ws, repos)
+
+
+HOOK = ".git/hooks/pre-commit"
+
+
+def _hook_path(repo_dir):
+    """The repository's pre-commit hook file, also for a linked worktree (whose .git is a file)."""
+    r = subprocess.run(["git", "rev-parse", "--git-path", "hooks/pre-commit"], cwd=repo_dir,
+                       capture_output=True, text=True, env=audit.git_env())
+    p = pathlib.Path(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip() else pathlib.Path(".git/hooks/pre-commit")
+    return p if p.is_absolute() else repo_dir / p
+
+
+def _hook_drift(ws, repos):
+    """A repository with a .pre-commit-config.yaml but no installed hook commits unchecked (a fresh clone
+    carries no hooks)."""
+    return [Drift(r, HOOK, "pre-commit install", "missing") for r in repos
+            if (ws / r / ".pre-commit-config.yaml").is_file() and not _hook_path(ws / r).is_file()]
 
 
 def apply(ws, templates):
@@ -172,6 +192,11 @@ def apply(ws, templates):
         changed.append(d)
     for d in check(ws, templates):
         if d.template == "block":
+            continue
+        if d.template == "pre-commit install":
+            if shutil.which("pre-commit"):
+                subprocess.run(["pre-commit", "install"], cwd=ws / d.repo, capture_output=True)
+                changed.append(d)
             continue
         path = ws / d.repo / d.target
         path.parent.mkdir(parents=True, exist_ok=True)
