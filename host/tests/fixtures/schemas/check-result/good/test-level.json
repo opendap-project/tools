@@ -1,0 +1,10 @@
+{
+  "schema": "opendap.check-result/v1",
+  "tool": {"name": "cargo-test", "version": "1.99.1"},
+  "subject": {"repo": "public/system", "path": "crates/opendap-device", "commit": "0000000"},
+  "generated": "2026-10-26T10:00:00Z",
+  "results": [
+    {"id": "device-description-parses", "verdict": "pass", "message": "every fixture parses", "level": "T0"},
+    {"id": "virtual-t1-boots", "verdict": "pass", "message": "the virtual T1 reaches the interface", "level": "T3"}
+  ]
+}

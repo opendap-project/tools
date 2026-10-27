@@ -80,7 +80,7 @@
           },
           "level": {
             "type": "string",
-            "pattern": "^[QIVCH][0-9]+$"
+            "pattern": "^[QIVTCH][0-9]+$"
           },
           "verdict": {
             "enum": [

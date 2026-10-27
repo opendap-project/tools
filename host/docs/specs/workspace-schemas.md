@@ -21,4 +21,4 @@ The formats the maintainers' tools read and write. Each one is a schema with goo
 
 - A `done` task carries at least one evidence commit and one doc; a `dropped` task says why.
 - A recommendation in a matrix is labelled as such; it never stands for a maintainers' decision.
-- Identifiers: task ids `<SCOPE>-<nn>`, decision ids `D-<NAME>`, requirement ids `<PREFIX>-<nnn>`, levels `<letter><n>` (Q quality, I integration, V software verification, C HAT compatibility, H hardware support).
+- Identifiers: task ids `<SCOPE>-<nn>`, decision ids `D-<NAME>`, requirement ids `<PREFIX>-<nnn>`, levels `<letter><n>` (Q quality, I integration, V software verification, T test (unit to device, RFC 0018 §7), C HAT compatibility, H hardware support); `opendap.check-result/v1` accepts `^[QIVTCH][0-9]+$`.
