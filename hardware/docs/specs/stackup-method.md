@@ -1,6 +1,6 @@
 # Stackup and trace geometry method
 
-- **Status:** v1, 2026-10-24. Generic, for every OpenDAP board.
+- **Status:** draft, v1, 2026-10-24. Generic, for every OpenDAP board.
 - **Tool:** `odapkit stackup` ([`bin/odapkit-stackup`](../../bin/odapkit-stackup), [`tools/stackup/`](../../tools/stackup/)).
 
 A board keeps its layer stack and the geometry of each impedance class in one machine-readable file, `hardware/stackup/stackup-<version>.toml`, explained by a spec in its `docs/specs/`. The file is the input to the fab's stack-up request and to the net classes; `odapkit stackup check` recomputes it after every change, so a width in the net classes is never older than the stack it came from.
