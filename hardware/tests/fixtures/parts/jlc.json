@@ -1,0 +1,43 @@
+{
+ "code": 200,
+ "data": {
+  "componentPageInfo": {
+   "total": 2,
+   "list": [
+    {
+     "componentModelEn": "XM4X1G32-046 IT:C",
+     "componentBrandEn": "Example",
+     "stockCount": 0,
+     "componentCode": "C1",
+     "lcscGoodsUrl": "https://www.lcsc.com/product-detail/C1.html",
+     "componentPrices": [
+      {
+       "startNumber": 1,
+       "endNumber": -1,
+       "productPrice": 80.0
+      }
+     ]
+    },
+    {
+     "componentModelEn": "XS4X32-MGCL",
+     "componentBrandEn": "Example",
+     "stockCount": 234,
+     "componentCode": "C2",
+     "lcscGoodsUrl": "https://www.lcsc.com/product-detail/C2.html",
+     "componentPrices": [
+      {
+       "startNumber": 1,
+       "endNumber": 9,
+       "productPrice": 30.0
+      },
+      {
+       "startNumber": 10,
+       "endNumber": -1,
+       "productPrice": 28.0
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

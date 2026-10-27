@@ -1,0 +1,1161 @@
+# The OpenDAP PCB craft rules, one entry per rule, in the order of the standard.
+# The tables of the craft standard (kicad-lib docs/specs/pcb-craft-standard.md) are rendered from
+# this file with `odapkit craft rules render`, and the craft checks read their limits from it.
+# Every field is the standard's own text; `limits` holds the values a check or a generator reads,
+# each one stated in the rule's row. Schema: schemas/craft-rules.schema.json.
+schema = "opendap.craft-rules/v1"
+spec = "https://github.com/opendap-project/kicad-lib/blob/main/docs/specs/pcb-craft-standard.md"
+levels = ["Q0", "Q1", "Q2", "Q3", "Q4"]
+
+[[rule]]
+id = "CRAFT-01"
+section = "3"
+level = "Q2"
+rule = "One typeface: KiCad's stroke font, regular, upright. Logos and the brand wordmark are graphics, never text."
+value = "`KiCad Font`, not bold, not italic"
+why = "A stroke font plots as lines of one width, which the fab reproduces evenly; KLC sizes are given in it; SparkFun requires a vector font for the same reason"
+source = "[KLC] F5.1; [SFE]"
+enforcement = "DRC"
+
+[[rule]]
+id = "CRAFT-02"
+section = "3"
+level = "Q2"
+rule = "Text height and stroke from a closed set; width equals height."
+value = "0.8 × 0.15 mm (dense areas only); **1.0 × 0.15 mm** (reference designators); 1.6 × 0.24 mm (labels); 2.0 × 0.30 mm (board name)"
+why = "Fewer sizes read as one hierarchy. 1.0 × 0.15 is KLC's reference size; 0.8 mm and 0.15 mm are the prototype fab's minimums, and it gives about 1 : 5 stroke to height as the best ratio; the larger sizes keep 15 % (SparkFun's ratio)"
+source = "[KLC] F5.1; [FAB]; [JLC]; [SFE]"
+enforcement = "DRC"
+[rule.limits]
+text_set_mm = [[0.8, 0.15], [1.0, 0.15], [1.6, 0.24], [2.0, 0.30]]
+
+[[rule]]
+id = "CRAFT-03"
+section = "3"
+level = "Q2"
+rule = "Two reading directions: from the bottom edge (0°) and from the right edge (90°). A flipped footprint keeps its text angle, so the same two values hold on the bottom side."
+value = "0° or 90°"
+why = "A board read from two sides only, never upside down. No primary source was found for the two-direction convention: OpenDAP's choice"
+source = "—"
+enforcement = "DRC"
+
+[[rule]]
+id = "CRAFT-04"
+section = "3"
+level = "Q1"
+rule = "Text reads from its own side: unmirrored on top, mirrored on the bottom."
+value = "—"
+why = "A reversed legend is not legible; KiCad also flags mirrored text on the front"
+source = "[KICAD-DRC]"
+enforcement = "DRC"
+
+[[rule]]
+id = "CRAFT-05"
+section = "3"
+level = "Q2"
+rule = "One silk stroke for outlines and marks. Filled marks (pin-1 triangles, dots, the brand mark) have no stroke."
+value = "0.15 mm"
+why = "KLC allows 0.10–0.15 mm (0.12 nominal); the prototype fab's minimum line is 0.15 mm, so OpenDAP uses KLC's upper value"
+source = "[KLC] F5.1; [FAB]"
+enforcement = "DRC"
+[rule.limits]
+silk_stroke_mm = 0.15
+
+[[rule]]
+id = "CRAFT-06"
+section = "3"
+level = "Q1"
+rule = "No silk inside a solder-mask opening (pads, exposed copper). Set the Board Setup check `silk_over_copper` to error."
+value = "—"
+why = "Silk on a pad prevents soldering; fabs clip it"
+source = "[KLC] F5.1; [EC-LEG]; [JLC]"
+enforcement = "DRC (Board Setup)"
+
+[[rule]]
+id = "CRAFT-07"
+section = "3"
+level = "Q2"
+rule = "Silk clear of pads and via lands."
+value = "0.15 mm from pads; 0.15 mm from via lands (DRC: 0.30 mm from the via hole, see the rule set's README)"
+why = "JLCPCB's minimum to pads is 0.15 mm; KLC recommends 0.2 mm"
+source = "[JLC]; [KLC] F5.1"
+enforcement = "DRC"
+[rule.limits]
+silk_to_pad_mm = 0.15
+
+[[rule]]
+id = "CRAFT-08"
+section = "3"
+level = "Q2"
+rule = "Silk clear of the board edge."
+value = "0.5 mm"
+why = "KLC's value; Eurocircuits clips legend within 0.25 mm of a routed edge"
+source = "[KLC] F5.1; [EC-LEG]"
+enforcement = "CHK (KiCad 10.0.7's DRC does not measure this reliably)"
+[rule.limits]
+silk_to_edge_mm = 0.5
+
+[[rule]]
+id = "CRAFT-09"
+section = "3"
+level = "Q2"
+rule = "Text clear of any other silk, so every character stands alone."
+value = "0.15 mm"
+why = "Legibility; one stroke width of air"
+source = "—"
+enforcement = "DRC"
+
+[[rule]]
+id = "CRAFT-10"
+section = "3"
+level = "Q2"
+rule = "Every part with electrical pads has a visible reference designator on the silk of its side. Where density forbids it, the designator moves to the fabrication layer and the part takes a `Craft_Exempt` with the reason."
+value = "—"
+why = "The open board is a repair document; see [§10](#10-decisions-taken) for why OpenDAP does not minimise its legend"
+source = "MNT Reform [MNT]; [SFE]"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-11"
+section = "3"
+level = "Q2"
+rule = "Every part carries `${REFERENCE}` on its fabrication layer."
+value = "—"
+why = "The assembly drawing, which is published, then names every part even where the silk cannot"
+source = "[KLC] F5.2"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-12"
+section = "3"
+level = "Q3"
+rule = "Reference designators in one size per side, beside their part (within 2 mm of its courtyard and nearer to it than to any other part), never under an SMD body."
+value = "2 mm"
+why = "One size reads as one system; a designator nearer another part names the wrong one; KLC forbids silk under SMD bodies"
+source = "[KLC] F5.1"
+enforcement = "CHK"
+[rule.limits]
+reference_to_courtyard_max_mm = 2.0
+
+[[rule]]
+id = "CRAFT-13"
+section = "3"
+level = "Q1"
+rule = "Every polarised part (ICs, diodes, LEDs, transistors, connectors, batteries, crystals) has a pin-1 or polarity mark next to pin 1, outside the body, visible after assembly and after mating. Forms: a filled triangle for ICs and connectors, a bar at the cathode for diodes, `+` for polarised capacitors."
+value = "—"
+why = "Orientation errors are found at a glance; KLC's mark forms"
+source = "[KLC] F5.1"
+enforcement = "CHK (mark next to pin 1); Review (form)"
+
+[[rule]]
+id = "CRAFT-14"
+section = "3"
+level = "Q1"
+rule = "Battery and power-input connectors are marked `+` and `−` in silk, within 3 mm."
+value = "3 mm"
+why = "The battery is user-replaceable (T1-055): its polarity must read without a schematic"
+source = "T1-055"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-15"
+section = "3"
+level = "Q1"
+rule = "Footprints follow KLC orientation and anchors: pin 1 top left (IPC-7351 \"Level A\"), two-terminal parts with pin 1 on the left; SMD anchor at the body centroid, THT anchor at pin 1. The fab package states the convention, as fabs differ (Eurocircuits uses IEC 61188-7, pin 1 bottom left)."
+value = "—"
+why = "Pick-and-place rotations come out right without per-part fixes"
+source = "[KLC] F4.2, F6.2, F7.2; [EC-ROT]"
+enforcement = "Review (library)"
+
+[[rule]]
+id = "CRAFT-20"
+section = "4"
+level = "Q1"
+rule = "Board name and revision on the silk, from the title block (`${TITLE}`, `${REVISION}`), so the copper and the files cannot disagree."
+value = "—"
+why = "Revision mix-ups are the commonest bring-up error; the MNT Reform motherboard carries both"
+source = "[MNT]"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-21"
+section = "4"
+level = "Q2"
+rule = "Issue date (`${ISSUE_DATE}`, ISO 8601), the copyright holder \"The OpenDAP Project\", and the licence's SPDX identifier on the silk: `CERN-OHL-S-2.0` for product hardware, `CERN-OHL-W-2.0` for HAT reference designs and building blocks."
+value = "—"
+why = "The board carries its own terms; the MNT Reform motherboard prints a dated identification line"
+source = "[MNT]; workspace licensing rule"
+enforcement = "CHK"
+[rule.limits]
+holder = "The OpenDAP Project"
+licences = ["CERN-OHL-S-2.0", "CERN-OHL-W-2.0"]
+
+[[rule]]
+id = "CRAFT-22"
+section = "4"
+level = "Q3"
+rule = "The source location (`github.com/opendap-project/<repository>`) on the silk, and the OpenDAP mark as a footprint built from the approved files (mark ≥ 5 mm high, wordmark ≥ 4 mm, the print minimums; the mark's gap, 6.9 % of its height, stays above the silk's 0.15 mm line)."
+value = "5 mm / 4 mm"
+why = "CERN-OHL-S §4 requires recipients to be told the source location, and lets a notice require it on the product; OpenDAP puts it on the board. The mark's minimums are the brand's"
+source = "[CERN-S] §1.9, §4; [BRAND]"
+enforcement = "CHK (text, `OpenDAP_Mark*` footprint); Review (size)"
+
+[[rule]]
+id = "CRAFT-23"
+section = "4"
+level = "Q1"
+rule = "The OSHW mark only after OSHWA certifies the board, with its UID next to it. No OpenDAP board is certified today, so no board carries it (**UNVERIFIED** whether certification will be sought)."
+value = "UID: two letters and up to six digits"
+why = "OSHWA allows the mark only after certification"
+source = "[OSHWA]"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-24"
+section = "4"
+level = "Q2"
+rule = "Title block complete: title, revision, ISO 8601 date, company \"The OpenDAP Project\"."
+value = "—"
+why = "Every output (fab drawing, assembly drawing, schematic PDF) inherits it"
+source = "—"
+enforcement = "CHK"
+[rule.limits]
+company = "The OpenDAP Project"
+
+[[rule]]
+id = "CRAFT-25"
+section = "4"
+level = "Q1"
+rule = "Only names the maintainers confirmed: OpenDAP, OpenDAP T1, Blackbird OS, OpenDAP HATs; never an unconfirmed product name."
+value = "—"
+why = "Workspace brand rules"
+source = "workspace rules"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-26"
+section = "4"
+level = "Q3"
+rule = "A silk-free area on each production board for a serial-number or 2D-code label, flat and away from probe points."
+value = "Size per board"
+why = "Traceability in production"
+source = "—"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-30"
+section = "5"
+level = "Q2"
+rule = "Footprint anchors on the placement grid, from the board's grid origin. Parts placed from a mechanical datum take a `Craft_Exempt`."
+value = "0.05 mm"
+why = "A common grid makes rows and alignments exact; 0.05 mm is fine enough for 0.4 mm-pitch HDI placement. OpenDAP's choice (SparkFun uses 0.1 in for the outline)"
+source = "[SFE]"
+enforcement = "CHK"
+[rule.limits]
+placement_grid_mm = 0.05
+
+[[rule]]
+id = "CRAFT-31"
+section = "5"
+level = "Q2"
+rule = "Footprint rotations in multiples of 90°."
+value = "—"
+why = "Pick-and-place and inspection; diagonal parts break rows"
+source = "—"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-32"
+section = "5"
+level = "Q3"
+rule = "Passives in one placement group share one orientation (0°/180° or 90°/270°). A group is a KiCad group, else a schematic sheet instance."
+value = "—"
+why = "Uniform blocks read as one function and inspect faster"
+source = "—"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-33"
+section = "5"
+level = "Q3"
+rule = "Passives in a group sit in rows or columns: each shares an x or y centre with another."
+value = "0.01 mm"
+why = "—"
+source = "—"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-34"
+section = "5"
+level = "Q2"
+rule = "Mirrored channels are laid out as mirrors: left and right audio channels, and the two halves of a DAC or amplifier, symmetric about an axis (or translated copies), part for part, with the same footprints and mirrored rotations. Declared in `<project>.craft.toml`."
+value = "0.05 mm"
+why = "Matched channels: TI's OPA1622 EVM keeps the left and right traces \"as balanced as possible\"; mirrored artwork for matched THD+N is reported in AN-1490 (**UNVERIFIED** verbatim)"
+source = "[TI-OPA1622] §5.1; [AN-1490]"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-35"
+section = "5"
+level = "Q2"
+rule = "The board outline, mounting holes, connectors and controls come from the enclosure's export (case `export/`, component export contract), never drawn by eye; corners take the case's radii."
+value = "—"
+why = "Hierarchical composition; the board fits its enclosure by construction"
+source = "Component export contract; [IFX-MB]"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-36"
+section = "5"
+level = "Q3"
+rule = "One mounting-hole (screw) size per board, and one screw family across the device, driven by common tools."
+value = "—"
+why = "T1-055: the battery is replaced with common tools"
+source = "T1-055"
+enforcement = "CHK (size); Review (family)"
+
+[[rule]]
+id = "CRAFT-37"
+section = "5"
+level = "Q3"
+rule = "Shield cans are catalogue parts (T1-038), two-piece (frame and removable lid) where the inside must be probed or reworked, aligned to the placement grid and to the board edges."
+value = "—"
+why = "Off-the-shelf parts; access for repair"
+source = "T1-038"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-38"
+section = "5"
+level = "Q2"
+rule = "Connectors at the board edge facing their enclosure opening, one family per function, the same mating direction, with a latch or a bracket on every flat-cable and board-to-board connector."
+value = "—"
+why = "A flat-cable or board-to-board connector held only by its mating force can unseat in a drop; one mating direction toward the opening keeps assembly and repair to one motion"
+source = "—"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-39"
+section = "5"
+level = "Q1"
+rule = "The battery connector is reachable with the back cover removed and nothing else (T1-055), and labelled (CRAFT-14)."
+value = "—"
+why = "User-replaceable battery"
+source = "T1-055"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-40"
+section = "6"
+level = "Q2"
+rule = "Straight segments at multiples of 45°."
+value = "0.001 mm tolerance"
+why = "One geometry for the whole board"
+source = "—"
+enforcement = "DRC"
+
+[[rule]]
+id = "CRAFT-41"
+section = "6"
+level = "Q3"
+rule = "Corners of 135° or more between connected segments: no right-angle or acute corners; T-junctions are made at a pad or a via, or with 45° entries."
+value = "135°"
+why = "Even routing; acute corners trap etchant and narrow the copper"
+source = "—"
+enforcement = "DRC"
+
+[[rule]]
+id = "CRAFT-42"
+section = "6"
+level = "Q3"
+rule = "Arcs only where signal integrity justifies them: on impedance-controlled classes."
+value = "—"
+why = "Arcs are a tool for controlled impedance, not a style"
+source = "—"
+enforcement = "CHK (KiCad DRC gives arcs no property of their own)"
+
+[[rule]]
+id = "CRAFT-43"
+section = "6"
+level = "Q2"
+rule = "Track widths from the OpenDAP series; impedance classes take their widths from the stackup."
+value = "0.08, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0 mm; wider copper is a pour"
+why = "A closed series keeps neighbouring tracks visibly related; every value is at or above the fab sets' minimums (3 mil HDI, 4 mil multilayer)"
+source = "[RES]"
+enforcement = "DRC"
+
+[[rule]]
+id = "CRAFT-44"
+section = "6"
+level = "Q3"
+rule = "At most two widths per net class: the class width and one neck-down."
+value = "2"
+why = "Width follows function, not the router's mood"
+source = "—"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-45"
+section = "6"
+level = "Q2"
+rule = "Vias from the OpenDAP set (drill / land)."
+value = "0.10 / 0.25 mm laser microvia; 0.20 / 0.46 mm; 0.30 / 0.60 mm"
+why = "Each meets the prototype fab's HDI and multilayer minimums (0.075 mm microvia ring, 5 mil mechanical ring); fewer sizes, fewer tools"
+source = "[RES]"
+enforcement = "DRC"
+
+[[rule]]
+id = "CRAFT-46"
+section = "6"
+level = "Q3"
+rule = "At most eight mechanical drill sizes per board (vias, plated and unplated holes, slots); laser drills not counted."
+value = "8"
+why = "Each size is a tool change; consistency"
+source = "—"
+enforcement = "CHK"
+[rule.limits]
+drill_sizes_max = 8
+
+[[rule]]
+id = "CRAFT-47"
+section = "6"
+level = "Q4"
+rule = "No jogs: no straight segment shorter than 0.1 mm."
+value = "0.1 mm"
+why = "Short kinks are router residue"
+source = "—"
+enforcement = "DRC"
+
+[[rule]]
+id = "CRAFT-48"
+section = "6"
+level = "Q3"
+rule = "One teardrop policy for the board: on at every via and pad junction, or off at all of them. Product rules may require them (the T1 board does at Q2)."
+value = "—"
+why = "Consistent geometry"
+source = "—"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-49"
+section = "6"
+level = "Q2"
+rule = "Copper zones remove islands; set the Board Setup check `isolated_copper` to error."
+value = "—"
+why = "No floating copper"
+source = "—"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-50"
+section = "6"
+level = "Q3"
+rule = "Zone fill minimum width ≥ 0.2 mm and zone outlines at 45° multiples."
+value = "0.2 mm"
+why = "No slivers; pour edges follow the routing geometry. KiCad's `connection_width` did not report a 1 mm neck against a 2 mm minimum in kicad-cli 10.0.7 tests, so slivers are controlled by the fill's minimum width"
+source = "—"
+enforcement = "CHK"
+[rule.limits]
+zone_min_width_mm = 0.2
+
+[[rule]]
+id = "CRAFT-51"
+section = "6"
+level = "Q3"
+rule = "Stitching vias (on no track) in one size, on the placement grid, on a regular pitch; the TI OPA1622 EVM rings its jack ground with stitching vias."
+value = "Pitch per board"
+why = "Even return paths and an even appearance"
+source = "[TI-OPA1622] §5.1"
+enforcement = "CHK (size, grid); Review (pitch)"
+
+[[rule]]
+id = "CRAFT-52"
+section = "6"
+level = "Q4"
+rule = "Matched visual density: no needless vias, no stray copper, similar fill across a block."
+value = "—"
+why = "—"
+source = "—"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-60"
+section = "7"
+level = "Q2"
+rule = "Fabrication notes on User.Comments or User.Drawings, titled \"Fabrication notes\": material, finish, mask and silk colours, impedance and test requirements, the pick-and-place rotation convention (CRAFT-15)."
+value = "—"
+why = "The order cannot drift from the design"
+source = "IPC-2614 covers board fabrication documentation (public summary; the standard itself was not read)"
+enforcement = "CHK (present); Review (content)"
+
+[[rule]]
+id = "CRAFT-61"
+section = "7"
+level = "Q2"
+rule = "The stackup table (KiCad: Place > Stackup Table) on a User layer, with the layer legend."
+value = "—"
+why = "One source for the stackup"
+source = "—"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-62"
+section = "7"
+level = "Q2"
+rule = "Board dimensions on User.Drawings: at least the outline's width and height, and the mounting holes and connector datums."
+value = "≥ 2"
+why = "IPC-2615 covers dimensioning (public summary only)"
+source = "—"
+enforcement = "CHK (count); Review (datums)"
+
+[[rule]]
+id = "CRAFT-63"
+section = "7"
+level = "Q2"
+rule = "Layer roles fixed: Edge.Cuts outline only; User.Drawings dimensions; User.Comments notes; F/B.Fab body outlines and `${REFERENCE}` (KLC F5.2); F/B.Courtyard courtyards (KLC F5.3)."
+value = "—"
+why = "Every OpenDAP board reads the same"
+source = "[KLC] F5.2, F5.3"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-70"
+section = "8"
+level = "Q3"
+rule = "**PROPOSAL, for the maintainers:** production boards in matte black solder mask with white silkscreen and ENIG finish; prototypes (Q1) in any standard colour of the prototype fab, green preferred."
+value = "Matte black / white / ENIG"
+why = "Matte black is the closest offered colour to graphite; white silk is the logo's default colour on graphite. The prototype fab offers matte black as a premium colour; its black mask needs a wider web (4 mil for black against 3 mil for green at the advanced minimum; 5 mil for colours other than green on the HDI page), and black hides traces from visual inspection, which is why prototypes stay green. ENIG is the starting point for the main board"
+source = "[FAB]; [RES]"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-71"
+section = "8"
+level = "Q2"
+rule = "Mask and silk colours recorded in the KiCad stackup (Board Setup), the same on both sides, so renders and the fab notes match the order."
+value = "—"
+why = "—"
+source = "—"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-72"
+section = "8"
+level = "Q2"
+rule = "No accent colours on boards: no orange or coloured silk, no coloured mask other than the chosen one."
+value = "—"
+why = "Orange belongs to the Action button"
+source = "[DS] §3.3, §7"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-80"
+section = "9.1"
+level = "Q1"
+rule = "Every sheet's title block is filled per the field map: title, ISO 8601 date, revision (identical on every sheet), company \"The OpenDAP Project\", comment 1 the block ID or role, comment 2 the purpose."
+value = "—"
+why = "The sheet identifies itself when printed alone; one revision per board"
+source = "[IEC-61082]; [BENCH] (8 of 9 projects fill title, date, revision and company)"
+enforcement = "CHK"
+[rule.limits]
+company = "The OpenDAP Project"
+
+[[rule]]
+id = "CRAFT-81"
+section = "9.1"
+level = "Q2"
+rule = "A4 landscape for block sheets; A3 landscape for the root, the overviews and a block that cannot be read at A4 (an SoC's power unit). No other size, no portrait."
+value = "A4 / A3"
+why = "Readable when printed; poster-size single sheets hide the architecture (Pocket Reform, A0)"
+source = "[BENCH]"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-100"
+section = "9.1"
+level = "Q1"
+rule = "The project uses the OpenDAP drawing sheet from kicad-lib through the pinned submodule: `${KIPRJMOD}/../lib/opendap/drawing-sheets/opendap.kicad_wks`, and the file exists."
+value = "—"
+why = "kicad-cli silently falls back to KiCad's default sheet when the path is wrong [K10]; Pocket Reform's sheet points outside its repository [BENCH]"
+source = "[KICAD-WKS]"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-101"
+section = "9.1"
+level = "Q2"
+rule = "Project text variables `OPENDAP_PROJECT`, `OPENDAP_BOARD`, `OPENDAP_LICENCE` (`CERN-OHL-S-2.0` or `CERN-OHL-W-2.0`) and `OPENDAP_SOURCE` (`github.com/opendap-project/<repository>`) are set; ERC `unresolved_variable` at error."
+value = "—"
+why = "One source for every sheet; Great Scott Gadgets fill their title blocks the same way"
+source = "[BENCH]; workspace licensing rule"
+enforcement = "CHK, ERC"
+[rule.limits]
+licences = ["CERN-OHL-S-2.0", "CERN-OHL-W-2.0"]
+
+[[rule]]
+id = "CRAFT-102"
+section = "9.1"
+level = "Q2"
+rule = "One typeface: KiCad's stroke font, in the drawing sheet and on every sheet. Text sizes in the drawing sheet 1.0, 1.5 and 2.5 mm; lines 0.15 mm, frame 0.25 mm."
+value = "Stroke font"
+why = "See below"
+source = "[K10]; [BENCH] (no project sets a face)"
+enforcement = "CHK (sheets); Review (drawing sheet)"
+
+[[rule]]
+id = "CRAFT-103"
+section = "9.1"
+level = "Q2"
+rule = "No hand-set colours on items: colour comes from the theme. Plots and reviews use the OpenDAP theme: graphite ink on white for parts, local labels and the sheet; functional accents, one per drawing role, for what a reader must tell apart at a glance: wires and junctions `#2563A8`, buses `#173866` (the same hue, darker, on the wider bus line), hierarchical labels and sheet pins `#007068` (a block's interface, one colour on both sides of the sheet boundary), global labels `#962668` (rails only, CRAFT-150), DNP and excluded-from-simulation markers `#6C40B8`; secondary text (fields, pin numbers, notes, net-class flags) in `graphite.700`, no-connect flags in `graphite.500`; the error and warning hues only for ERC markers, darkened for white (`#C62832`, `#966200`); the orange accent only for the editor's hover and selection. Every ink colour reaches 4.5:1 on white for text and 3:1 for lines, and the functional groups are at least ΔE76 20 apart (`colour-themes/check_theme.py`). Meaning is never carried by colour alone: label kinds keep their shapes (CRAFT-151), rails their power symbols (CRAFT-85)."
+value = "[`colour-themes/opendap.json`](../../colour-themes/opendap.json)"
+why = "Restrained palette with functional colour accents, orange reserved for interaction [DS] §1, §3; a monochrome theme made wires, labels, symbol bodies and rails hard to tell apart in the 2026-10-25 visual review (§12); prints in black and white without loss of meaning"
+source = "[DS] §3.1–3.3; WCAG 2.2 1.4.3, 1.4.11"
+enforcement = "CHK (no colour on items; `check_theme.py` on the theme); Review (theme)"
+
+[[rule]]
+id = "CRAFT-104"
+section = "9.1"
+level = "Q3"
+rule = "Notes refer to places by sheet and zone (`5:B3`), from the frame's zone marks (columns 1–6 or 1–8, rows A–D or A–F, 50 mm fields)."
+value = "—"
+why = "IEC 61082-1 grid reference system (summary)"
+source = "[IEC-61082]"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-82"
+section = "9.2"
+level = "Q1"
+rule = "One feature block per sheet (RFC 0011). The sheet symbol carries a `Block` field with the block ID, its title block comment 1 says the same, and its file is named after the block without `blk.` (`periph-switch.kicad_sch`)."
+value = "—"
+why = "Tools resolve blocks without parsing sheet names; one sheet is one layout block and one variant unit"
+source = "RFC 0011 §1; board feature-blocks spec §1"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-110"
+section = "9.2"
+level = "Q2"
+rule = "Three overview sheets: the **root** (a block diagram: sheet symbols, buses, notes, no parts), the **power** overview (power tree and rail table: rail, voltage, source, switch, consumers, net class, measurement) and the **interconnect** overview (one pin-map table per external connector). Parts live only in block sheets; mounting holes, fiducials and logos in a `blk.mechanical` sheet."
+value = "—"
+why = "The architecture first, depth after; Cynthion's and Kria's roots are wired block diagrams [BENCH]"
+source = "[BENCH]; CM4 IO board (connector index per sheet)"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-111"
+section = "9.2"
+level = "Q3"
+rule = "The root reads in signal-flow order: overviews in the top row, then blocks left to right, top to bottom, from inputs (power and connectors) through processing to outputs; page numbers follow that reading order."
+value = "—"
+why = "The PDF reads in the same order as the diagram"
+source = "[IEC-61082] (signal flow, summary)"
+enforcement = "CHK (page order); Review (flow)"
+
+[[rule]]
+id = "CRAFT-112"
+section = "9.2"
+level = "Q1"
+rule = "Sheet pins are named exactly as the block's interface (the catalog's `interface` list, mirrored in `<project>.craft.toml` or a `blocks.toml`) and equal the sheet's hierarchical labels; ERC `hier_label_mismatch` at error."
+value = "—"
+why = "RFC 0011 rule 4: a block refers only to its interface"
+source = "RFC 0011"
+enforcement = "CHK, ERC"
+
+[[rule]]
+id = "CRAFT-113"
+section = "9.2"
+level = "Q2"
+rule = "Sheet pins by direction: inputs on the left edge, outputs on the right, supplies entering at the top, a separate ground return at the bottom, bidirectional buses on the side of their source; a rail the block produces leaves on the right."
+value = "—"
+why = "The block symbol reads like an IC symbol (KLC S4.2)"
+source = "[KLC-S] S4.2"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-114"
+section = "9.2"
+level = "Q3"
+rule = "Inside the block sheet, hierarchical labels sit at the sheet's edges on the same side as their sheet pins."
+value = "—"
+why = "The sheet and its symbol read the same way"
+source = "—"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-115"
+section = "9.2"
+level = "Q2"
+rule = "Every block sheet has a text box beginning \"Notes\", above the title block: function, **absent state** (RFC 0011 rule 2), the constraint IDs the sheet implements, the decisions it applies by ADR number, and the \"unless noted\" defaults (tolerance, dielectric, voltage rating)."
+value = "—"
+why = "The reasons travel with the circuit; Glasgow's notes carry numbers [BENCH]"
+source = "RFC 0011; [BENCH]"
+enforcement = "CHK (present, absent state stated); Review (content)"
+
+[[rule]]
+id = "CRAFT-116"
+section = "9.2"
+level = "Q3"
+rule = "References numbered by sheet: one hundred-block per sheet (KiCad's \"sheet number × 100\" annotation), × 1000 for a sheet with more than 99 parts of a prefix."
+value = "100"
+why = "Stable designators per block; the mirrored pairs of CRAFT-34 and CRAFT-87 follow by construction"
+source = "—"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-87"
+section = "9.2"
+level = "Q3"
+rule = "Mirrored channels drawn once, as one hierarchical sheet used twice, annotated by sheet so that CRAFT-34's pairs are R1xx / R2xx by construction."
+value = "offset 100"
+why = "Symmetry starts in the schematic; Cynthion and Glasgow reuse sheets for repeated channels [BENCH]"
+source = "[BENCH]"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-120"
+section = "9.3"
+level = "Q1"
+rule = "Symbols come from kicad-lib or KiCad's library; never drawn inside a project schematic. Project-only symbols live in the project's `hardware/lib/` and follow this section."
+value = "—"
+why = "One drawing per part, checked once"
+source = "[KLC-S]"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-121"
+section = "9.3"
+level = "Q2"
+rule = "Pin length 2.54 mm, longer in 1.27 mm steps when the pin number needs it: 1.27 mm per character of the symbol's longest pin number beyond the first (two characters: 3.81 mm; a ball name such as `AA38`: 6.35 mm), at most 7.62 mm, one length per symbol, so the number, centred on its pin, clears the pin name and a no-connect flag on the pin end. Two-pin discretes keep KiCad's short pins."
+value = "2.54–7.62 mm"
+why = "KLC S4.1; at 2.54 mm a two-digit number met the no-connect flag in the 2026-10-26 visual review (a stroke-font character is about 1.1 mm at 1.27 mm, the flag 1.22 mm across)"
+source = "[KLC-S] S4.1"
+enforcement = "CHK"
+[rule.limits]
+pin_length_min_mm = 2.54
+pin_length_step_mm = 1.27
+pin_length_max_mm = 7.62
+
+[[rule]]
+id = "CRAFT-122"
+section = "9.3"
+level = "Q1"
+rule = "Pin connection points on the 2.54 mm grid; two-pin discretes on 1.27 mm, as KiCad's own."
+value = "2.54 mm"
+why = "Symbols land on the schematic's connection grid; KiCad's library is 98 % on grid, Cynthion 16 % [BENCH]"
+source = "[KLC-S] S4.1; [IEC-60617] (via KLC)"
+enforcement = "CHK"
+[rule.limits]
+pin_grid_mm = 2.54
+two_pin_grid_mm = 1.27
+
+[[rule]]
+id = "CRAFT-123"
+section = "9.3"
+level = "Q2"
+rule = "Supply inputs at the top, ground and negative supplies at the bottom; a converter's input on the left and output on the right (KLC's exception)."
+value = "—"
+why = "KLC S4.2; supply flows down the page"
+source = "[KLC-S] S4.2"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-124"
+section = "9.3"
+level = "Q1"
+rule = "Electrical pin types set for ERC: `power_in` / `power_out` for supplies, `bidirectional` for programmable IO, `open_collector` for open-drain, `no_connect` for NC pads, `passive` for every pin of passives and connectors; never `unspecified`. Active-low pin names use the overbar `~{RESET}` (KLC S4.7)."
+value = "—"
+why = "ERC is only as good as the pin types; KLC S4.4"
+source = "[KLC-S] S4.4, S4.7"
+enforcement = "CHK; ERC"
+
+[[rule]]
+id = "CRAFT-125"
+section = "9.3"
+level = "Q1"
+rule = "No hidden pins, NC pins included (stricter than KLC S4.6)."
+value = "—"
+why = "Every pad is visible and takes a wire or a no-connect flag; a hidden power pin makes an implicit global connection [KICAD-SCH]"
+source = "[KLC-S] S4.6"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-126"
+section = "9.3"
+level = "Q2"
+rule = "Large parts are split into units by function: an SoC by IO domain and function (one unit per IO bank, one per high-speed interface, separate power and ground units); a PMIC by rail (one unit per regulator with its pins, one for control); connectors above 64 contacts by group. Units are not interchangeable."
+value = "≤ 64 pins per unit"
+why = "A unit fits an A4 sheet at 2.54 mm pitch and lands on the sheet of its block; KLC S3.8 separates power units"
+source = "[KLC-S] S3.8"
+enforcement = "CHK (pin count); Review (split)"
+[rule.limits]
+unit_pins_max = 64
+
+[[rule]]
+id = "CRAFT-127"
+section = "9.3"
+level = "Q3"
+rule = "Inputs on the left, outputs on the right; bus pins in KiCad's bus order; pins grouped by function with a one-grid gap between groups, ports ordered top to bottom."
+value = "—"
+why = "KLC S4.2"
+source = "[KLC-S] S4.2"
+enforcement = "CHK (sides, heuristic); Review"
+
+[[rule]]
+id = "CRAFT-128"
+section = "9.3"
+level = "Q2"
+rule = "Black-box bodies (ICs, modules, connectors): rectangle, 0.254 mm line, background fill; simple discretes unfilled; no De Morgan body style."
+value = "0.254 mm"
+why = "KLC S3.3, S3.9"
+source = "[KLC-S] S3.3"
+enforcement = "CHK"
+[rule.limits]
+body_stroke_mm = 0.254
+
+[[rule]]
+id = "CRAFT-129"
+section = "9.3"
+level = "Q2"
+rule = "Symbol text 1.27 mm; pin names and numbers down to 0.508 mm only on small symbols; pin-name offset 0.508 mm."
+value = "1.27 mm"
+why = "KLC S3.2, S3.6"
+source = "[KLC-S] S3.2, S3.6"
+enforcement = "CHK"
+[rule.limits]
+text_mm = 1.27
+small_text_min_mm = 0.508
+
+[[rule]]
+id = "CRAFT-130"
+section = "9.3"
+level = "Q1"
+rule = "Reference prefixes from KLC's designator table (IEEE 315 / ASME Y14.44 lineage): R, C, L, FB, D, Q, U, J, P, SW, Y (crystals and oscillators), F, BT, H, JP, K, T, M, LS, MK, AE, RN, RT, RV, TP, FL, DS, A, Z; plus NT (net tie) and FID (the boards' fiducials)."
+value = "—"
+why = "One meaning per letter across every board"
+source = "[KLC-S] S6.1; [IEEE-315]"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-131"
+section = "9.3"
+level = "Q3"
+rule = "IEC 60617 graphic forms (rectangular resistor, as KiCad's `Device:R`), never the `_US` forms; logic gates in one style per board."
+value = "—"
+why = "KiCad's default library and international readers"
+source = "[IEC-60617]; [KLC-S]"
+enforcement = "CHK (`_US`); Review"
+
+[[rule]]
+id = "CRAFT-132"
+section = "9.3"
+level = "Q2"
+rule = "Alternate pin functions for multiplexed pads (KLC S4.1): the pin's primary name is its default function (a strap's function first); every other function is an alternate, and each placed unit selects the function the board uses, so the sheet names what the pad does."
+value = "—"
+why = "The SoC's pin plan reads on the sheet; KiCad 10 supports `(alternate …)` per pin"
+source = "[KLC-S] S4.1; [KICAD-SCH]"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-133"
+section = "9.3"
+level = "Q2"
+rule = "Placed IC symbols upright: rotation 0°, never mirrored; passives at 0° or 90°."
+value = "—"
+why = "Pin text reads left to right"
+source = "—"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-140"
+section = "9.4"
+level = "Q1"
+rule = "Every placed part carries Reference, Value, Footprint (on-board parts), Datasheet (https), Description, Manufacturer and MPN (BOM parts) and Block, filled; library symbols carry Description and, fully specified, Footprint, Datasheet, Manufacturer and MPN."
+value = "—"
+why = "BOM, assembly and the variant tool read them; MPN on 77–100 % in 7 of 9 benchmarked projects"
+source = "[KLC-S] S6.2; [BENCH]"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-141"
+section = "9.4"
+level = "Q2"
+rule = "Component values always carry their unit: the number, one space, the SI prefix and the unit symbol. Unicode `Ω` (U+03A9) and `µ` (U+00B5), never `R`, `u`, the ohm sign U+2126 or the Greek mu U+03BC; the decimal point is `.`; no bare numbers, no `4k7` notation. Checked on resistors (`Ω`), capacitors (`F`), inductors (`H`) and crystals (`Hz`); any other part whose Value is a quantity follows the same form. Ratings go to Spec, never into Value."
+value = "`22 Ω`, `4.7 kΩ`, `5 mΩ`, `0 Ω`, `100 nF`, `2.2 µH`, `24.576 MHz`"
+why = "A bare number is ambiguous: in a visual review in KiCad (2026-10-25) a 1 Ω shunt read only \"1\". KiCad renders `Ω` and `µ`, and KiCad 10.0.7's SPICE netlist export still reads the form (`100 kΩ` → `100k`, `1 µF` → `1u`), so the simulator and BOM grouping keep working; Olimex packs ratings into Value, which no tool can read [BENCH]"
+source = "[BENCH]; maintainers, 2026-10-25"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-142"
+section = "9.4"
+level = "Q2"
+rule = "Spec shown only where it differs from the sheet's \"unless noted\" defaults; capacitors on rails above 5 V and every polarised part always show their voltage."
+value = "—"
+why = "Reader's information without clutter"
+source = "IEC 61082 \"unless otherwise specified\" practice (summary)"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-143"
+section = "9.4"
+level = "Q2"
+rule = "Only Reference, Value and Spec are shown; every other field hidden. Field names exactly as the table; no unnamed, placeholder or vendor-leftover fields."
+value = "—"
+why = "KLC S6.2; CM4 IO's `Field4`–`Field8` and SnapEDA leftovers are what this prevents [BENCH]"
+source = "[KLC-S] S6.2; [BENCH]"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-144"
+section = "9.4"
+level = "Q3"
+rule = "A second source, where one exists, in `Manufacturer_2` and `MPN_2` together."
+value = "—"
+why = "Sourcing resilience (workspace parts rule); GSG `Substitution`, Glasgow `MPN_Alt`"
+source = "[BENCH]"
+enforcement = "CHK (pairs); Review"
+
+[[rule]]
+id = "CRAFT-145"
+section = "9.4"
+level = "Q1"
+rule = "Block equals the block of the sheet the part sits on."
+value = "—"
+why = "RFC 0011: the variant tool resolves parts by block"
+source = "RFC 0011"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-146"
+section = "9.4"
+level = "Q3"
+rule = "Constraints holds only constraint IDs, space-separated."
+value = "—"
+why = "The layout check finds the parts a constraint binds"
+source = "Board PCB design constraints"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-147"
+section = "9.4"
+level = "Q1"
+rule = "Variants are data (RFC 0011 rule 7): the base design fits every part (the full variant); DNP in the base design only on the unused footprint of an alternate pair, which carries `Alternate`. Other variants are KiCad 10 design variants written by `odapkit variant sync` from the variant files, never edited by hand."
+value = "—"
+why = "KiCad 10 stores per-variant DNP and field overrides per instance [K10]; hand edits would drift from the variant files"
+source = "RFC 0011; [KICAD-SCH]"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-148"
+section = "9.4"
+level = "Q3"
+rule = "Simulation fields reference models inside the project (`${KIPRJMOD}`), never an absolute path; parts without a model on a simulated sheet are excluded from simulation."
+value = "—"
+why = "`odapkit sim` runs anywhere"
+source = "—"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-84"
+section = "9.5"
+level = "Q1"
+rule = "Net names: signals in `UPPER_SNAKE_CASE`, named by function from the host's side, connector-style (`I2C2_SCL`, `FP_SPI_CS_N`), never by SoC ball; rails exactly as the board's power tree names them; active low with the suffix `_N`, never an overbar, `n` prefix, `#` or `!` in a net name; differential pairs `_P` / `_N` (a net ending `_N` is a pair member only if its `_P` exists); buses as vectors `D[0..7]` or groups `I2C2{SCL SDA}` with project bus aliases; direction suffixes `_IN` / `_OUT` only where the host's view is ambiguous. ERC `similar_labels`, `multiple_net_names` at error."
+value = "—"
+why = "Names feed net classes, DRC rules, the pin plan, devicetree and the variant tool; the T1 pinout v1 uses `_N`"
+source = "[BENCH]; board pinout v1"
+enforcement = "CHK, ERC"
+
+[[rule]]
+id = "CRAFT-85"
+section = "9.5"
+level = "Q1"
+rule = "Rails through power symbols whose Value is the rail's name in the power tree; one `GND` unless a separate return is designed (joined by a net tie, NT); ground symbols point down, positive rails up; `PWR_FLAG` only where a rail is driven from off the sheet's parts (a connector, a measurement link). Rails internal to one block may use KiCad 10 local power symbols."
+value = "—"
+why = "Power symbols are global by nature; a rail named twice is two nets"
+source = "[KICAD-SCH]"
+enforcement = "CHK, ERC"
+
+[[rule]]
+id = "CRAFT-150"
+section = "9.5"
+level = "Q1"
+rule = "Label kinds carry meaning: local labels within a sheet; hierarchical labels for a block's interface; global labels never for signals, only for a rail that cannot be a power symbol."
+value = "—"
+why = "Flat designs through global labels hide the data flow (Reform: 396 global, 0 hierarchical) [BENCH]"
+source = "[BENCH]"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-151"
+section = "9.5"
+level = "Q2"
+rule = "Label and sheet-pin shapes state direction as seen from the block: `input`, `output`, `bidirectional` (I2C SDA, SDIO data), `tri_state` (shared buses with an output enable), `passive` (analogue and supplies where direction does not apply); a sheet pin and its hierarchical label share the shape. KiCad treats shapes as visual only [KICAD-SCH], so they are checked here."
+value = "—"
+why = "Shape is the semiotics of direction"
+source = "[KICAD-SCH]"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-152"
+section = "9.5"
+level = "Q1"
+rule = "A no-connect flag on every unused pin; ERC `pin_not_connected`, `no_connect_connected`, `no_connect_dangling` at error."
+value = "—"
+why = "Every pad accounted for"
+source = "—"
+enforcement = "ERC"
+
+[[rule]]
+id = "CRAFT-153"
+section = "9.5"
+level = "Q2"
+rule = "No four-way junctions: a crossing is two T-junctions one grid step apart; a dot on every T, none elsewhere; ERC `four_way_junction` at error (KiCad's default ignores it)."
+value = "—"
+why = "A four-way dot is lost when printed small; a crossing without a dot is ambiguous"
+source = "IEEE 315 / IEC 60617 practice (summary)"
+enforcement = "CHK, ERC"
+
+[[rule]]
+id = "CRAFT-154"
+section = "9.5"
+level = "Q2"
+rule = "Wires and buses orthogonal, at KiCad's default widths; no wire through a symbol body or text; buses for three or more related nets that travel together."
+value = "—"
+why = "—"
+source = "—"
+enforcement = "CHK (orthogonal, widths); Review"
+
+[[rule]]
+id = "CRAFT-155"
+section = "9.5"
+level = "Q2"
+rule = "Net classes in the project match the board's `hardware/rules/netclasses.toml` both ways: every class there exists in the project, and every class the project uses (classes, patterns, `Netclass` fields of directive labels) is declared there; ERC `undefined_netclass` at error. Classes are assigned by patterns generated from the file, or by a directive label at the net's source."
+value = "—"
+why = "The schematic and the product rules share one contract"
+source = "board `netclasses.toml`"
+enforcement = "CHK, ERC"
+
+[[rule]]
+id = "CRAFT-156"
+section = "9.5"
+level = "Q2"
+rule = "Interface nets cross the hierarchy only through sheet pins; a block's internal nets never leave it."
+value = "—"
+why = "RFC 0011 rule 4"
+source = "RFC 0011"
+enforcement = "Review (variant tool check, RFC 0011 §6.3)"
+
+[[rule]]
+id = "CRAFT-157"
+section = "9.5"
+level = "Q3"
+rule = "A net joining two or more ICs is named."
+value = "—"
+why = "A reader can refer to it; auto names change with annotation"
+source = "—"
+enforcement = "CHK (netlist)"
+
+[[rule]]
+id = "CRAFT-158"
+section = "9.5"
+level = "Q1"
+rule = "The project's ERC severities hold the craft checks at error: `endpoint_off_grid`, `four_way_junction`, `pin_not_connected`, `label_dangling`, `hier_label_mismatch`, `power_pin_not_driven`, `pin_not_driven`, `unresolved_variable`, `unannotated`, `duplicate_reference`, `missing_power_pin`, `multiple_net_names`, `similar_labels`, `similar_power`, `similar_label_and_power`, `same_local_global_label`, `same_local_global_power`, `no_connect_connected`, `no_connect_dangling`, `wire_dangling`, `unconnected_wire_endpoint`, `undefined_netclass`, `ground_pin_not_ground`. No rule class is switched off; an exception is an ERC exclusion with its reason."
+value = "—"
+why = "Antmicro switches `pin_to_pin` off; no benchmarked board runs ERC in CI [BENCH]"
+source = "[K10] (KiCad 10 key names)"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-86"
+section = "9.6"
+level = "Q2"
+rule = "Everything on KiCad's 1.27 mm (50 mil) connection grid: symbols, wires, junctions, labels, sheets and sheet pins; rotations in multiples of 90°; ERC `endpoint_off_grid` at error."
+value = "1.27 mm"
+why = "Off-grid ends do not connect"
+source = "[KICAD-SCH] (default grid 50 mil)"
+enforcement = "CHK, ERC"
+[rule.limits]
+grid_mm = 1.27
+
+[[rule]]
+id = "CRAFT-83"
+section = "9.6"
+level = "Q2"
+rule = "Signal flow left to right; supplies at the top, ground symbols on one baseline at the bottom of the circuit."
+value = "—"
+why = "IEC 61082-1 signal-flow layout (summary)"
+source = "[IEC-61082]"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-170"
+section = "9.6"
+level = "Q2"
+rule = "Sheet zones: the circuit in the upper band; interface and rail tables at the lower left; notes above the title block. Interface labels inside the frame, at least 25 mm from it."
+value = "—"
+why = "Every block sheet reads the same way (template)"
+source = "—"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-171"
+section = "9.6"
+level = "Q2"
+rule = "Decoupling next to the pins it serves, grouped by rail, in the order it is placed on the board (smallest value nearest the pin), each group under its rail's name."
+value = "—"
+why = "The schematic predicts the layout"
+source = "—"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-172"
+section = "9.6"
+level = "Q3"
+rule = "A sheet with decoupling carries a rail table (KiCad table headed \"Rail\": rail, capacitors, the data sheet's requirement with its section)."
+value = "—"
+why = "The requirement is checked where the capacitors are chosen"
+source = "—"
+enforcement = "CHK"
+
+[[rule]]
+id = "CRAFT-173"
+section = "9.6"
+level = "Q2"
+rule = "Text sizes from a closed set: 1.27 mm for everything (labels, fields, notes, tables), 2.54 mm for group titles only."
+value = "1.27 / 2.54 mm"
+why = "Two sizes read as one hierarchy"
+source = "[KLC-S] S3.2"
+enforcement = "CHK"
+[rule.limits]
+text_sizes_mm = [1.27, 2.54]
+
+[[rule]]
+id = "CRAFT-174"
+section = "9.6"
+level = "Q2"
+rule = "Functional groups inside a sheet in a titled rectangle: dashed default line, no fill, title at 2.54 mm above its top-left corner, one grid step between groups."
+value = "—"
+why = "Grouping without colour"
+source = "—"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-175"
+section = "9.6"
+level = "Q2"
+rule = "Whitespace: fields and text never overlap a symbol, wire or other text; parts in a group aligned on rows or columns."
+value = "—"
+why = "Legibility"
+source = "—"
+enforcement = "Review"
+
+[[rule]]
+id = "CRAFT-176"
+section = "9.6"
+level = "Q2"
+rule = "Pin maps, strap options, address maps, option and variant tables are KiCad tables, never text drawn with vertical-bar characters."
+value = "—"
+why = "Glasgow keeps its I²C map as a KiCad table [BENCH]"
+source = "[BENCH]; [KICAD-SCH] (tables)"
+enforcement = "CHK"

@@ -1,0 +1,96 @@
+# Fixture for tests/test_stackup.py: a plain 4-layer board, one microstrip, one pair, one
+# stripline. Values are made up for the test; they describe no OpenDAP board.
+version = 1
+name = "fixture 4-layer"
+design_window_pct = 2.0
+
+[etch]
+outer_reduction_um = 0.0
+inner_reduction_um = 0.0
+
+[tolerance]
+dielectric_pct = 10
+er_pct = 5
+width_um = 10
+copper_pct = 15
+
+[thickness]
+min_mm = 0.4
+max_mm = 0.8
+tolerance_mm = 0.05
+
+[[distance]]
+from = "L1"
+to = "L2"
+min_um = 95
+max_um = 105
+
+[[layer]]
+name = "L1"
+type = "copper"
+thickness_um = 35
+
+[[layer]]
+name = "PP1"
+type = "dielectric"
+thickness_um = 100
+er = 4.2
+
+[[layer]]
+name = "L2"
+type = "copper"
+thickness_um = 18
+
+[[layer]]
+name = "C1"
+type = "dielectric"
+thickness_um = 150
+er = 4.2
+
+[[layer]]
+name = "L3"
+type = "copper"
+thickness_um = 18
+fills = "below"
+
+[[layer]]
+name = "PP2"
+type = "dielectric"
+thickness_um = 150
+er = 4.2
+
+[[layer]]
+name = "L4"
+type = "copper"
+thickness_um = 18
+
+[[class]]
+name = "MS50"
+type = "se"
+target_ohm = 50
+layer = "L1"
+reference = ["L2"]
+solve = "width"
+width_um = 172.5
+z_ohm = 50.0
+
+[[class]]
+name = "MS90D"
+type = "diff"
+target_ohm = 90
+layer = "L1"
+reference = ["L2"]
+solve = "width"
+gap_um = 150
+width_um = 164.0
+z_ohm = 90.02
+
+[[class]]
+name = "SL50"
+type = "se"
+target_ohm = 50
+layer = "L3"
+reference = ["L2", "L4"]
+solve = "width"
+width_um = 118.5
+z_ohm = 50.03

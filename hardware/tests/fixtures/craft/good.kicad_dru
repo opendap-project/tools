@@ -1,0 +1,6 @@
+(version 1)
+(rule "FIX-01 [Q2]: Track SIG3 at least 0.5 mm"
+	(severity warning)
+	(condition "A.Type == 'Track' && A.NetName == 'SIG3'")
+	(constraint track_width (min 0.5mm))
+)

@@ -1,0 +1,40 @@
+# Fixture for `odapkit stackup explore`: two zones, 4 and 6 layers, a two-entry palette, no
+# impedance classes (no solver runs), so the test is fast and its answer is known by hand.
+version = 1
+name = "explore fixture"
+layer_counts = [4, 6]
+builds = ["through", "2+N+2"]
+
+[thickness]
+min_mm = 0.5
+max_mm = 2.0
+tolerance_mm = 0.1
+
+[copper]
+outer_um = 35
+inner_um = 18
+mask_um = 20
+
+[[dielectric]]
+name = "pp100"
+kind = "prepreg"
+um = 100
+er = 4.4
+laser = true
+
+[[dielectric]]
+name = "c200"
+kind = "core"
+um = 200
+er = 4.6
+
+[[zone]]
+name = "digital"
+outer_fast = "both"
+inner_fast = 1
+
+[[zone]]
+name = "power"
+outer_fast = "both"
+pour_layers = 2
+low_speed_next_to_power = true

@@ -1,0 +1,28 @@
+{
+ "manufacturerPartNumberSearchReturn": {
+  "numberOfResults": 1,
+  "products": [
+   {
+    "sku": "12AB34",
+    "translatedManufacturerPartNumber": "XM4X1G32-046 AAT:C",
+    "brandName": "Example",
+    "productStatus": "STOCKED",
+    "stock": {
+     "level": 1100
+    },
+    "prices": [
+     {
+      "from": 1,
+      "to": 9,
+      "cost": 130.0
+     },
+     {
+      "from": 10,
+      "to": 99,
+      "cost": 460.0
+     }
+    ]
+   }
+  ]
+ }
+}

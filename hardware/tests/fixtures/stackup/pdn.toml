@@ -1,0 +1,47 @@
+# Fixture for `odapkit stackup pdn`: one rail, one capacitor group, two plane distances. The
+# answers are closed forms (via-pair and radial plane inductance, plane capacitance), checked by
+# hand in tests/test_stackup.py.
+version = 1
+name = "pdn fixture"
+
+[sweep]
+f_min_hz = 1e5
+f_max_hz = 1e9
+points = 300
+band_max_hz = 1e8
+report_mhz = [1, 10, 100]
+
+[via]
+radius_um = 100
+pitch_um = 650
+
+[[rail]]
+name = "core"
+v_nom = 1.0
+ripple_pct = 5
+i_step_a = 1.0
+vrm = { r_mohm = 2, l_nh = 10 }
+load = { vias = 4, via_pitch_um = 650 }
+[[rail.cap]]
+name = "1u"
+c_uf = 1.0
+esr_mohm = 10
+esl_nh = 0.3
+count = 4
+distance_mm = 2.0
+
+[[case]]
+name = "thin"
+d_um = 65
+er = 4.2
+area_cm2 = 1.0
+cap_via_um = 100
+load_via_um = 800
+
+[[case]]
+name = "thick"
+d_um = 200
+er = 4.2
+area_cm2 = 1.0
+cap_via_um = 100
+load_via_um = 800

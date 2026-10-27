@@ -1,0 +1,21 @@
+{
+ "parts": [
+  {
+   "manufacturerPartNumber": "XM4X1G32-046 WT:C",
+   "manufacturer": "Example",
+   "ttiPartNumber": "XM4X1G32-046WTC",
+   "availableToSell": 0,
+   "leadTime": "26 Weeks",
+   "partStatus": "Active",
+   "pricing": {
+    "quantityPriceBreaks": [
+     {
+      "quantity": 1280,
+      "price": 90.0
+     }
+    ]
+   },
+   "buyUrl": "https://www.tti.com/x"
+  }
+ ]
+}

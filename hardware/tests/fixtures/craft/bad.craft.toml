@@ -1,0 +1,8 @@
+version = 1
+target = "Q1"
+
+[[symmetry]]
+name = "Channel blocks L/R"
+a = "group:CH-L"
+offset = 100
+axis = "vertical"

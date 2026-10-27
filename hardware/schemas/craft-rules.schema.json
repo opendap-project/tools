@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-hardware/blob/main/schemas/craft-rules.schema.json",
+  "title": "opendap.craft-rules/v1: the PCB craft standard's rules as data (tools/craft/rules.toml)",
+  "description": "Every CRAFT rule of kicad-lib's docs/specs/pcb-craft-standard.md, in the standard's order. The standard's rule tables are rendered from it (odapkit craft rules render) and the craft checks read their levels and limits from it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "spec", "levels", "rule"],
+  "properties": {
+    "schema": { "const": "opendap.craft-rules/v1" },
+    "spec": {
+      "description": "URL of the craft standard the rules belong to.",
+      "type": "string",
+      "format": "uri"
+    },
+    "levels": {
+      "description": "The quality levels, lowest first (RFC 0010).",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^Q[0-9]$" },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "rule": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/rule" }
+    }
+  },
+  "$defs": {
+    "cell": {
+      "description": "One table cell of the standard, as Markdown: one line, no '|'. An em dash when the standard gives none.",
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^|\\n]+$"
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "section", "level", "rule", "value", "why", "source", "enforcement"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^CRAFT-[0-9]{2,3}$" },
+        "section": {
+          "description": "The standard's section whose table lists the rule, for example \"3\" or \"9.4\".",
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?$"
+        },
+        "level": {
+          "description": "The lowest level at which the rule is mandatory; one of levels.",
+          "type": "string",
+          "pattern": "^Q[0-9]$"
+        },
+        "rule": { "$ref": "#/$defs/cell" },
+        "value": { "$ref": "#/$defs/cell" },
+        "why": { "$ref": "#/$defs/cell" },
+        "source": {
+          "description": "The sources, cited exactly as the standard cites them (reference keys of its Sources section, requirement IDs, RFCs).",
+          "$ref": "#/$defs/cell"
+        },
+        "enforcement": { "$ref": "#/$defs/cell" },
+        "limits": {
+          "description": "Values a check or a generator reads, each one stated in the rule's row (rule or value). Numbers in millimetres where the key ends in _mm.",
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "number" },
+              { "type": "string" },
+              { "type": "array", "items": { "type": "string" } },
+              { "type": "array", "items": { "type": "number" } },
+              { "type": "array", "items": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 } }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

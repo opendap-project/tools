@@ -1,0 +1,17 @@
+{
+  "meta": {
+    "filename": "good.kicad_pro",
+    "version": 3
+  },
+  "net_settings": {
+    "classes": [
+      {
+        "name": "Default",
+        "priority": 2147483647
+      }
+    ],
+    "meta": {
+      "version": 4
+    }
+  }
+}

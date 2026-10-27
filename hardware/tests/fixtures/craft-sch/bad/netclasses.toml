@@ -1,0 +1,10 @@
+# Net classes of the example: the contract between the schematic and the board's rules,
+# in the format of the T1 board's hardware/rules/netclasses.toml. The project's net classes and
+# patterns are generated from this file; odapkit craft check compares them (CRAFT-155).
+
+version = 1
+
+[[class]]
+name = "PWR_PERIPH"
+signals = "PERIPH_3V3: the switched output of blk.periph-switch to J201 pin 2"
+design_current_a = 0.5

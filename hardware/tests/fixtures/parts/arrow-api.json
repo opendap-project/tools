@@ -1,0 +1,50 @@
+{
+ "itemserviceresult": {
+  "data": [
+   {
+    "PartList": [
+     {
+      "partNum": "XM4X1G32-046 IT:C",
+      "manufacturer": {
+       "mfrName": "Example"
+      },
+      "status": "Active",
+      "InvOrg": {
+       "webSites": [
+        {
+         "code": "arrow.com",
+         "sources": [
+          {
+           "sourceParts": [
+            {
+             "sourcePartId": "V1",
+             "Prices": {
+              "resaleList": [
+               {
+                "minQty": 1,
+                "price": 250.0
+               },
+               {
+                "minQty": 100,
+                "price": 240.0
+               }
+              ]
+             },
+             "Availability": [
+              {
+               "fohQty": 40
+              }
+             ]
+            }
+           ]
+          }
+         ]
+        }
+       ]
+      }
+     }
+    ]
+   }
+  ]
+ }
+}

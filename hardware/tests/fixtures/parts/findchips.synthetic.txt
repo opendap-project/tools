@@ -1,0 +1,18 @@
+<html><body>
+<div id="list1" class="distributor-results " data-distributor_name="Mouser Electronics">
+<h2 class="distributor-title"><a>Mouser Electronics <span class="other-disti-details">ECIA (NEDA) Member &#149; Authorized Distributor</span></a></h2>
+<table><tbody>
+<tr data-id="1" data-distributor_name="Mouser Electronics" data-mfr="Example Memory" data-instock="1000" data-stock="1000" data-mfrpartnumber="XM4X1G32-046 AAT:C" data-price="[[1,&#34;USD&#34;,&#34;120.0000&#34;]]" class="row" data-distino="X-XM4X1G32-046 AAT:C"><td></td></tr>
+</tbody></table></div>
+<div id="list2" class="distributor-results " data-distributor_name="Newark">
+<h2 class="distributor-title"><a>Newark <span class="other-disti-details">&nbsp;</span></a></h2>
+<table><tbody>
+<tr data-id="1" data-distributor_name="Newark" data-mfr="Example Memory" data-instock="1100" data-stock="1100" data-mfrpartnumber="XM4X1G32-046 AAT:C" data-price="[[1,&#34;USD&#34;,&#34;130.0000&#34;],[100,&#34;USD&#34;,&#34;450.0000&#34;]]" class="row" data-distino="X-XM4X1G32-046 AAT:C"><td></td></tr>
+<tr data-id="1" data-distributor_name="Newark" data-mfr="Example Memory" data-instock="0" data-stock="0" data-mfrpartnumber="XM4X1G32-046 IT:C" data-price="[[1,&#34;USD&#34;,&#34;110.0000&#34;]]" class="row" data-distino="X-XM4X1G32-046 IT:C"><td></td></tr>
+</tbody></table></div>
+<div id="list3" class="distributor-results " data-distributor_name="Vyrian">
+<h2 class="distributor-title"><a>Vyrian <span class="other-disti-details">&nbsp;</span></a></h2>
+<table><tbody>
+<tr data-id="1" data-distributor_name="Vyrian" data-mfr="Example Memory" data-instock="5000" data-stock="5000" data-mfrpartnumber="XM4X1G32-046-IT-C-TR" data-price="[]" class="row" data-distino="X-XM4X1G32-046-IT-C-TR"><td></td></tr>
+</tbody></table></div>
+</body></html>

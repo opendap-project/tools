@@ -1,0 +1,15 @@
+* Test fixture: RC low-pass, 1 V step at t = 0. tau = R*C (1 ms with the defaults).
+.param R=1k C=1u
+V1 in 0 PWL(0 0 1n 1)
+R1 in out {R}
+C1 out 0 {C} IC=0
+.tran 10u 5m uic
+.control
+run
+meas tran tau when v(out)=0.6321 rise=1
+meas tran vfinal find v(out) at=5m
+let tau_ms = tau*1000
+print tau_ms
+echo "table: tau_ms=$&tau_ms"
+.endc
+.end

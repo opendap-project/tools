@@ -1,0 +1,41 @@
+# Test fixture for odapkit sim: an RC low-pass with known answers (tau = R*C).
+version = 1
+
+[[check]]
+id = "tau"
+description = "Time constant with the netlist defaults (1 kOhm, 1 uF)"
+netlist = "rc.cir"
+measure = "tau"
+min = 0.98e-3
+max = 1.02e-3
+unit = "s"
+source = "FIXTURE-1"
+
+[[check]]
+id = "tau-2k"
+description = "Time constant with R overridden to 2 kOhm"
+netlist = "rc.cir"
+params = { R = "2k" }
+measure = "tau_ms"
+min = 1.96
+max = 2.04
+unit = "ms"
+source = "FIXTURE-2"
+
+[[check]]
+id = "settled"
+netlist = "rc.cir"
+measure = "vfinal"
+min = 0.99
+unit = "V"
+source = "FIXTURE-3"
+
+[[check]]
+id = "table"
+description = "Value read from an echo line with a pattern"
+netlist = "rc.cir"
+pattern = '^table: tau_ms=(\S+)'
+reduce = "all"
+max = 1.02
+unit = "ms"
+source = "FIXTURE-4"

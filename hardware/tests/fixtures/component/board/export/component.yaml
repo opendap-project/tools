@@ -1,0 +1,14 @@
+# Minimal example of a board component's export (illustrative: names, versions and files are
+# placeholders, not the T1 board's export). Schema: schemas/component.schema.json.
+name: board
+version: v0.1.0
+interfaces:
+  - name: hat-interface
+    version: "1"
+files:
+  - path: board.step
+    domain: electronics
+  - path: board.glb
+    domain: renders
+  - path: board-connectors.net
+    domain: electronics

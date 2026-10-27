@@ -1,0 +1,16 @@
+# Craft check configuration of the example (odapkit craft check, toolkit-hardware).
+# The example passes every schematic check, so it targets Q4.
+version = 1
+target = "Q4"
+
+[schematic]
+rails = ["VSYS_LV", "PERIPH_3V3", "GND"]
+netclasses = "netclasses.toml"
+
+[[schematic.block]]
+id = "blk.header"
+interface = ["EN_PERIPH"]
+
+[[schematic.block]]
+id = "blk.periph-switch"
+interface = ["VIN", "EN", "VOUT"]

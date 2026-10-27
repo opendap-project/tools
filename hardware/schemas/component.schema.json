@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-hardware/blob/main/schemas/component.schema.json",
+  "title": "OpenDAP component export (export/component.yaml)",
+  "description": "Describes a component's export/ folder: the component as one unit, for other components and the product integration. Specification: docs/specs/component-export.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "version", "interfaces", "files"],
+  "properties": {
+    "name": {
+      "description": "The component's name.",
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "description": "The tag of the producing repository this export is committed with (rules 2 and 4).",
+      "type": "string",
+      "minLength": 1
+    },
+    "interfaces": {
+      "description": "The interfaces the component implements, each with its version (rule 3). Empty when it implements none.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/interface" }
+    },
+    "files": {
+      "description": "Every exported file, relative to export/.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/file" }
+    },
+    "mechanics": {
+      "description": "Mass properties of the whole component as one body. Required when a mechanics file is exported.",
+      "$ref": "#/$defs/mechanics"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "files": { "contains": { "properties": { "domain": { "const": "mechanics" } }, "required": ["domain"] } }
+        },
+        "required": ["files"]
+      },
+      "then": { "required": ["mechanics"] }
+    }
+  ],
+  "$defs": {
+    "interface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "description": "The interface's name.", "type": "string", "minLength": 1 },
+        "version": { "description": "The version of the interface implemented.", "type": "string", "minLength": 1 }
+      }
+    },
+    "file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "domain"],
+      "properties": {
+        "path": {
+          "description": "Path relative to export/, without '..' segments.",
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$))[^\\\\]+$"
+        },
+        "domain": {
+          "description": "The domain of the export contract table the file belongs to.",
+          "enum": ["mechanics", "renders", "electronics", "signal-paths", "power-thermal", "firmware", "software"]
+        }
+      }
+    },
+    "mechanics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mass_g", "center_of_gravity_mm"],
+      "properties": {
+        "mass_g": { "description": "Mass in grams.", "type": "number", "exclusiveMinimum": 0 },
+        "center_of_gravity_mm": {
+          "description": "Center of gravity [x, y, z] in millimetres, in the coordinate frame of the exported STEP.",
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      }
+    }
+  }
+}

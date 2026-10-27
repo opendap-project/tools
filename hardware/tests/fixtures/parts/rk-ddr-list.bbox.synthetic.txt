@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html><head><title>synthetic</title></head><body>
+<doc>
+  <page width="841.680000" height="595.200000">
+    <word xMin="150.000000" yMin="30.000000" xMax="180.000000" yMax="34.100000">Consumer</word>
+    <word xMin="40.500000" yMin="64.800000" xMax="60.600000" yMax="68.900000">Manufacturer</word>
+    <word xMin="78.600000" yMin="64.800000" xMax="85.000000" yMax="68.900000">Part</word>
+    <word xMin="85.800000" yMin="64.800000" xMax="97.600000" yMax="68.900000">Number</word>
+    <word xMin="380.600000" yMin="64.800000" xMax="392.500000" yMax="68.900000">RK3568</word>
+    <word xMin="399.200000" yMin="64.800000" xMax="411.100000" yMax="68.900000">RK3566</word>
+    <word xMin="417.400000" yMin="64.800000" xMax="429.300000" yMax="68.900000">RV1126/</word>
+    <word xMin="78.600000" yMin="78.300000" xMax="123.600000" yMax="82.400000">XM4X1G32-046</word>
+    <word xMin="124.600000" yMin="78.300000" xMax="139.600000" yMax="82.400000">WT:B</word>
+    <word xMin="140.600000" yMin="78.300000" xMax="166.850000" yMax="82.400000">(D8CJG)</word>
+    <word xMin="189.400000" yMin="78.300000" xMax="195.900000" yMax="82.400000">32G</word>
+    <word xMin="196.800000" yMin="78.300000" xMax="200.700000" yMax="82.400000">bit</word>
+    <word xMin="214.100000" yMin="78.300000" xMax="231.000000" yMax="82.400000">1024M×32</word>
+    <word xMin="236.800000" yMin="78.300000" xMax="268.800000" yMax="82.400000">LPDDR4/LPDDR4X</word>
+    <word xMin="274.200000" yMin="78.300000" xMax="285.600000" yMax="82.400000">200ball</word>
+    <word xMin="383.700000" yMin="78.300000" xMax="390.000000" yMax="82.400000">T/A</word>
+    <word xMin="402.300000" yMin="78.300000" xMax="408.600000" yMax="82.400000">T/A</word>
+    <word xMin="78.600000" yMin="84.500000" xMax="123.600000" yMax="88.600000">XM4X2G32-046</word>
+    <word xMin="124.600000" yMin="84.500000" xMax="139.600000" yMax="88.600000">WT:A</word>
+    <word xMin="140.600000" yMin="84.500000" xMax="166.850000" yMax="88.600000">(D9ZRD)</word>
+    <word xMin="189.400000" yMin="84.500000" xMax="195.900000" yMax="88.600000">64G</word>
+    <word xMin="196.800000" yMin="84.500000" xMax="200.700000" yMax="88.600000">bit</word>
+    <word xMin="214.100000" yMin="84.500000" xMax="231.000000" yMax="88.600000">2048M×32</word>
+    <word xMin="236.800000" yMin="84.500000" xMax="268.800000" yMax="88.600000">LPDDR4/LPDDR4X</word>
+    <word xMin="274.200000" yMin="84.500000" xMax="285.600000" yMax="88.600000">200ball</word>
+    <word xMin="383.700000" yMin="84.500000" xMax="390.000000" yMax="88.600000">T/A</word>
+    <word xMin="402.300000" yMin="84.500000" xMax="408.600000" yMax="88.600000">T/A</word>
+    <word xMin="409.500000" yMin="84.500000" xMax="417.000000" yMax="88.600000">[7][11]</word>
+    <word xMin="40.000000" yMin="81.400000" xMax="62.000000" yMax="85.500000">ExampleMicro</word>
+    <word xMin="78.600000" yMin="96.300000" xMax="119.850000" yMax="100.400000">XS4X32-MG**</word>
+    <word xMin="189.400000" yMin="96.300000" xMax="195.900000" yMax="100.400000">32G</word>
+    <word xMin="196.800000" yMin="96.300000" xMax="200.700000" yMax="100.400000">bit</word>
+    <word xMin="214.100000" yMin="96.300000" xMax="231.000000" yMax="100.400000">1024M×32</word>
+    <word xMin="236.800000" yMin="96.300000" xMax="268.800000" yMax="100.400000">LPDDR4X</word>
+    <word xMin="274.200000" yMin="96.300000" xMax="285.600000" yMax="100.400000">200ball</word>
+    <word xMin="383.700000" yMin="96.300000" xMax="390.000000" yMax="100.400000">T/A</word>
+    <word xMin="78.600000" yMin="102.500000" xMax="119.850000" yMax="106.600000">XS4X64-MGCL</word>
+    <word xMin="166.000000" yMin="102.500000" xMax="173.000000" yMax="106.600000">EOL</word>
+    <word xMin="189.400000" yMin="102.500000" xMax="195.900000" yMax="106.600000">64G</word>
+    <word xMin="196.800000" yMin="102.500000" xMax="200.700000" yMax="106.600000">bit</word>
+    <word xMin="214.100000" yMin="102.500000" xMax="231.000000" yMax="106.600000">2048M×32</word>
+    <word xMin="236.800000" yMin="102.500000" xMax="268.800000" yMax="106.600000">LPDDR4X</word>
+    <word xMin="274.200000" yMin="102.500000" xMax="285.600000" yMax="106.600000">200ball</word>
+    <word xMin="402.300000" yMin="102.500000" xMax="408.600000" yMax="106.600000">S/A</word>
+    <word xMin="40.000000" yMin="99.400000" xMax="60.000000" yMax="103.500000">ExampleSemi</word>
+  </page>
+  <page width="841.680000" height="595.200000">
+    <word xMin="150.000000" yMin="30.000000" xMax="180.000000" yMax="34.100000">Automotive</word>
+    <word xMin="40.500000" yMin="64.800000" xMax="60.600000" yMax="68.900000">Manufacturer</word>
+    <word xMin="78.600000" yMin="64.800000" xMax="85.000000" yMax="68.900000">Part</word>
+    <word xMin="85.800000" yMin="64.800000" xMax="97.600000" yMax="68.900000">Number</word>
+    <word xMin="291.000000" yMin="64.800000" xMax="302.900000" yMax="68.900000">RK2118</word>
+    <word xMin="379.000000" yMin="64.800000" xMax="390.900000" yMax="68.900000">RK3568M</word>
+    <word xMin="78.600000" yMin="78.300000" xMax="116.100000" yMax="82.400000">XA4X32-046</word>
+    <word xMin="117.100000" yMin="78.300000" xMax="135.850000" yMax="82.400000">AAT:B</word>
+    <word xMin="189.400000" yMin="78.300000" xMax="195.900000" yMax="82.400000">32G</word>
+    <word xMin="196.800000" yMin="78.300000" xMax="200.700000" yMax="82.400000">bit</word>
+    <word xMin="214.100000" yMin="78.300000" xMax="231.000000" yMax="82.400000">1024M×32</word>
+    <word xMin="236.800000" yMin="78.300000" xMax="268.800000" yMax="82.400000">LPDDR4/LPDDR4X</word>
+    <word xMin="274.200000" yMin="78.300000" xMax="285.600000" yMax="82.400000">200ball</word>
+    <word xMin="383.700000" yMin="78.300000" xMax="390.000000" yMax="82.400000">T/A</word>
+    <word xMin="40.000000" yMin="78.300000" xMax="62.000000" yMax="82.400000">ExampleMicro</word>
+  </page>
+</doc>
+</body></html>

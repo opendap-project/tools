@@ -1,0 +1,24 @@
+{
+ "SearchResults": {
+  "NumberOfResult": 1,
+  "Parts": [
+   {
+    "ManufacturerPartNumber": "XM4X1G32-046 AAT:C",
+    "Manufacturer": "Example",
+    "MouserPartNumber": "340-1",
+    "Availability": "1000 In Stock",
+    "AvailabilityInStock": "1000",
+    "LifecycleStatus": null,
+    "LeadTime": "182 Days",
+    "ProductDetailUrl": "https://www.mouser.com/ProductDetail/340-1",
+    "PriceBreaks": [
+     {
+      "Quantity": 1,
+      "Price": "$120.00",
+      "Currency": "USD"
+     }
+    ]
+   }
+  ]
+ }
+}

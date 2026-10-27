@@ -1,0 +1,19 @@
+schema = "opendap.requirements/v1"
+
+[[block]]
+markdown = "# Hardware toolkit requirements\n\nRequirements TK-001, TK-009, TK-010 and TK-011 in [cli](https://github.com/opendap-project/cli/blob/main/docs/requirements/README.md) apply to every toolkit repository.\n"
+
+[[block]]
+[[block.requirement]]
+id = "TK-014"
+text = "Product-side 3D animations and interactive previews that do not need Blender may be standalone HTML documents using libraries such as three.js or anime.js."
+priority = "should"
+status = "confirmed"
+[[block.requirement]]
+id = "TK-015"
+text = "Product presentation videos may be produced from the standalone HTML previews: captured frame by frame with Playwright and assembled with ffmpeg."
+priority = "should"
+status = "confirmed"
+
+[[block]]
+markdown = "\n- Video capture must be deterministic: the page's clock is stepped frame by frame (three.js clock, anime.js `seek`, a controlled `requestAnimationFrame`) instead of recording in real time, so every frame is exact regardless of host speed.\n"
