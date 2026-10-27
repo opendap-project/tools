@@ -1,0 +1,10 @@
+# The tools this root adds to the maintainers' umbrella command (command standard §3).
+schema = "opendap.tools/v1"
+front = "odw"
+
+[[tool]]
+name = "dru"
+summary = "Compose a KiCad project's .kicad_dru from its fab and product rule sources, or check it"
+entry = "bin/odapkit-dru"
+audience = "maintainer"
+stability = "preview"

@@ -26,3 +26,9 @@ repos:
         entry: hooks/no-stray-files.sh
         language: script
         files: \.(pdf|html?)$
+      - id: hooks-tests
+        name: hook and tool tests (python3 -m unittest discover tests)
+        entry: python3 -m unittest discover tests
+        language: system
+        pass_filenames: false
+        files: ^(bin|hooks|lib|tests)/|^tools\.toml$|^\.pre-commit-hooks\.yaml$

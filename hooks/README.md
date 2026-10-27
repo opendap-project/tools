@@ -36,13 +36,17 @@ sources = [
 ]
 ```
 
-Paths are relative to the repository root. The composed file has `(version 1)` once, then each source's rules, each block preceded by a comment with the source path and its sha256; two rules with the same name are an error. `hooks/kicad-dru.py compose MANIFEST` writes it (maintainers run it as `odapkit dru compose`, from toolkit-hardware), and `hooks/kicad-dru.py check [--json] [MANIFEST…]` verifies it; with no manifest, `check` covers every `*.dru.toml` in the repository. Python 3.11 or later, standard library only.
+Paths are relative to the repository root. The composed file has `(version 1)` once, then each source's rules, each block preceded by a comment with the source path and its sha256; two rules with the same name are an error. `hooks/kicad-dru.py compose MANIFEST` writes it and `hooks/kicad-dru.py check [--json] [MANIFEST…]` verifies it; with no manifest, `check` covers every `*.dru.toml` in the repository. Python 3.11 or later, standard library only.
+
+The same engine is the maintainers' `odapkit dru compose|check` (`bin/odapkit-dru`, declared in `tools.toml`), so the tool and the `kicad-dru-composed` hook never disagree; one test suite covers both.
 
 ## Layout
 
 - `.pre-commit-hooks.yaml` — hook definitions
-- `hooks/` — the hook scripts
-- `tests/` — tests and their fixtures: `python3 -m unittest discover tests`
+- `hooks/` — the hook scripts and their engines
+- `bin/` — the tools this repository adds to `odapkit` (`tools.toml`), thin wrappers over the engines in `hooks/`
+- `lib/cli.sh` — the command-line helpers of the shell wrappers (toolkit-host's, with a minimal fallback)
+- `tests/` — tests and their fixtures: `python3 -m unittest discover tests` (pre-commit runs them)
 
 ## License
 

@@ -1,9 +1,11 @@
-"""Tests for hooks/kicad-dru.py on the fixture in tests/fixtures/dru.
+"""Tests for hooks/kicad-dru.py on the fixture in tests/fixtures/dru, and for bin/odapkit-dru, the same engine
+reached as `odapkit dru` (the one DRU test suite: the hook and the tool never disagree).
 
 Run from the repository root: python3 -m unittest discover tests
 """
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -12,10 +14,21 @@ import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TOOL = os.path.join(HERE, "..", "hooks", "kicad-dru.py")
+WRAPPER = os.path.join(HERE, "..", "bin", "odapkit-dru")
+TOOLS_TOML = os.path.join(HERE, "..", "tools.toml")
 FIXTURE = os.path.join(HERE, "fixtures", "dru")
 MANIFEST = "hardware/demo.dru.toml"
 TARGET = "hardware/demo.kicad_dru"
 PRODUCT = "hardware/rules/product.kicad_dru"
+# Under a pre-commit hook git exports GIT_DIR, GIT_INDEX_FILE and others; the tests' own repositories must never
+# see them, or their git commands would act on the repository being committed.
+for _k in [k for k in os.environ if k.startswith("GIT_")]:
+    del os.environ[_k]
+
+
+def read(path):
+    with open(path) as f:
+        return f.read()
 
 
 class KicadDru(unittest.TestCase):
@@ -192,6 +205,58 @@ class KicadDru(unittest.TestCase):
 
     def test_usage_error(self):
         self.assertEqual(self.run_tool("frobnicate").returncode, 2)
+
+
+class OdapkitDru(unittest.TestCase):
+    """bin/odapkit-dru: `odapkit dru` runs hooks/kicad-dru.py, the kicad-dru-composed hook's engine."""
+
+    FAB = '(version 1)\n(rule "Fab: track width"\n\t(constraint track_width (min 0.1mm))\n)\n'
+    PRODUCT = '(version 1)\n(rule "Product: track width"\n\t(constraint track_width (min 0.2mm))\n)\n'
+    MANIFEST = 'version = 1\nsources = ["hardware/lib/opendap/fab.kicad_dru", "hardware/product.kicad_dru"]\n'
+
+    def setUp(self):
+        self.repo = tempfile.mkdtemp()
+        subprocess.run(["git", "init", "-q", self.repo], check=True)
+        for rel, text in (("hardware/lib/opendap/fab.kicad_dru", self.FAB), ("hardware/product.kicad_dru", self.PRODUCT),
+                          ("hardware/demo.dru.toml", self.MANIFEST)):
+            os.makedirs(os.path.dirname(os.path.join(self.repo, rel)), exist_ok=True)
+            with open(os.path.join(self.repo, rel), "w") as f:
+                f.write(text)
+
+    def tearDown(self):
+        shutil.rmtree(self.repo)
+
+    def run_tool(self, *args):
+        return subprocess.run([WRAPPER, *args], cwd=self.repo, capture_output=True, text=True)
+
+    def test_compose_then_check(self):
+        self.assertEqual(self.run_tool("check").returncode, 1)
+        r = self.run_tool("compose", "hardware/demo.dru.toml")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        with open(os.path.join(self.repo, "hardware", "demo.kicad_dru")) as f:
+            text = f.read()
+        self.assertEqual(text.count("(version 1)"), 1)
+        self.assertIn("# Composed by `odapkit dru` from hardware/demo.dru.toml.", text)
+        self.assertIn("# Source: hardware/lib/opendap/fab.kicad_dru", text)
+        self.assertLess(text.index("Fab: track width"), text.index("Product: track width"))
+        self.assertEqual(self.run_tool("check").returncode, 0)
+
+    def test_same_output_as_the_hook(self):
+        a = self.run_tool("compose", "--stdout", "hardware/demo.dru.toml")
+        b = subprocess.run([sys.executable, TOOL, "compose", "--stdout", "hardware/demo.dru.toml"], cwd=self.repo,
+                           capture_output=True, text=True)
+        self.assertEqual((a.returncode, a.stdout), (b.returncode, b.stdout))
+
+    def test_help_and_usage(self):
+        r = self.run_tool("--help")
+        self.assertEqual(r.returncode, 0)
+        summary = re.search(r'name = "dru"\nsummary = "([^"]+)"', read(TOOLS_TOML)).group(1)
+        self.assertEqual(r.stdout.splitlines()[0], f"odapkit dru: {summary}")
+        self.assertEqual(self.run_tool().returncode, 2)
+
+    def test_declared_in_tools_toml(self):
+        names = set(re.findall(r'^name = "([^"]+)"', read(TOOLS_TOML), re.M))
+        self.assertEqual({f.removeprefix("odapkit-") for f in os.listdir(os.path.dirname(WRAPPER))}, names)
 
 
 if __name__ == "__main__":
