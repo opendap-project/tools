@@ -107,6 +107,29 @@ def test_another_number_or_a_file_outside_requirements_adr_specs_does_not_count(
     assert row["state"] == "missing" and row["citations"] == []
 
 
+def test_a_repository_without_docs_records_in_its_readme_or_contributing(ws):
+    write_rfc(ws, "0001", rfc("0001", "alpha, beta"))
+    cite(ws, "alpha", "README.md", "Follows RFC 0001.\n")
+    cite(ws, "beta", "CONTRIBUTING.md", "See https://github.com/opendap-project/rfcs/blob/main/text/0001-thing.md\n")
+    rows = {r["repository"]: (r["state"], r["citations"]) for r in rfcstatus.status(ws)["rfcs"][0]["rows"]}
+    assert rows == {"alpha": ("recorded", ["README.md"]), "beta": ("recorded", ["CONTRIBUTING.md"])}
+
+
+def test_a_repository_without_docs_and_no_citation_is_missing(ws):
+    write_rfc(ws, "0001", rfc("0001", "alpha"))
+    cite(ws, "alpha", "README.md", "Follows RFC 0010.\n")
+    cite(ws, "alpha", "notes.md", "RFC 0001\n")  # only README.md and CONTRIBUTING.md count
+    row = rfcstatus.status(ws)["rfcs"][0]["rows"][0]
+    assert row["state"] == "missing" and row["citations"] == []
+
+
+def test_the_workspace_root_without_docs_records_in_its_contributing(ws):
+    write_rfc(ws, "0001", rfc("0001", "workspace"))
+    cite(ws, "..", "CONTRIBUTING.md", "Cross-repository changes follow RFC 0001.\n")
+    row = rfcstatus.status(ws)["rfcs"][0]["rows"][0]
+    assert (row["state"], row["citations"]) == ("recorded", ["CONTRIBUTING.md"])
+
+
 def test_citation_paths_are_reported(ws):
     write_rfc(ws, "0001", rfc("0001", "alpha"))
     cite(ws, "alpha", "docs/adr/0002-y.md", "RFC-0001\n")

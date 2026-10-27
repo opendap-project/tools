@@ -4,7 +4,8 @@ An RFC's `- **Affected repositories:**` header item (inline, or a bullet list un
 separated by commas, semicolons or "and"; a note in parentheses after a name is ignored, except `(formerly X)`,
 `(from X)` and `(becomes Y)`, which declare a rename that every RFC's list may use. A name resolves through the
 workspace's repos.tsv files (`workspace` is the workspace root). A repository recorded the outcome when a Markdown
-or TOML file under its `docs/requirements/`, `docs/adr/` or `docs/specs/` cites the RFC by number (`RFC 0004`) or by its GitHub URL.
+or TOML file under its `docs/requirements/`, `docs/adr/` or `docs/specs/` cites the RFC by number (`RFC 0004`) or by its GitHub URL;
+a repository without docs/ (the workspace root, rfcs) records it in its README.md or CONTRIBUTING.md.
 Spec: docs/specs/docs-gates.md.
 """
 import dataclasses
@@ -19,6 +20,7 @@ RENAME = re.compile(r"^(formerly|from|becomes)\s+`?([A-Za-z0-9._-]+)`?")
 NUMBER = re.compile(r"(?:^|/)(\d{4})-[^/]*\.md$")
 FAILING_STATUSES = ("accepted", "implemented")
 RECORD_DIRS = ("requirements", "adr", "specs")
+ROOT_RECORDS = ("README.md", "CONTRIBUTING.md")  # where a repository without docs/ records
 
 
 @dataclasses.dataclass
@@ -122,6 +124,8 @@ def _cites(number):
 
 
 def _citations(repo_dir, rx):
+    if not (repo_dir / "docs").is_dir():
+        return [n for n in ROOT_RECORDS if (repo_dir / n).is_file() and rx.search((repo_dir / n).read_text(errors="replace"))]
     found = []
     for kind in RECORD_DIRS:
         for f in sorted((repo_dir / "docs" / kind).rglob("*")):
