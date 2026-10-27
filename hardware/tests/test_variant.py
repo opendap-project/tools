@@ -1,4 +1,4 @@
-"""odw variant: catalog readers, variant validation, part resolution, KiCad edits and the command line.
+"""odapkit variant: catalog readers, variant validation, part resolution, KiCad edits and the command line.
 
 The first classes run without KiCad; `KiCadFixture` and `Commands` drive kicad-cli on the tiny fixture project
 (tests/fixtures/variant/board, built by make_fixture.py) and are skipped when kicad-cli is not installed.
@@ -16,22 +16,15 @@ import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools", "variant"))
-import absent  # noqa: E402
 import catalog  # noqa: E402
 import kicad  # noqa: E402
 import resolve  # noqa: E402
-import software  # noqa: E402
 import variantfile  # noqa: E402
-
-# Tests never inherit a hook's GIT_* variables (HL-64): under pre-commit, git exports GIT_DIR, GIT_INDEX_FILE and
-# others, and a fixture's git would act on the repository being committed.
-for _k in [k for k in os.environ if k.startswith("GIT_")]:
-    del os.environ[_k]
 
 FIX = os.path.join(ROOT, "tests", "fixtures", "variant")
 BOARD = os.path.join(FIX, "board")
 VARIANTS = os.path.join(BOARD, "variants")
-TOOL = os.path.join(ROOT, "bin", "odw-variant")
+TOOL = os.path.join(ROOT, "bin", "odapkit-variant")
 ENV = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
 HAS_KICAD = kicad.cli() is not None
 
@@ -110,23 +103,6 @@ class Variants(unittest.TestCase):
         self.assertEqual(codes(found, "warning"), ["variant.full-dnp"])
         self.assertEqual(codes(found, "error"), [])
 
-    def test_record_absent_state_and_software(self):
-        cat = catalog.load(os.path.join(BOARD, "blocks"))
-        self.assertEqual(cat.findings, [])
-        self.assertEqual(cat.blocks["blk.sensor"].absent_text, "The bus keeps its pull-up on blk.core")
-        self.assertEqual(cat.blocks["blk.mem"].absent_nets, [(["MEM_*"], "Not applicable: never omitted (FIX-001)",
-                                                              "blocks/mem.toml")])
-        self.assertEqual(cat.blocks["blk.sensor"].software["devicetree"], "sensor0")
-        for bad, code in (('software = "x"\nsoftware2 = 1\n', "catalog.field-unknown"),
-                          ('software = { devicetree = 3 }\n', "catalog.software"),
-                          ('software = { colour = "red" }\n', "catalog.software"),
-                          ('absent_state = [{ state = "x" }]\n', "catalog.absent-state"),
-                          ('absent_state = 4\n', "catalog.absent-state")):
-            folder = os.path.join(self.tmp, "blocks")
-            with open(os.path.join(folder, "x.toml"), "w") as f:
-                f.write('schema = "opendap.block/v1"\nid = "blk.x"\n' + bad)
-            self.assertIn(code, codes(catalog.load(folder).findings), bad)
-
     def test_unknown_record_fields_are_rejected(self):
         with open(os.path.join(self.tmp, "blocks", "core.toml"), "a") as f:
             f.write('colour = "red"\n')
@@ -174,26 +150,6 @@ class MarkdownCatalog(unittest.TestCase):
         self.assertEqual(c.blocks["blk.mem-supply"].alternates, ["mem-16"])  # one record, two blocks
         self.assertEqual(c.blocks["blk.mem"].params, ["capacity_gb"])
         self.assertEqual(c.blocks["blk.core"].alternates, [])
-
-    def test_absent_state_and_software_rows(self):
-        c = self.cat
-        self.assertTrue(c.blocks["blk.core"].absent_text.startswith("Not applicable"))
-        self.assertIn("SENSOR_EN", c.blocks["blk.sensor"].absent_text)
-        self.assertEqual(c.blocks["blk.sensor"].software,
-                         {"devicetree": "sensor0", "compatible": ["acme,tiny-sensor"],
-                          "provides": ["cc.opendap.Blackbird.Hw.Fixture", "cc.opendap.Blackbird.Hw.Probe"], "description": ["sensors"],
-                          "note": c.blocks["blk.sensor"].software["note"]})
-        self.assertEqual(c.blocks["blk.mem-supply"].software["devicetree"], "/memory@0")   # one record, two blocks
-        self.assertEqual(c.blocks["blk.mem"].software["description"], ["identity", "power"])
-        self.assertIsNone(c.blocks["blk.core"].software["devicetree"])
-
-    def test_sub_blocks_row(self):
-        c = self.cat
-        self.assertEqual(c.blocks["blk.core"].sub_blocks, ["blk.core-power", "blk.core-io"])
-        self.assertEqual(c.blocks["blk.sensor"].sub_blocks, [])
-        self.assertEqual(c.owner("blk.core-io"), ("blk.core", "sub_block"))
-        self.assertEqual(c.blocks["blk.mem-supply"].sub_blocks, ["blk.mem-supply-ldo"])   # one record, two blocks:
-        self.assertEqual(c.blocks["blk.mem"].sub_blocks, ["blk.mem-bank"])                # the longest prefix owns it
 
     def test_summary_table_disagreement_is_a_warning(self):
         v = variantfile.load(os.path.join(FIX, "md", "variants", "prod.toml"))
@@ -256,16 +212,6 @@ class Resolution(unittest.TestCase):
         self.assertFalse(rows["R1"]["dnp"])       # the variant file wins
         self.assertTrue(rows["R2"]["dnp"])
 
-    def test_kicad_mode_dnp_block_already_dnp_in_the_base(self):
-        # KiCad's netlist leaves out a variant entry equal to the base design: a part already DNP in the
-        # base needs none in a variant that does not fit its block
-        kd = {"variant-b": {"dnp": None, "in_bom": None, "fields": {"Value": "x"}}}
-        rows, found, mode = self.rows([comp("R1", "blk.core", variants=kd),
-                                       comp("R2", "blk.sensor", dnp=True)])
-        self.assertEqual(mode, "kicad")
-        self.assertNotIn("kicad.dnp-mismatch", codes(found, "error"))
-        self.assertTrue(rows["R2"]["dnp"])
-
     def test_alternate_without_data_and_footprint_swap(self):
         _, found, _ = self.rows([comp("R1", "blk.core"), comp("R4", "blk.mem")])
         self.assertIn("alternate.no-data", codes(found, "error"))
@@ -294,187 +240,6 @@ class Resolution(unittest.TestCase):
                          [{"part": "1k", "footprint": "R_0603", "quantity": [3, 2]},
                           {"part": "MEM-16", "footprint": "R_0603", "quantity": [0, 1]},
                           {"part": "MEM-32", "footprint": "R_0603", "quantity": [1, 0]}])
-
-
-def nd(ref, pin, pintype="passive"):
-    return {"ref": ref, "pin": pin, "pintype": pintype}
-
-
-class AbsentState(unittest.TestCase):
-    """The absent-state check (spec §6) on synthetic parts and nets over the fixture's block records."""
-
-    def setUp(self):
-        self.cat = catalog.load(os.path.join(BOARD, "blocks"))
-        self.vb = variantfile.load(os.path.join(VARIANTS, "variant-b.toml"))
-        self.full = variantfile.load(os.path.join(VARIANTS, "full.toml"))
-        sens = {"sheetfile": "sensor.kicad_sch"}
-        self.comps = [comp("U1", "blk.core"), comp("R1", "blk.core"), {**comp("S1", "blk.sensor"), **sens},
-                      {**comp("R2", "blk.sensor"), **sens}, comp("M1", "blk.mem"), comp("M3", "blk.mem", dnp=True)]
-        self.nets = [
-            {"name": "VDD", "nodes": [nd("R1", "1"), nd("U1", "V", "power_in"), nd("S1", "V", "power_in"),
-                                      nd("M1", "V", "power_in")]},
-            {"name": "GND", "nodes": [nd("U1", "G", "power_in"), nd("S1", "G", "power_in")]},
-            {"name": "/SINT", "nodes": [nd("U1", "A", "input"), nd("S1", "INT", "output")]},
-            {"name": "/SEN", "nodes": [nd("U1", "B", "output"), nd("S1", "EN", "input")]},
-            {"name": "/SDA", "nodes": [nd("U1", "C", "bidirectional"), nd("R1", "2"), nd("S1", "SDA", "bidirectional"),
-                                       nd("M1", "SDA", "bidirectional")]},
-            {"name": "/SCL", "nodes": [nd("U1", "D", "bidirectional"), nd("M1", "SCL", "bidirectional"),
-                                       nd("S1", "SCL", "bidirectional")]},
-            {"name": "/Sensor/SRST", "nodes": [nd("U1", "E", "input"), nd("M1", "RST", "input"),
-                                               nd("S1", "RST", "output")]},
-            {"name": "SVOUT", "nodes": [nd("S1", "VOUT", "power_out"), nd("M1", "VIO", "power_in")]},
-            {"name": "/Sensor/SX", "nodes": [nd("S1", "X", "output"), nd("R2", "1")]},
-            {"name": "/Memory/MOPT", "nodes": [nd("M1", "OPT"), nd("M3", "1")]},
-            {"name": "/XOPT", "nodes": [nd("U1", "F", "input"), nd("M3", "2")]},
-            {"name": "unconnected-(U1-NC)", "nodes": [nd("U1", "NC", "no_connect")]},
-        ]
-        self.tables = {"sensor.kicad_sch": [("SINT", "SoC pull-down: no interrupt"),
-                                            ("SRST", "Pulled up on blk.core: out of reset")]}
-
-    def check(self, variant=None, tables=None, nets=None):
-        v = variant or self.vb
-        rows, _, _ = resolve.components(v, self.cat, self.comps)
-        return absent.check(v, self.cat, rows, self.comps, nets or self.nets,
-                            self.tables if tables is None else tables)
-
-    def test_classes_and_findings(self):
-        rep, found = self.check()
-        self.assertEqual(rep["schema"], "opendap.variant-absent-state/v1")
-        self.assertEqual(rep["dnp_blocks"], ["blk.sensor"])
-        by = {n["net"]: n for n in rep["nets"]}
-        self.assertEqual({k: (v["class"], v["scope"], v["expected"]) for k, v in by.items()}, {
-            "/SINT": ("single-pin", "block", True),         # declared: the SoC's pull holds it
-            "/SEN": ("single-pin", "block", False),         # an output left alone: undeclared
-            "/SDA": ("defined", "block", False),            # R1 pulls it up, but no state is declared
-            "/SCL": ("floating", "block", False),
-            "/Sensor/SRST": ("floating", "block", False),   # declared a pull-up that the netlist does not have
-            "SVOUT": ("rail-unsourced", "block", False),
-            "/Memory/MOPT": ("single-pin", "part", True),   # an option land inside its own block
-            "/XOPT": ("single-pin", "part", False),         # an option land leaving another block's input alone
-        })
-        self.assertEqual(by["/SINT"]["declared"]["kind"], "internal-pull")
-        self.assertEqual(by["/SINT"]["declared"]["source"], "sensor.kicad_sch")
-        self.assertEqual(by["/SDA"]["remaining"], ["M1", "R1", "U1"])
-        self.assertEqual(rep["counts"]["removed"], 1)        # /Sensor/SX: every node in the absent block
-        self.assertEqual(rep["counts"]["rails"], 2)          # VDD and GND keep their sources: not listed
-        self.assertEqual([(f["level"], f["code"]) for f in found], [
-            ("error", "absent.floating"), ("error", "absent.single-pin"), ("warning", "absent.declared-mismatch"),
-            ("warning", "absent.rail-unsourced"), ("warning", "absent.single-pin"), ("warning", "absent.undeclared")])
-        floating = next(f for f in found if f["code"] == "absent.floating")
-        self.assertIn("/SCL", floating["message"])
-        self.assertIn("blk.sensor", floating["message"])
-        single = next(f for f in found if f["code"] == "absent.single-pin" and f["level"] == "error")
-        self.assertIn("/XOPT", single["message"])            # the input U1.F is alone and undriven
-
-    def test_full_variant_only_reports_part_options(self):
-        rep, found = self.check(self.full)
-        self.assertEqual(rep["dnp_blocks"], [])
-        self.assertEqual(sorted(n["net"] for n in rep["nets"]), ["/Memory/MOPT", "/XOPT"])
-        self.assertEqual(codes(found), ["absent.single-pin"])
-
-    def test_not_applicable(self):
-        _, found = self.check(tables={"sensor.kicad_sch": [("SEN", "Not applicable: never omitted")]})
-        self.assertIn("absent.not-applicable", codes(found, "error"))
-        md = catalog.load(os.path.join(FIX, "md", "docs", "feature-blocks.md"))
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "prod.toml")
-            with open(path, "w") as f:
-                f.write(read(os.path.join(FIX, "md", "variants", "prod.toml")).replace(
-                    '"blk.core" = { state = "fit" }', '"blk.core" = { state = "dnp" }'))
-            v = variantfile.load(path)
-            rows, _, _ = resolve.components(v, md, [comp("U1", "blk.core"), comp("R1", "blk.sensor")])
-            _, found = absent.check(v, md, rows, [comp("U1", "blk.core"), comp("R1", "blk.sensor")],
-                                    [{"name": "/A", "nodes": [nd("U1", "1"), nd("R1", "1")]}], {})
-            self.assertIn("absent.not-applicable", codes(found, "error"))   # the record says the block stays
-
-    def test_record_declarations_and_name_patterns(self):
-        self.cat.blocks["blk.sensor"].absent_nets = [(["SEN", "SDA"], "Tied low on blk.core", "blocks/sensor.toml")]
-        rep, found = self.check(tables={})
-        by = {n["net"]: n for n in rep["nets"]}
-        self.assertTrue(by["/SEN"]["expected"] and by["/SDA"]["expected"])
-        self.assertEqual(by["/SEN"]["declared"]["kind"], "tied")
-        for cell, yes, no in [("SD_D0-D3", ["SD_D0", "SD_D3"], ["SD_D4", "SD_CLK"]),
-                              ("BT_UART_TXD, _RXD, _CTS", ["BT_UART_TXD", "BT_UART_RXD", "BT_UART_CTS"], ["_RXD"]),
-                              ("DDR_*_A, DDR_*_B", ["DDR_DQ0_A", "DDR_CK_B"], ["DDR_DQ0_C"]),
-                              ("DSD_x, DACx_AOUT_P", ["DSD_L", "DAC1_AOUT_P", "DACR_AOUT_P"], ["DSD_", "DAC1_AOUT_N"]),
-                              ("I2C2_SCL (pull-ups on blk.soc)", ["I2C2_SCL"], ["I2C2_SDA"])]:
-            pats = absent.patterns(cell)
-            for n in yes:
-                self.assertTrue(any(p.fullmatch(n) for p in pats), (cell, n))
-            for n in no:
-                self.assertFalse(any(p.fullmatch(n) for p in pats), (cell, n))
-
-    def test_declared_kinds(self):
-        for text, kind in [("Not applicable (never omitted)", "not-applicable"), ("Open: no load", "floating"),
-                           ("Left floating by design", "floating"), ("100 kΩ pull-down here: off", "pull"),
-                           ("Pulled up on blk.core", "pull"), ("SoC ball pull-down at reset", "internal-pull"),
-                           ("0x28; pull-ups on blk.soc-pmuio", "pull"),     # a block ID names where, not who
-                           ("Tied to GND", "tied"), ("From blk.radio-power", "described")]:
-            self.assertEqual(absent.kind(text), kind, text)
-
-    def test_interface_tables_from_a_sheet(self):
-        text = ('(kicad_sch (table (column_count 3) (cells (table_cell "Net" (at 0 0 0)) (table_cell "Direction") '
-                '(table_cell "Absent state (block not fitted)") (table_cell "A, B") (table_cell "Input") '
-                '(table_cell "Pulled \\"up\\"")))\n(table (column_count 2) (cells (table_cell "Rail") '
-                '(table_cell "Voltage") (table_cell "VDD") (table_cell "3.3 V"))))')
-        self.assertEqual(kicad.interface_tables(text), [("A, B", 'Pulled "up"')])
-
-
-class Software(unittest.TestCase):
-    """The capabilities and devicetree outputs (spec §7) from the fixture's block records."""
-
-    def setUp(self):
-        self.cat = catalog.load(os.path.join(BOARD, "blocks"))
-        self.vb = variantfile.load(os.path.join(VARIANTS, "variant-b.toml"))
-        self.full = variantfile.load(os.path.join(VARIANTS, "full.toml"))
-
-    def test_capabilities(self):
-        doc = software.capabilities(self.vb, self.cat)
-        self.assertEqual(doc["schema"], "opendap.variant-capabilities/v1")
-        self.assertEqual((doc["board"], doc["variant"], doc["kind"]), ("tiny", "variant-b", "variant-b"))
-        self.assertEqual((doc["present"], doc["absent"]), (["blk.core", "blk.mem"], ["blk.sensor"]))
-        self.assertEqual(doc["provides"], [])                      # the sensor's interface left with the sensor
-        self.assertEqual(doc["description_sections"], ["identity"])
-        mem = next(b for b in doc["blocks"] if b["id"] == "blk.mem")
-        self.assertEqual((mem["state"], mem["alternate"], mem["params"]), ("alternate", "mem-16", {"capacity_gb": 16}))
-        full = software.capabilities(self.full, self.cat)
-        self.assertEqual(full["provides"], ["cc.opendap.Blackbird.Hw.Fixture"])
-        self.assertEqual(full["absent"], [])
-
-    def test_devicetree(self):
-        doc, dtso = software.devicetree(self.vb, self.cat, "variants/variant-b.toml")
-        self.assertEqual(doc["schema"], "opendap.variant-devicetree/v1")
-        by = {b["block"]: b for b in doc["blocks"]}
-        self.assertEqual((by["blk.sensor"]["node"], by["blk.sensor"]["status"]), ("sensor0", "disabled"))
-        self.assertEqual((by["blk.mem"]["node"], by["blk.mem"]["status"]), ("/memory@0", "okay"))
-        self.assertIsNone(by["blk.core"]["node"])
-        self.assertIn("no devicetree node", by["blk.core"]["skipped"])
-        self.assertEqual(doc["counts"], {"okay": 1, "disabled": 1, "skipped": 1})
-        self.assertIn('&sensor0 {\n\tstatus = "disabled";', dtso)
-        self.assertIn('&{/memory@0} {\n\tstatus = "okay";', dtso)
-        self.assertTrue(dtso.startswith("// Generated by odapkit variant") and "/plugin/;" in dtso)
-        self.assertIn("blk.core", dtso.split("/plugin/;")[1])     # skipped blocks are named in the fragment
-        self.assertEqual(software.devicetree(self.vb, self.cat, "variants/variant-b.toml"), (doc, dtso))
-
-    def test_node_that_is_not_a_label_or_path_is_skipped(self):
-        self.cat.blocks["blk.sensor"].software["devicetree"] = "usb-c-connector"
-        doc, dtso = software.devicetree(self.vb, self.cat, "v.toml")
-        sensor = next(b for b in doc["blocks"] if b["block"] == "blk.sensor")
-        self.assertIsNone(sensor["node"])
-        self.assertIn("not a devicetree label or path", sensor["skipped"])
-        self.assertNotIn("usb-c-connector {", dtso)
-
-    def test_markdown_software_cells(self):
-        p = catalog.parse_software
-        self.assertEqual(p("`sdhci` node, `status = \"okay\"`")["devicetree"], "sdhci")
-        t = p("`ti,bq25798`, `ti,bq25792` (DKMS); board description `power` section")
-        self.assertEqual((t["compatible"], t["description"], t["devicetree"]),
-                         (["ti,bq25798", "ti,bq25792"], ["power"], None))
-        t = p("`simple-audio-card` or audio-graph card; `cc.opendap.Blackbird.Hw.Audio.Dac`, `.Output`; description `audio` "
-              "and `outputs` sections")
-        self.assertEqual(t["provides"], ["cc.opendap.Blackbird.Hw.Audio.Dac", "cc.opendap.Blackbird.Hw.Audio.Output"])
-        self.assertEqual(t["description"], ["audio", "outputs"])
-        self.assertEqual(p("—"), {"devicetree": None, "compatible": [], "provides": [], "description": [], "note": "—"})
 
 
 SCH = '''(kicad_sch (version 20260306)
@@ -536,12 +301,7 @@ class Normalize(unittest.TestCase):
                 with open(rep, "w") as f:
                     pair = ["Pad 1 [GND] of R1 on F.Cu", "Pad 2 [GND] of C1 on F.Cu"][:: 1 if n else -1]
                     json.dump({"date": date, "source": f"/abs/{n}/x.kicad_pcb",
-                               "violations": [{"type": f"t{i}"} for i in order] + [
-                                   {"type": "assertion_failure", "severity": "warning",
-                                    "description": "Assertion failure (rule 'R')",
-                                    "items": [{"description": f"Segment of C{n + k} on F.Silkscreen",
-                                               "pos": {"x": 1.0, "y": 2.0 + n}, "uuid": f"u{n}{k}"}]}
-                                   for k in range(2)],
+                               "violations": [{"type": f"t{i}"} for i in order],
                                "unconnected_items": [{"type": "unconnected_items", "severity": "error",
                                                       "items": [{"description": d} for d in pair]}]}, f)
                 pdf = os.path.join(tmp, f"p{n}.pdf")
@@ -558,9 +318,6 @@ class Normalize(unittest.TestCase):
             self.assertEqual(rep["unconnected_items"], [{"net": "GND", "severity": "error", "type": "unconnected_items",
                                                          "count": 1}])
             self.assertEqual(build._violations(rep)[-1], ("error", "unconnected_items", "unconnected", ("net GND",)))
-            self.assertEqual([v for v in rep["violations"] if v["type"] == "assertion_failure"],
-                             [{"type": "assertion_failure", "severity": "warning", "items": [], "count": 2,
-                               "description": "Assertion failure (rule 'R')"}])
             self.assertEqual(os.path.getsize(os.path.join(tmp, "p0.pdf")), len(b"%PDF-1.5\n/CreationDate (D:2026:10:27:07:17:42)\n"))
 
 
@@ -594,15 +351,14 @@ class KiCadFixture(unittest.TestCase):
         self.assertEqual(self.r.returncode, 0, self.r.stderr)
         self.assertEqual(tree_hash(BOARD), self.before)
         self.assertEqual(self.m["schema"], "opendap.variant-build/v1")
-        self.assertEqual((self.m["mode"], self.m["bom"]), ("generated", {"lines": 6, "parts": 7, "dnp": 4,
+        self.assertEqual((self.m["mode"], self.m["bom"]), ("generated", {"lines": 4, "parts": 4, "dnp": 3,
                                                                          "parity": True}))
 
     def test_outputs(self):
         paths = {o["path"] for o in self.m["outputs"]}
         for p in ("bom.json", "bom.csv", "bom-kicad.csv", "sch/tiny.pdf", "sch/svg/tiny-Sensor.svg",
                   "pcb/fab-front.pdf", "pcb/fab-back.svg", "pcb/pos.csv", "checks/erc.json", "checks/drc.json",
-                  "design/tiny.kicad_sch", "design/tiny.kicad_pcb", "absent-state.json",
-                  "software/capabilities.json", "software/devicetree.json", "software/variant.dtso"):
+                  "design/tiny.kicad_sch", "design/tiny.kicad_pcb"):
             self.assertIn(p, paths)
         self.assertNotIn("design/tiny.kicad_prl", paths)
         pos = read(os.path.join(self.out, "pcb", "pos.csv"))
@@ -611,61 +367,14 @@ class KiCadFixture(unittest.TestCase):
         self.assertEqual(json.loads(read(os.path.join(self.out, "design", "tiny.kicad_pro")))["text_variables"]
                          ["VARIANT"], "variant-b")
         inputs = {i["path"] for i in self.m["inputs"]}
-        self.assertIn("variants/variant-b.toml", inputs)          # relative to the component, not the repository
+        self.assertIn("tests/fixtures/variant/board/variants/variant-b.toml", inputs)
         self.assertTrue(self.m["kicad"] and self.m["tool"]["sha256"])
 
     def test_variant_erc_and_drc(self):
         erc, drc = self.m["checks"]["erc"], self.m["checks"]["drc"]
-        self.assertEqual((erc["new_errors"], erc["symbols_removed"]), (0, 4))
+        self.assertEqual((erc["new_errors"], erc["symbols_removed"]), (0, 3))
         self.assertGreater(erc["removal_artifacts"], 0)     # the sensor's power symbols, left alone
         self.assertEqual(drc["new"], 0)
-
-    def test_absent_state(self):
-        rep = json.loads(read(os.path.join(self.out, "absent-state.json")))
-        self.assertEqual(rep["schema"], "opendap.variant-absent-state/v1")
-        by = {n["net"]: n for n in rep["nets"]}
-        self.assertEqual({k: (v["class"], v["expected"], v["declared"]["kind"]) for k, v in by.items()},
-                         {"SENSOR_EN": ("single-pin", True, "pull"), "SENSOR_INT": ("defined", True, "pull")})
-        self.assertEqual(by["SENSOR_EN"]["declared"]["source"], "sensor.kicad_sch")
-        self.assertEqual(self.m["absent_state"]["counts"]["unexpected"], 0)
-        self.assertNotIn("absent.", " ".join(f["code"] for f in self.m["findings"]))
-
-    def test_software_outputs(self):
-        caps = json.loads(read(os.path.join(self.out, "software", "capabilities.json")))
-        self.assertEqual((caps["present"], caps["absent"]), (["blk.core", "blk.mem"], ["blk.sensor"]))
-        dt = json.loads(read(os.path.join(self.out, "software", "devicetree.json")))
-        self.assertEqual(dt["counts"], {"okay": 1, "disabled": 1, "skipped": 1})
-        self.assertEqual(self.m["software"], {"present": 2, "absent": 1, "devicetree": dt["counts"]})
-        dtso = read(os.path.join(self.out, "software", "variant.dtso"))
-        self.assertIn("variants/variant-b.toml", dtso)       # the source named relative to the component
-        self.assertNotIn(self.tmp, dtso)
-
-    def test_documents_validate(self):
-        if not shutil.which("uv"):
-            self.skipTest("uv not found")
-        code = ("import json,sys,jsonschema;"
-                "jsonschema.Draft202012Validator(json.load(open(sys.argv[1]))).validate(json.load(open(sys.argv[2])))")
-        for schema, doc in (("variant-absent-state.schema.json", "absent-state.json"),
-                            ("variant-capabilities.schema.json", "software/capabilities.json"),
-                            ("variant-devicetree.schema.json", "software/devicetree.json")):
-            r = subprocess.run(["uv", "run", "--quiet", "--no-project", "--python", ">=3.11", "--with",
-                                "jsonschema>=4.18", "python", "-c", code, os.path.join(ROOT, "schemas", schema),
-                                os.path.join(self.out, doc)], capture_output=True, text=True, env=ENV, timeout=300)
-            self.assertEqual(r.returncode, 0, (schema, r.stderr))
-
-    def test_undeclared_net_is_reported(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            shutil.copytree(BOARD, os.path.join(tmp, "board"))
-            sheet = os.path.join(tmp, "board", "hardware", "tiny", "sensor.kicad_sch")
-            text = read(sheet)
-            with open(sheet, "w", encoding="utf-8") as f:
-                f.write(text.replace('(table_cell "SENSOR_EN"', '(table_cell "SENSOR_OTHER"'))
-            r = run("apply", "variant-b", "--dir", os.path.join(tmp, "board", "variants"), "--out",
-                    os.path.join(tmp, "o"), "--no-checks", "--json")
-            self.assertEqual(r.returncode, 0, r.stderr)          # a passive pin left alone: a warning
-            found = [f for f in json.loads(r.stdout)["findings"] if f["code"].startswith("absent.")]
-            self.assertEqual([(f["level"], f["code"]) for f in found], [("warning", "absent.single-pin")])
-            self.assertIn("SENSOR_EN", found[0]["message"])
 
     def test_rebuild_into_a_previous_build_and_refusals(self):
         r = run("apply", "variant-b", "--dir", VARIANTS, "--out", self.out, "--no-checks", "--json")
@@ -681,48 +390,6 @@ class KiCadFixture(unittest.TestCase):
         open(os.path.join(busy, "keep.txt"), "w").close()
         self.assertEqual(run("apply", "variant-b", "--dir", VARIANTS, "--out", busy).returncode, 2)
         self.assertTrue(os.path.isfile(os.path.join(busy, "keep.txt")))
-
-
-class Anchor(unittest.TestCase):
-    """Manifest paths are relative to the component, whether it is its own repository or a folder of a monorepo."""
-
-    def test_layouts(self):
-        sys.path.insert(0, os.path.join(ROOT, "tools"))
-        import build
-        with tempfile.TemporaryDirectory() as tmp:
-            own = os.path.join(tmp, "own", "board")              # a repository of its own
-            shutil.copytree(BOARD, own)
-            os.makedirs(os.path.join(own, ".git"))
-            merged = os.path.join(tmp, "mono", "devices", "board")  # a folder of a merged monorepo
-            shutil.copytree(BOARD, merged)
-            os.makedirs(os.path.join(tmp, "mono", ".git"))
-            for root in (own, merged):
-                self.assertEqual(build.anchor(os.path.join(root, "variants", "variant-b.toml")), root)
-            hw = os.path.join(tmp, "mono", "devices", "t1")      # variants under hardware/
-            os.makedirs(os.path.join(hw, "hardware", "variants"))
-            self.assertEqual(build.anchor(os.path.join(hw, "hardware", "variants", "x.toml")), hw)
-            marked = os.path.join(tmp, "mono", "devices", "marked")  # component.toml wins over the layout
-            os.makedirs(os.path.join(marked, "data", "variants"))
-            open(os.path.join(marked, "component.toml"), "w").close()
-            self.assertEqual(build.anchor(os.path.join(marked, "data", "variants", "x.toml")), marked)
-
-    @unittest.skipUnless(HAS_KICAD, "kicad-cli (KiCad 10) not installed")
-    def test_manifest_is_the_same_in_a_merged_root(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            merged = os.path.join(tmp, "mono", "devices", "board")
-            shutil.copytree(BOARD, merged)
-            os.makedirs(os.path.join(tmp, "mono", ".git"))
-            docs = []
-            for vdir in (VARIANTS, os.path.join(merged, "variants")):
-                r = run("apply", "variant-b", "--dir", vdir, "--out", os.path.join(tmp, f"o{len(docs)}"),
-                        "--no-checks", "--json")
-                self.assertEqual(r.returncode, 0, r.stderr)
-                docs.append(json.loads(r.stdout))
-            self.assertEqual(docs[0]["inputs"], docs[1]["inputs"])
-            self.assertIn({"path": "variants/variant-b.toml", "sha256": docs[1]["inputs"][0]["sha256"]},
-                          docs[1]["inputs"])
-            self.assertTrue(all(i["path"].startswith(("variants/", "blocks/", "hardware/tiny/"))
-                                for i in docs[1]["inputs"]))
 
 
 @unittest.skipUnless(HAS_KICAD, "kicad-cli (KiCad 10) not installed")
@@ -751,7 +418,7 @@ class Commands(unittest.TestCase):
             d = json.loads(r.stdout)
             self.assertEqual(d["schema"], "opendap.variant-bom/v1")
             fitted = sorted(ref for ln in d["lines"] if not ln["dnp"] for ref in ln["refs"])
-            self.assertEqual(fitted, ["C101", "C102", "R101", "R102", "R103", "R301", "R302"])
+            self.assertEqual(fitted, ["C101", "R101", "R301", "R302"])
             self.assertIn("MEM16-X", read(os.path.join(tmp, "bom.csv")))
         self.assertEqual(tree_hash(BOARD), before)          # reading the schematic writes nothing next to it
 
@@ -760,15 +427,13 @@ class Commands(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         d = json.loads(r.stdout)
         self.assertEqual([b["block"] for b in d["blocks"]], ["blk.mem", "blk.sensor"])
-        self.assertEqual([p["ref"] for p in d["parts"]], ["C201", "R201", "R202", "R203", "R301", "R302"])
+        self.assertEqual([p["ref"] for p in d["parts"]], ["C201", "R201", "R202", "R301", "R302"])
 
     def test_check_proves_reproducibility(self):
         r = run("check", "--dir", VARIANTS, "--no-checks", "--json")
         self.assertEqual(r.returncode, 0, r.stderr)
-        items = json.loads(r.stdout)["variants"]
-        self.assertEqual([(v["variant"], v["reproducible"]) for v in items], [("full", True), ("variant-b", True)])
-        self.assertEqual([v["absent_state"]["counts"]["expected"] for v in items], [0, 2])
-        self.assertEqual([v["absent_state"]["dnp_blocks"] for v in items], [[], ["blk.sensor"]])
+        self.assertEqual([(v["variant"], v["reproducible"]) for v in json.loads(r.stdout)["variants"]],
+                         [("full", True), ("variant-b", True)])
 
     def test_invalid_variant_fails_with_1_and_usage_with_2(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -1,0 +1,19 @@
+# Fixture: the sensor left off, the 16 GB memory alternate, links as 0 ohm.
+schema = "opendap.board-variant/v1"
+board = "tiny"
+name = "variant-b"
+kind = "variant-b"
+status = "proposed"
+description = "Sensor not fitted, 16 GB memory, links 0 ohm"
+target_level = "Q1"
+catalog = "blocks"
+promise = ["FIX-001", "FIX-003"]
+
+[instrumentation]
+links = "zero-ohm"
+test_points = "fit"
+
+[blocks]
+"blk.core" = { state = "fit" }
+"blk.sensor" = { state = "dnp", note = "fixture: the should block left off" }
+"blk.mem" = { state = "alternate", alternate = "mem-16", params = { capacity_gb = 16 } }

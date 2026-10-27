@@ -13,13 +13,15 @@ It is generic: nothing in it names a board. A component is found by its folder l
 | Command | Reads | Result |
 |---|---|---|
 | `list` | variant files, catalogs | Each variant's kind, status, target level, block counts and whether it is valid |
-| `show <variant>` | one variant file, its catalog | Every catalog block's resolved state (fit, dnp, alternate and its name, parameters, open decision) and the findings |
+| `get <variant>` | one variant file, its catalog | Every catalog block's resolved state (fit, dnp, alternate and its name, parameters, open decision) and the findings |
 | `diff <a> <b>` | two variants, the schematic | Block-level differences; part-level differences (fitted, value, MPN); BOM quantity changes per part. `--blocks-only` skips KiCad |
 | `bom <variant>` | variant, catalog, schematic | The BOM with DNP and alternates applied; `--out FILE` writes `.csv` or `.json` |
 | `apply <variant> --out DIR` | variant, catalog, KiCad project | The variant build (§5) |
 | `check` | every variant | Every variant valid and consistent with the schematic; each one built twice and compared file by file. `--no-build` skips the builds, `--no-schematic` also skips KiCad |
 
-Every command takes `--json` (documents `opendap.variant-list/v1`, `opendap.variant-show/v1`, `opendap.variant-diff/v1`, `opendap.variant-bom/v1`, `opendap.variant-build/v1`, `opendap.variant-check/v1`, each with a `findings` list) and `--dir` (the variants folder). Exit status: 0 no finding at error level (warnings allowed), 1 at least one error, 2 a usage, file or tool error (`input.invalid`, `variant.not_found`, `catalog.not_found`, `project.not_found`, `tool.missing`, `kicad.failed`, `variant.build_failed`), reported with a code, a hint and a fix as the [command standard](https://github.com/opendap-project/toolkit-host/blob/main/docs/specs/command-standard.md) asks.
+The verbs are the command standard's closed set; `show`, the name `get` had before, still runs it and prints a one-line hint to use `get`, and is not listed in `--help`.
+
+Every command takes `--json` (documents `opendap.variant-list/v1`, `opendap.variant-get/v1`, `opendap.variant-diff/v1`, `opendap.variant-bom/v1`, `opendap.variant-build/v1`, `opendap.variant-check/v1`, each with a `findings` list) and `--dir` (the variants folder). Exit status: 0 no finding at error level (warnings allowed), 1 at least one error, 2 a usage, file or tool error (`input.invalid`, `variant.not_found`, `catalog.not_found`, `project.not_found`, `tool.missing`, `kicad.failed`, `variant.build_failed`), reported with a code, a hint and a fix as the [command standard](https://github.com/opendap-project/toolkit-host/blob/main/docs/specs/command-standard.md) asks.
 
 ## 2. Variant file: `opendap.board-variant/v1`
 

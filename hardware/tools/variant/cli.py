@@ -58,7 +58,7 @@ def load_variant(arg, folder):
     try:
         return variantfile.load(path)
     except variantfile.VariantError as e:
-        fail("variant.invalid", str(e), "the file must be TOML (opendap.board-variant/v1)", f"{TOOL} show {arg}")
+        fail("variant.invalid", str(e), "the file must be TOML (opendap.board-variant/v1)", f"{TOOL} get {arg}")
 
 
 def load_catalog(v):
@@ -69,7 +69,7 @@ def load_catalog(v):
         return catalogs.load(path)
     except catalogs.CatalogError as e:
         fail("catalog.not_found", str(e), "catalog is a path from the component root to its block catalog",
-             f"{TOOL} show {v.name}")
+             f"{TOOL} get {v.name}")
 
 
 def find_project(v, given):
@@ -176,10 +176,10 @@ def cmd_list(a):
     return emit(a.json, doc, text)
 
 
-def cmd_show(a):
+def cmd_get(a):
     v, cat, findings, *_ = evaluate(a.variant, a.dir)
     rows = variantfile.resolve(v, cat)
-    doc = {"schema": "opendap.variant-show/v1", **variantfile.summary(v),
+    doc = {"schema": "opendap.variant-get/v1", **variantfile.summary(v),
            "catalog": {"path": cat.path if cat else None, "kind": cat.kind if cat else None},
            "promise": v.data.get("promise", []), "instrumentation": v.data.get("instrumentation", {}),
            "blocks": rows, "findings": findings}
@@ -326,7 +326,7 @@ def parser():
                        description=__doc__.split("\n", 2)[2].split("\nExit status")[0].strip()
                        + "\n\nExit status: 0 no error (warnings allowed), 1 a finding at error level, 2 usage, "
                          "file or tool error.",
-                       examples=["odapkit variant list", "odapkit variant show production --json",
+                       examples=["odapkit variant list", "odapkit variant get production --json",
                                  "odapkit variant diff full production", "odapkit variant bom production --out bom.csv",
                                  "odapkit variant apply production --out /tmp/t1-production",
                                  "odapkit variant check --no-build"])
@@ -339,7 +339,7 @@ def parser():
         if schematic:
             p.add_argument("--project", help="the board's .kicad_pro (default: <board>.kicad_pro in the component)")
     common(sub.add_parser("list", help="the variants and whether each is valid"))
-    p = sub.add_parser("show", help="one variant's resolved block states and its findings")
+    p = sub.add_parser("get", help="one variant's resolved block states and its findings")
     p.add_argument("variant", help="a variant name or file")
     common(p)
     p = sub.add_parser("diff", help="block-level and BOM-level differences between two variants")
@@ -366,10 +366,13 @@ def parser():
 
 
 def body(argv):
+    if argv and argv[0] == "show":      # the verb before the command standard's closed set: kept, not listed
+        print(f"{TOOL}: 'show' is now 'get': {TOOL} get {' '.join(argv[1:])}".rstrip(), file=sys.stderr)
+        argv = ["get"] + list(argv[1:])
     a = parser().parse_args(argv)
     if a.cmd == "check" and a.no_schematic:
         a.no_build = True
-    return {"list": cmd_list, "show": cmd_show, "bom": cmd_bom, "diff": cmd_diff, "apply": cmd_apply,
+    return {"list": cmd_list, "get": cmd_get, "bom": cmd_bom, "diff": cmd_diff, "apply": cmd_apply,
             "check": cmd_check}[a.cmd](a)
 
 
