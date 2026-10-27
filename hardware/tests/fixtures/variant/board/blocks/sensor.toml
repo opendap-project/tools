@@ -1,0 +1,6 @@
+schema = "opendap.block/v1"
+id = "blk.sensor"
+function = "Optional sensor: pull-up, decoupling and its measurement link"
+requirements = [{ id = "FIX-002", priority = "should" }]
+absent_state = "The bus keeps its pull-up on blk.core"
+sheet = "sensor.kicad_sch"

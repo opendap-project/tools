@@ -24,6 +24,13 @@ audience = "maintainer"
 stability = "preview"
 
 [[tool]]
+name = "variant"
+summary = "A board's variants (RFC 0011): validate against the block catalog, diff, BOM, and per-variant schematic and PCB builds"
+entry = "bin/odapkit-variant"
+audience = "maintainer"
+stability = "preview"
+
+[[tool]]
 name = "sim"
 summary = "Run a board's simulation regression checks (ngspice) against limits from its constraints and ADRs"
 entry = "bin/odapkit-sim"

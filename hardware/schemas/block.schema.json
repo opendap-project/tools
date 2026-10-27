@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-hardware/blob/main/schemas/block.schema.json",
+  "title": "opendap.block/v1 (the fields odapkit variant reads)",
+  "description": "A feature block record, blocks/<block>.toml (RFC 0011 §1). This schema fixes the fields odapkit variant reads (id, function, status, requirements, alternates, params, sub_blocks) and admits the other RFC 0011 §1 fields as free values. Spec: docs/specs/variant-tool.md §3.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "id"],
+  "properties": {
+    "schema": {"const": "opendap.block/v1"},
+    "id": {"type": "string", "pattern": "^blk\\.[a-z0-9][a-z0-9-]*$"},
+    "function": {"type": "string"},
+    "status": {"enum": ["active", "removed"]},
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Z][A-Z0-9]*-[0-9]{2,}$"},
+          "priority": {"enum": ["must", "should"]}
+        }
+      }
+    },
+    "alternates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {"name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.-]*$"}, "note": {"type": "string"}}
+      }
+    },
+    "params": {"type": "array", "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}},
+    "sub_blocks": {"type": "array", "items": {"type": "string", "pattern": "^blk\\.[a-z0-9][a-z0-9-]*$"}},
+    "interface": {}, "power_domain": {}, "absent_state": {}, "measure": {}, "software": {},
+    "sheet": {}, "layout_block": {}, "level": {}, "note": {}
+  }
+}

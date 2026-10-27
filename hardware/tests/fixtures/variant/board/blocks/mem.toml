@@ -1,0 +1,7 @@
+schema = "opendap.block/v1"
+id = "blk.mem"
+function = "Memory: 32 GB part, or the 16 GB alternate on a DNP twin land"
+requirements = [{ id = "FIX-001", priority = "must" }, { id = "FIX-003", priority = "must" }]
+alternates = [{ name = "mem-16", note = "R301 takes the 16 GB value; R302, the twin land, is fitted" }]
+params = ["capacity_gb"]
+sheet = "mem.kicad_sch"

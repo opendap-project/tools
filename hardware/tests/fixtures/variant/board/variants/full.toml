@@ -1,0 +1,19 @@
+# Fixture: every block fitted, measurement links with their shunt.
+schema = "opendap.board-variant/v1"
+board = "tiny"
+name = "full"
+kind = "full"
+status = "proposed"
+description = "Every block, every measurement link with its shunt"
+target_level = "Q1"
+catalog = "blocks"
+promise = ["FIX-001", "FIX-003"]
+
+[instrumentation]
+links = "shunt"
+test_points = "fit"
+
+[blocks]
+"blk.core" = { state = "fit" }
+"blk.sensor" = { state = "fit" }
+"blk.mem" = { state = "fit", params = { capacity_gb = 32 } }

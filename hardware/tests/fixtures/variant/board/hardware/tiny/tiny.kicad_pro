@@ -1,0 +1,12 @@
+{
+  "board": {"design_settings": {"defaults": {}, "rules": {}}},
+  "meta": {"filename": "tiny.kicad_pro", "version": 3},
+  "schematic": {"drawing": {}},
+  "sheets": [
+    ["66a81b00-37dd-53f5-81ba-daabee42749a", "Root"],
+    ["791f5bf8-41bc-56d1-9e1d-b6f01e930073", "Core"],
+    ["45e8c92c-d494-57f7-85bf-c9f7de86d5ef", "Sensor"],
+    ["47fd3adb-0a7d-5179-9f61-a3576fafb417", "Memory"]
+  ],
+  "text_variables": {"OPENDAP_PROJECT": "variant fixture"}
+}

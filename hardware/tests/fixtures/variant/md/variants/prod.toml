@@ -1,0 +1,14 @@
+schema = "opendap.board-variant/v1"
+board = "md"
+name = "prod"
+kind = "production"
+status = "proposed"
+target_level = "Q1"
+catalog = "docs/feature-blocks.md"
+promise = ["FIX-001", "FIX-003"]
+
+[blocks]
+"blk.core" = { state = "fit" }
+"blk.sensor" = { state = "dnp", open = "fixture: not decided" }
+"blk.mem" = { state = "alternate", alternate = "mem-16", params = { capacity_gb = 16 } }
+"blk.mem-supply" = { state = "fit" }

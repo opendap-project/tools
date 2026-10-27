@@ -1,0 +1,5 @@
+schema = "opendap.block/v1"
+id = "blk.core"
+function = "Core supply decoupling and the reference pull-up"
+requirements = [{ id = "FIX-001", priority = "must" }]
+sheet = "core.kicad_sch"

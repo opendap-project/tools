@@ -1,0 +1,4 @@
+schema = "opendap.block/v1"
+id = "blk.radio"
+function = "Removed: kept as a record, never in a variant"
+status = "removed"

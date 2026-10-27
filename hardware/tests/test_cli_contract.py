@@ -49,7 +49,7 @@ class Plugins(unittest.TestCase):
             self.assertEqual(r.stdout.splitlines()[0], f"odapkit {name}: {TOOLS[name]}", name)
 
     def test_unknown_flag_exits_2_with_a_code_a_hint_and_a_fix(self):
-        for name in ["component", "craft", "parts", "sim"]:
+        for name in ["component", "craft", "parts", "sim", "variant"]:
             if name not in PLUGINS:
                 continue
             r = run(tool(name), "--odw-no-such-flag")
@@ -77,7 +77,8 @@ class Plugins(unittest.TestCase):
 
     def test_json_documents_carry_a_schema(self):
         cases = [("sim", "list", "--json", "tests/fixtures/sim"),
-                 ("craft", "check", "--json", "tests/fixtures/craft-sch/bad.kicad_sym")]
+                 ("craft", "check", "--json", "tests/fixtures/craft-sch/bad.kicad_sym"),
+                 ("variant", "list", "--json", "--dir", "tests/fixtures/variant/board/variants")]
         if shutil.which("uv"):
             cases.append(("stackup", "stack", "tests/fixtures/stackup/fixture.toml", "--json"))
         for name, *args in cases:

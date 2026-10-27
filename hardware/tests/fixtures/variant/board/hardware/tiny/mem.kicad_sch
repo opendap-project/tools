@@ -1,0 +1,459 @@
+(kicad_sch (version 20260306) (generator "eeschema") (generator_version "10.0")
+(uuid "1ca5f143-629e-5424-95ed-76e45c6d9e29")
+(paper "A4")
+(title_block (title "Memory") (date "2026-10-27") (rev "A") (company "The OpenDAP Project") (comment 1 "blk.mem") (comment 2 "Variant ${VARIANT}"))
+(lib_symbols (symbol "Device:R"
+		(pin_numbers
+			(hide yes)
+		)
+		(pin_names
+			(offset 0)
+		)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(duplicate_pin_numbers_are_jumpers no)
+		(property "Reference" "R"
+			(at 2.032 0 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "R"
+			(at 0 0 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at -1.778 0 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "ki_keywords" "R res resistor"
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "ki_fp_filters" "R_*"
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(symbol "R_0_1"
+			(rectangle
+				(start -1.016 -2.54)
+				(end 1.016 2.54)
+				(stroke
+					(width 0.254)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+		)
+		(symbol "R_1_1"
+			(pin passive line
+				(at 0 3.81 270)
+				(length 1.27)
+				(name ""
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "1"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+			(pin passive line
+				(at 0 -3.81 90)
+				(length 1.27)
+				(name ""
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "2"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+		)
+		(embedded_fonts no)
+	)
+(symbol "power:+3V3"
+		(power global)
+		(pin_numbers
+			(hide yes)
+		)
+		(pin_names
+			(offset 0)
+			(hide yes)
+		)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(duplicate_pin_numbers_are_jumpers no)
+		(property "Reference" "#PWR"
+			(at 0 -3.81 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "+3V3"
+			(at 0 3.556 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"+3V3\""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "ki_keywords" "global power"
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(symbol "+3V3_0_1"
+			(polyline
+				(pts
+					(xy -0.762 1.27) (xy 0 2.54)
+				)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy 0 2.54) (xy 0.762 1.27)
+				)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+			(polyline
+				(pts
+					(xy 0 0) (xy 0 2.54)
+				)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+		)
+		(symbol "+3V3_1_1"
+			(pin power_in line
+				(at 0 0 90)
+				(length 0)
+				(name ""
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "1"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+		)
+		(embedded_fonts no)
+	)
+(symbol "power:GND"
+		(power global)
+		(pin_numbers
+			(hide yes)
+		)
+		(pin_names
+			(offset 0)
+			(hide yes)
+		)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(duplicate_pin_numbers_are_jumpers no)
+		(property "Reference" "#PWR"
+			(at 0 -6.35 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 0 -3.81 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "ki_keywords" "global power"
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(symbol "GND_0_1"
+			(polyline
+				(pts
+					(xy 0 0) (xy 0 -1.27) (xy 1.27 -1.27) (xy 0 -2.54) (xy -1.27 -1.27) (xy 0 -1.27)
+				)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+		)
+		(symbol "GND_1_1"
+			(pin power_in line
+				(at 0 0 270)
+				(length 0)
+				(name ""
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "1"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+		)
+		(embedded_fonts no)
+	))
+(symbol (lib_id "Device:R") (at 63.5 60.96 0) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp no) (uuid "65570fbf-064a-51c0-b8e3-60e2b1bac6ca")
+  (property "Reference" "R301" (at 66.04 59.69 0) (effects (font (size 1.27 1.27))))
+  (property "Value" "MEM-32" (at 66.04 62.230000000000004 0) (effects (font (size 1.27 1.27))))
+  (property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 63.5 60.96 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "Datasheet" "" (at 63.5 60.96 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "Block" "blk.mem" (at 63.5 60.96 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "MPN" "MEM32-X" (at 63.5 60.96 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "Manufacturer" "Acme" (at 63.5 60.96 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "Alt.mem-16.Value" "MEM-16" (at 63.5 60.96 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "Alt.mem-16.MPN" "MEM16-X" (at 63.5 60.96 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (pin "1" (uuid "d05a66eb-acdb-5952-a809-ec14e8c8d8ba"))
+  (pin "2" (uuid "5a785cdc-e1a1-502a-9147-483a55251b5b"))
+  (instances (project "tiny" (path "/66a81b00-37dd-53f5-81ba-daabee42749a/47fd3adb-0a7d-5179-9f61-a3576fafb417" (reference "R301") (unit 1))))
+)
+(symbol (lib_id "power:+3V3") (at 63.5 57.15 0) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "6a28e04b-5295-5f05-bfb2-f07711f9df57")
+  (property "Reference" "#PWR0311" (at 66.04 55.879999999999995 0) (effects (font (size 1.27 1.27))))
+  (property "Value" "+3V3" (at 66.04 58.42 0) (effects (font (size 1.27 1.27))))
+  (property "Footprint" "" (at 63.5 57.15 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "Datasheet" "" (at 63.5 57.15 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (pin "1" (uuid "3ea2f731-107b-5a76-a40b-bddc14482aa1"))
+  (instances (project "tiny" (path "/66a81b00-37dd-53f5-81ba-daabee42749a/47fd3adb-0a7d-5179-9f61-a3576fafb417" (reference "#PWR0311") (unit 1))))
+)
+(symbol (lib_id "power:GND") (at 63.5 64.77 0) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "4991a02f-97ed-5fbf-b6fa-2fa6f1a83f45")
+  (property "Reference" "#PWR0312" (at 66.04 63.49999999999999 0) (effects (font (size 1.27 1.27))))
+  (property "Value" "GND" (at 66.04 66.03999999999999 0) (effects (font (size 1.27 1.27))))
+  (property "Footprint" "" (at 63.5 64.77 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "Datasheet" "" (at 63.5 64.77 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (pin "1" (uuid "d15591be-b679-5906-9987-ff5846b13980"))
+  (instances (project "tiny" (path "/66a81b00-37dd-53f5-81ba-daabee42749a/47fd3adb-0a7d-5179-9f61-a3576fafb417" (reference "#PWR0312") (unit 1))))
+)
+(symbol (lib_id "Device:R") (at 88.9 60.96 0) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom yes) (on_board yes) (dnp yes) (uuid "b5253bfa-bc18-5306-a010-47fe0f7cf2d5")
+  (property "Reference" "R302" (at 91.44000000000001 59.69 0) (effects (font (size 1.27 1.27))))
+  (property "Value" "MEM-16" (at 91.44000000000001 62.230000000000004 0) (effects (font (size 1.27 1.27))))
+  (property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 88.9 60.96 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "Datasheet" "" (at 88.9 60.96 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "Block" "blk.mem" (at 88.9 60.96 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "MPN" "MEM16-Y" (at 88.9 60.96 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "Manufacturer" "Acme" (at 88.9 60.96 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "Alt.mem-16.DNP" "no" (at 88.9 60.96 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (pin "1" (uuid "bea97ad4-8f66-544c-ab16-ed35a2c82ab3"))
+  (pin "2" (uuid "1b8bb8ee-d521-55df-9f53-1a51ef46c2e3"))
+  (instances (project "tiny" (path "/66a81b00-37dd-53f5-81ba-daabee42749a/47fd3adb-0a7d-5179-9f61-a3576fafb417" (reference "R302") (unit 1))))
+)
+(symbol (lib_id "power:+3V3") (at 88.9 57.15 0) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "25bc3ec8-01fd-50ca-8413-629e96cf19bd")
+  (property "Reference" "#PWR0321" (at 91.44000000000001 55.879999999999995 0) (effects (font (size 1.27 1.27))))
+  (property "Value" "+3V3" (at 91.44000000000001 58.42 0) (effects (font (size 1.27 1.27))))
+  (property "Footprint" "" (at 88.9 57.15 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "Datasheet" "" (at 88.9 57.15 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (pin "1" (uuid "031084dd-ed83-5cd1-8696-0f18c20ea3f3"))
+  (instances (project "tiny" (path "/66a81b00-37dd-53f5-81ba-daabee42749a/47fd3adb-0a7d-5179-9f61-a3576fafb417" (reference "#PWR0321") (unit 1))))
+)
+(symbol (lib_id "power:GND") (at 88.9 64.77 0) (unit 1) (body_style 1) (exclude_from_sim no) (in_bom no) (on_board no) (dnp no) (uuid "476b5e54-e7b5-531c-a398-05a174436a82")
+  (property "Reference" "#PWR0322" (at 91.44000000000001 63.49999999999999 0) (effects (font (size 1.27 1.27))))
+  (property "Value" "GND" (at 91.44000000000001 66.03999999999999 0) (effects (font (size 1.27 1.27))))
+  (property "Footprint" "" (at 88.9 64.77 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (property "Datasheet" "" (at 88.9 64.77 0) (effects (font (size 1.27 1.27)) (hide yes)))
+  (pin "1" (uuid "6137a787-3eb0-5c88-89c6-04e5096d0053"))
+  (instances (project "tiny" (path "/66a81b00-37dd-53f5-81ba-daabee42749a/47fd3adb-0a7d-5179-9f61-a3576fafb417" (reference "#PWR0322") (unit 1))))
+)
+(sheet_instances (path "/" (page "1")))
+)
