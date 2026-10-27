@@ -9,8 +9,8 @@
 #        odapkit stackup explore  EXPLORE.toml [--csv F]     enumerate and rank zoned stackups
 #        odapkit stackup pdn      PDN.toml [--json]          plane pairing against a rail's target impedance
 #
-# Runs tools/stackup/stackup.py in its own environment: uv installs the pinned, hash-locked
-# dependencies of tools/stackup/uv.lock (numpy, scipy, scikit-fem) on first use. Format and
+# Runs tools/stackup/stackup.py in the tools' environment: uv installs the pinned, hash-locked
+# dependencies of tools/uv.lock (numpy, scipy, scikit-fem) on first use. Format and
 # method: docs/specs/stackup-method.md.
 #
 # Examples:
@@ -29,4 +29,4 @@ case "${1:-}" in
 esac
 command -v uv >/dev/null 2>&1 || cli_fail "tool.missing" "uv not found" "toolkit-host's setup installs it" \
   "\"\${ODAP_TOOLKIT_HOST_DIR:-<toolkit-host>}/setup.sh\""
-exec uv run --quiet --locked --project "$here/tools/stackup" python "$here/tools/stackup/stackup.py" "$@"
+exec uv run --quiet --locked --project "$here/tools" python "$here/tools/stackup/stackup.py" "$@"

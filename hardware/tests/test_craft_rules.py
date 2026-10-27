@@ -26,6 +26,7 @@ ROOT = os.path.join(HERE, "..")
 TOOLS = os.path.join(ROOT, "tools")
 RULES = os.path.join(TOOLS, "craft", "rules.toml")
 SCHEMA = os.path.join(ROOT, "schemas", "craft-rules.schema.json")
+TOOLS_PROJECT = os.path.join(ROOT, "tools")
 SPEC = os.path.join(HERE, "fixtures", "craft-rules", "pcb-craft-standard.md")
 TOOL = os.path.join(ROOT, "bin", "odapkit-craft")
 # sha256 of kicad/docs/specs/pcb-craft-standard.md at libs v0.1.1 (52fe7dd)
@@ -123,7 +124,8 @@ class Data(unittest.TestCase):
             self.skipTest("uv not found")
         code = ("import json,sys,tomllib,jsonschema;"
                 "jsonschema.Draft202012Validator(json.load(open(sys.argv[1]))).validate(tomllib.load(open(sys.argv[2],'rb')))")
-        res = subprocess.run(["uv", "run", "--quiet", "--no-project", "--python", ">=3.11", "--with", "jsonschema>=4.18",
+        # jsonschema from the tools' environment (tools/pyproject.toml, tools/uv.lock).
+        res = subprocess.run(["uv", "run", "--quiet", "--locked", "--project", TOOLS_PROJECT,
                               "python", "-c", code, SCHEMA, RULES], capture_output=True, text=True)
         self.assertEqual(res.returncode, 0, res.stderr)
 

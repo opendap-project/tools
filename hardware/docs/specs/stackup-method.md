@@ -16,7 +16,7 @@ A board keeps its layer stack and the geometry of each impedance class in one ma
 
 A 2D quasi-static (quasi-TEM) field solver, the same class of method as commercial PCB impedance calculators. Laplace's equation is solved over the cross-section with linear finite elements ([scikit-fem](https://github.com/kinnala/scikit-fem), BSD-3-Clause) on a graded tensor grid that has a line on every conductor and dielectric edge. The Maxwell capacitance matrix comes from the field energy, with dielectrics and in vacuum; L = C₀⁻¹ / c². A single line gives Z₀ = √(L/C); a symmetric pair gives the odd and even modes, Z_diff = 2 Z_odd and Z_common = Z_even / 2. Effective permittivity and delay per millimetre are reported with each class, for skew budgets across layers.
 
-**Why this solver.** It is a maintained FEM library installed the canonical way: `tools/stackup/pyproject.toml` pins numpy, scipy and scikit-fem, and `uv.lock` pins them with their hashes, so `uv run --locked` installs exactly the verified files. The problem setup is about 150 lines that can be read whole.
+**Why this solver.** It is a maintained FEM library installed the canonical way: `tools/pyproject.toml`, the one Python project of this repository's tools, pins numpy, scipy and scikit-fem, and `tools/uv.lock` pins them with their hashes, so `uv run --locked` installs exactly the verified files. The problem setup is about 150 lines that can be read whole.
 
 **Model.**
 

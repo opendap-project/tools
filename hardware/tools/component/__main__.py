@@ -1,9 +1,5 @@
-# /// script
-# requires-python = ">=3.11"
-# dependencies = ["pyyaml>=6", "jsonschema>=4.18"]
-# ///
-"""Run odapkit component's engine, tools/component/validate.py: run as a uv script by bin/odapkit-component
-(uv installs the dependencies above)."""
+"""Run odapkit component's engine, tools/component/validate.py: run by bin/odapkit-component
+in the tools' environment (tools/pyproject.toml, tools/uv.lock)."""
 import sys
 
 from validate import main
