@@ -1,6 +1,6 @@
 """Tests for tools/craft/sexpr.py, the one S-expression model of both craft checks, without KiCad.
 
-Run from the repository root: python3 -m unittest tests.test_sexpr
+Run from the repository root: python3 -m unittest tests.test_sexpr_model
 """
 import os
 import sys

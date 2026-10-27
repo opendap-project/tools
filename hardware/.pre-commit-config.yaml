@@ -41,10 +41,10 @@ repos:
         files: ^(tools/craft/|tests/fixtures/craft-rules/|bin/odapkit-craft$)
       - id: craft-rules-tests
         name: craft rules data, golden and drift tests; the craft checks' S-expression model
-        entry: python3 -m unittest tests.test_craft_rules tests.test_sexpr
+        entry: python3 -m unittest tests.test_craft_rules tests.test_sexpr_model
         language: system
         pass_filenames: false
-        files: ^(tools/craft/|tools/(pcb|sch)-craft-check\.py$|tests/test_(craft_rules|sexpr)\.py$|tests/fixtures/craft-rules/|schemas/craft-rules\.schema\.json$)
+        files: ^(tools/craft/|tools/(pcb|sch)-craft-check\.py$|tests/test_(craft_rules|sexpr_model)\.py$|tests/fixtures/craft-rules/|schemas/craft-rules\.schema\.json$)
   # Every tool's command-line contract, without KiCad, ngspice or the network.
   - repo: local
     hooks:
