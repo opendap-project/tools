@@ -27,7 +27,11 @@ LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 GITHUB_REPO = re.compile(r"https://github\.com/opendap-project/([A-Za-z0-9._-]+)")
 TERMS = {re.compile(r"\bopen source\b"): "Open Source", re.compile(r"\bopen hardware\b"): "Open Hardware",
          re.compile(r"\bdigital audio player\b"): "Digital Audio Player"}
-WORKING = re.compile(r"\b(for now|next step|not started|TODO|FIXME|will take this over)\b", re.I)
+WORKING = re.compile(r"\b(for now|not started|TODO|FIXME|will take this over)\b", re.I)
+# "next step" is a working note only when it announces the doc's own next step ("Next step: ...",
+# "the next step is ..."); "the reason and the next step" is UI wording about what a message tells the user.
+NEXT_STEP_NOTE = re.compile(r"(?:^\W*|\b)(next steps?)(?=\s*:|\s+(?:is|are|will|would)\b)", re.I)
+QUOTED = re.compile(r"\"[^\"]*\"|\u201c[^\u201d]*\u201d")
 STATUS_WORDS = ("draft", "accepted", "confirmed", "superseded", "withdrawn", "implemented")
 HEADER_ITEM = re.compile(r"^- \*\*([^*:]+):\*\* ?(.*)$")
 INDEX_START, INDEX_END = "<!-- index:start -->", "<!-- index:end -->"
@@ -60,6 +64,13 @@ def header(text):
 
 def _strip_code(line):
     return re.sub(r"`[^`]*`", "", line)
+
+
+def _working_note(line):
+    """The working-note phrase in a line, ignoring quoted wording; None when there is none."""
+    unquoted = QUOTED.sub("", line)
+    m = WORKING.search(unquoted) or NEXT_STEP_NOTE.search(unquoted)
+    return m.group(1) if m else None
 
 
 def private_repo_names(ws):
@@ -118,9 +129,10 @@ def check_file(path, repo_root=None, private_repos=frozenset(), repo_is_private=
         for rx, right in TERMS.items():
             for m in rx.finditer(GITHUB_REPO.sub("", line)):
                 out.append(Finding(rel, n, "term", "error", f"'{m.group(0)}' is written '{right}'"))
-        if not open_items and WORKING.search(line):
+        note = None if open_items else _working_note(line)
+        if note:
             out.append(Finding(rel, n, "working-note", "warning",
-                               f"working note '{WORKING.search(line).group(0)}': move it to ## Open items or a private plan"))
+                               f"working note '{note}': move it to ## Open items or a private plan"))
     status = header(text).get("status")
     if status is not None and not status.lower().startswith(STATUS_WORDS):
         out.append(Finding(rel, 1, "status", "warning", f"status '{status[:40]}' is outside the vocabulary {', '.join(STATUS_WORDS)}"))

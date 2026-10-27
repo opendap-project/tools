@@ -19,7 +19,7 @@ A directory path is searched for Markdown, leaving out build trees (`target/`, `
 | `cross-repo-link` | error | A relative link that leaves the repository; links between repositories are GitHub URLs |
 | `private-link` | error | A link from a public repository to a private one (names from the private overlay's `repos.tsv`, when present); private repositories may link each other by GitHub URL |
 | `term` | error | Project terms in lower case outside code: `Open Source`, `Open Hardware`, `Digital Audio Player` |
-| `working-note` | warning | `for now`, `next step`, `not started`, `TODO`, `FIXME` outside an `## Open items` section |
+| `working-note` | warning | `for now`, `not started`, `TODO`, `FIXME`, `will take this over`, and `next step` when it announces the document's own work (`Next step:`, `the next step is`), outside an `## Open items` section. Wording in double quotes, and `next step` as what a message tells the user (`the reason and the next step`), is not a working note |
 | `status` | warning | A header status outside the vocabulary |
 
 `--strict` makes warnings fail. Code spans and fenced blocks are not checked for terms or working notes.

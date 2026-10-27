@@ -64,6 +64,43 @@ def test_working_notes_warn_outside_open_items(repo):
     assert len(found) == 1 and found[0].severity == "warning" and found[0].line == 8
 
 
+# Lines taken from published docs where "next step" is UI wording, not a working note.
+NEXT_STEP_AS_UI_WORDING = [
+    'Failures have "a reason and next step" (devices-and-sync spec §6), never colour alone.',
+    "| **Error** | One sentence with what failed and why, the next step, and one action that takes it |",
+    "Error: icon and words, what failed and why, the next step and its action, never looking like loading.",
+    "| SYS-014 | Errors shall be explained in a human sentence with the next step, never blaming the user. |",
+    'Each failure has its reason and next step ("Not enough space: 2.1 GB needed").',
+    '| Cannot sync | "Can\'t sync", and the reason with the next step one step down | Cross |',
+]
+NEXT_STEP_AS_WORKING_NOTE = [
+    "Next step: measure the noise floor.",
+    "- Next steps: wire the codec.",
+    "The next step is to pick a value.",
+    "Our next steps are the layout and the DRC.",
+]
+
+
+@pytest.mark.parametrize("line", NEXT_STEP_AS_UI_WORDING)
+def test_next_step_as_ui_wording_is_not_a_working_note(repo, line):
+    p = repo / "docs/specs/thing.md"
+    p.write_text(SPEC + "\n" + line + "\n")
+    assert [f for f in docs.check_file(p, repo_root=repo) if f.rule == "working-note"] == []
+
+
+@pytest.mark.parametrize("line", NEXT_STEP_AS_WORKING_NOTE)
+def test_next_step_as_a_working_note_still_warns(repo, line):
+    p = repo / "docs/specs/thing.md"
+    p.write_text(SPEC + "\n" + line + "\n")
+    assert [f.rule for f in docs.check_file(p, repo_root=repo)] == ["working-note"]
+
+
+def test_working_phrase_inside_double_quotes_is_quoted_wording(repo):
+    p = repo / "docs/specs/thing.md"
+    p.write_text(SPEC + '\nThe button reads \u201cFor now, skip\u201d and the toast "TODO list saved".\n')
+    assert [f for f in docs.check_file(p, repo_root=repo) if f.rule == "working-note"] == []
+
+
 def test_status_outside_the_vocabulary_warns(repo):
     p = repo / "docs/specs/thing.md"
     p.write_text(SPEC.replace("Draft, 2026-10-26.", "v1, kind of done"))
