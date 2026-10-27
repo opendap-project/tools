@@ -13,6 +13,7 @@ import sys
 import tempfile
 
 from pcbmodel import Check
+from sexpr import load_toml
 
 KICAD_APP = LEVELS = SPEC = None  # bound from the check script (bind)
 
@@ -79,19 +80,7 @@ def fold_drc(path, out):
 # ---------------------------------------------------------------- report
 
 def load_config(path):
-    if not path or not os.path.exists(path):
-        return {}
-    try:
-        import tomllib  # Python 3.11+
-        with open(path, "rb") as fh:
-            return tomllib.load(fh)
-    except ImportError:
-        py = os.environ.get("ODAPKIT_PYTHON3", "python3")
-        res = subprocess.run([py, "-c", "import json,sys,tomllib;print(json.dumps(tomllib.load(open(sys.argv[1],'rb'))))", path],
-                             capture_output=True, text=True)
-        if res.returncode:
-            sys.exit(f"pcb-craft-check: cannot read {path}: {res.stderr.strip()}")
-        return json.loads(res.stdout)
+    return load_toml(path, "pcb-craft-check")
 
 
 def reached(results):

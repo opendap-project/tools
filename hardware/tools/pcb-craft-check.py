@@ -73,7 +73,7 @@ for _m in (pcbmodel, pcbreport):
     _m.bind(globals())
 from pcbmodel import (Board, Check, Quiet, _groups, _silk_points, angle_ok, bbox_mm, body_box,  # noqa: E402
                       electrical, is_on_bottom, norm_deg, point_box_dist, prefix, seg_point_dist, shown,
-                      silk_layers, to_mm)
+                      silk_layers, stackup_colours, to_mm)
 from pcbreport import fold_drc, load_config, order, render  # noqa: E402
 
 # ---------------------------------------------------------------- checks
@@ -413,7 +413,7 @@ def check_docs(b, out):
     dims = [d for d in b.board.GetDrawings() if d.GetClass().startswith("PCB_DIM_") and d.GetLayer() == pcbnew.Dwgs_User]
     if len(dims) < 2:
         c62.fail(f"{len(dims)} dimension(s) on User.Drawings, need at least 2 (outline width and height)")
-    colours = dict(re.findall(r'\(layer "([FB]\.(?:Mask|SilkS))"\s*\(type "[^"]*"\)\s*\(color "([^"]+)"\)', b.raw))
+    colours = stackup_colours(b.raw)
     for pair in (("F.Mask", "B.Mask"), ("F.SilkS", "B.SilkS")):
         got = [colours.get(layer) for layer in pair]
         if not all(got):

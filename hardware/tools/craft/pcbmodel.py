@@ -12,6 +12,8 @@ import os
 import re
 import sys
 
+from sexpr import find_form, kids, val
+
 pcbnew = None  # KiCad's module, imported by load_pcbnew() once a board is checked
 GRID = PASSIVES = None  # bound from the check script (bind)
 
@@ -133,6 +135,15 @@ def exemptions(fp):
         return set(), ""
     text = fp.GetFieldText("Craft_Exempt")
     return set(re.findall(r"CRAFT-\d+", text)), text
+
+
+def stackup_colours(text):
+    """The mask and silk colours a board file's stackup records ({"F.Mask": "Green", …}), from the shared
+    S-expression model (sexpr.find_form): only the stackup form is parsed."""
+    stackup = find_form(text, "stackup")
+    layers = kids(stackup, "layer") if stackup else []
+    return {lay[1]: val(lay, "color") for lay in layers
+            if len(lay) > 1 and lay[1] in ("F.Mask", "B.Mask", "F.SilkS", "B.SilkS") and val(lay, "color")}
 
 
 class Check:

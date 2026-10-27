@@ -1,5 +1,7 @@
-"""S-expressions of KiCad files for the schematic craft check (tools/sch-craft-check.py): parse, child
-lookups, properties, text sizes and the grid. bind(names) gives it the check script's constants. Python 3.9."""
+"""The one S-expression model of KiCad files for both craft checks (tools/sch-craft-check.py and
+tools/pcb-craft-check.py): parse, find_form (one form out of a large file), child lookups, properties,
+text sizes, the grid, and load_toml for their configuration. bind(names) gives it the schematic check's
+constants (GRID). Python 3.9 (KiCad's, for the board check)."""
 import json
 import os
 import re
@@ -41,6 +43,39 @@ def parse(text):
         else:
             cur.append(m.group(4))
     return cur[0] if cur else []
+
+
+_HEAD = re.compile(r'\(\s*([^\s()"]+)')
+
+
+def find_form(text, head):
+    """Parse only the first form whose head is `head` (a whole token) out of a KiCad file's text, as the board
+    check reads its stackup, without parsing the whole board. None when there is none."""
+    for m in _HEAD.finditer(text):
+        if m.group(1) != head or _in_string(text, m.start()):
+            continue
+        depth, i, n = 0, m.start(), len(text)
+        while i < n:
+            c = text[i]
+            if c == '"':
+                i += 1
+                while i < n and text[i] != '"':
+                    i += 2 if text[i] == "\\" else 1
+            elif c == "(":
+                depth += 1
+            elif c == ")":
+                depth -= 1
+                if depth == 0:
+                    return parse(text[m.start():i + 1])
+            i += 1
+        raise ValueError(f"unbalanced S-expression from offset {m.start()}")
+    return None
+
+
+def _in_string(text, pos):
+    """True when pos is inside a quoted string (an odd number of unescaped quotes before it on its line)."""
+    line = text[text.rfind("\n", 0, pos) + 1:pos]
+    return len(re.findall(r'(?<!\\)"', line)) % 2 == 1
 
 
 def kids(node, name):
@@ -114,7 +149,9 @@ def fmt(x, y):
     return f"({x:g}, {y:g})"
 
 
-def load_toml(path):
+def load_toml(path, tool="sch-craft-check"):
+    """A configuration file as a dict ({} when there is none). KiCad's Python (3.9) has no tomllib: it reads
+    the file through $ODAPKIT_PYTHON3."""
     if not path or not os.path.exists(path):
         return {}
     try:
@@ -126,5 +163,5 @@ def load_toml(path):
         res = subprocess.run([py, "-c", "import json,sys,tomllib;print(json.dumps(tomllib.load(open(sys.argv[1],'rb'))))", path],
                              capture_output=True, text=True)
         if res.returncode:
-            sys.exit(f"sch-craft-check: cannot read {path}: {res.stderr.strip()}")
+            sys.exit(f"{tool}: cannot read {path}: {res.stderr.strip()}")
         return json.loads(res.stdout)
