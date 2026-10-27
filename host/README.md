@@ -28,6 +28,10 @@ The script is safe to run again. It installs the Homebrew packages in [`Brewfile
 
 Code is built and tested on the host; the build VM only builds images and the sysroot, and the virtual T1 and the T1 only run software: [development workflow](docs/specs/development-workflow.md).
 
+## Command standard
+
+Every command-line surface, from the `opendap` and `odw` umbrellas and their plugins to device binaries, scripts, generators and hooks, follows the [command standard](docs/specs/command-standard.md) (accepted with [RFC 0017](https://github.com/opendap-project/rfcs/blob/main/text/0017-naming-and-topology.md)): discovery through `tools.toml`, `--help`, `--json`, exit status 0, 1 or 2, and agents first, humans second. `odapkit` keeps working until the `tools` cut; the standard's §10 lists what changes.
+
 ## Layout
 
 - `setup.sh` — installs and checks everything; safe to run again
