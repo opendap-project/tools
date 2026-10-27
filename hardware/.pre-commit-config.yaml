@@ -49,8 +49,8 @@ repos:
   - repo: local
     hooks:
       - id: cli-contract
-        name: command-line contract (tests/test_cli_contract.py)
-        entry: python3 -m unittest tests.test_cli_contract
+        name: command-line contract and the toolkit-host lookup (tests/test_cli_contract.py, tests/test_host_lookup.py)
+        entry: python3 -m unittest tests.test_cli_contract tests.test_host_lookup
         language: system
         pass_filenames: false
         files: ^(bin|lib|tools|tests)/|^tools\.toml$

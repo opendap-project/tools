@@ -1,7 +1,8 @@
 # shellcheck shell=sh
 # toolkit-host's command-line helpers (lib/cli.sh) for this repository's shell tools, sourced (POSIX sh):
 # cli_fail CODE MSG HINT FIX [STATUS], cli_usage MSG, cli_json_str, cli_summary NAME FILE (command standard §6).
-# toolkit-host is found through ODAP_TOOLKIT_HOST_DIR (odapkit sets it) or the workspace's repos.tsv; without it,
+# toolkit-host is host/ of this repository when this checkout is one of its folders (the merged tools root), else
+# ODAP_TOOLKIT_HOST_DIR (odapkit sets it), else the workspace's repos.tsv; without it,
 # the same error format in its smallest form. cli_root is this checkout.
 cli_root="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/.." && pwd)"
 : "${CLI_TOOL:=odapkit ${0##*/odapkit-}}"
@@ -10,7 +11,19 @@ CLI_JSON="${CLI_JSON:-0}"
 # True when FILE belongs to the user running the tool (POSIX: no test -O).
 _cli_mine() { [ -n "$(find "$1" -prune -user "$(id -u)" 2>/dev/null)" ]; }
 
+# host/ beside this folder in the same repository (the merged tools root): the nearest folder at or above
+# cli_root with a .git is the repository's top; when that is not cli_root itself, its host/ holds the helpers.
+_cli_sibling() {
+  d="$cli_root"
+  while [ ! -e "$d/.git" ]; do
+    [ "$d" = / ] && return 1
+    d="$(dirname "$d")"
+  done
+  [ "$d" != "$cli_root" ] && [ -f "$d/host/lib/cli.sh" ] && _cli_mine "$d/host/lib/cli.sh" && echo "$d/host"
+}
+
 _cli_host() {
+  _cli_sibling && return 0
   [ -n "${ODAP_TOOLKIT_HOST_DIR:-}" ] && { echo "$ODAP_TOOLKIT_HOST_DIR"; return 0; }
   d="$cli_root"
   while [ "$d" != / ]; do
