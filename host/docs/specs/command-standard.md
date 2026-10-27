@@ -34,7 +34,7 @@ OpenDAP has two umbrella commands, one per side of the audience boundary. Both d
 
 ## 3. Discovery: `tools.toml`
 
-Each root that contributes tools declares them in `tools.toml` at the root, one file per front:
+Each root that contributes tools declares them in `tools.toml` at the root, one file per front. A root made of tool folders (the merged `tools` root) keeps one `tools.toml` in each folder directly below it instead, its `entry` paths relative to that folder:
 
 ```toml
 schema = "opendap.tools/v1"
@@ -51,7 +51,7 @@ stability = "stable"          # internal | preview | stable | deprecated
 
 Resolution order, first match wins:
 
-1. **Workspace roots.** The workspace manifest (`repos.tsv`) lists the roots; every root's `tools.toml` with this `front` is read. `ODAP_<ROOT>_DIR` overrides a root's path.
+1. **Workspace roots.** The workspace manifest (`repos.tsv`) lists the roots; every root's `tools.toml` with this `front` is read, then the `tools.toml` of each folder directly below the root (sorted; hidden folders skipped). `ODAP_<ROOT>_DIR` overrides a root's path.
 2. **`PATH`.** An executable `<front>-<tool>` on `PATH`. A tool found only here has `audience` and `stability` unknown and is listed as such.
 
 Rules:
@@ -61,7 +61,7 @@ Rules:
 - Two entries with the same `name` for one front are an error reported by `odw doctor`; dispatch takes the first in manifest order. Until `odw doctor` exists, `<front> help` reports it on stderr.
 - An entry is not dispatched when its name breaks the pattern, it names a built-in, its `entry` leaves the root or is not an executable file; `<front> help` reports why on stderr. Other schema problems (a summary over 100 characters, an `audience` that does not fit the front) are reported the same way and the tool still runs. A `tools.toml` that does not parse is reported and skipped; the other roots still work. Running a tool prints no such report.
 - Until the `tools` cut, `odw` also accepts `odapkit-<tool>` on `PATH`, after `odw-<tool>` in the same folder.
-- `odw` sets `ODAP_TOOLKIT_HOST_DIR` for the tool it runs, when unset, to the toolkit-host root, so tools in other roots find the shared helpers.
+- `odw` sets `ODAP_TOOLKIT_<NAME>_DIR` (`HOST`, `HARDWARE`, `HOOKS`, `IMAGE`, `VERIFY`) for the tool it runs, when unset: to the `toolkit-<name>` root, or to the `<name>` folder of a root whose folders hold their `tools.toml`, which is exported as `ODAP_<ROOT>_DIR` too (`ODAP_TOOLS_DIR`). Tools in other roots find the shared helpers (host) the same way in either layout.
 - `audience` follows the front: `odw` entries are `maintainer`; `opendap` entries are `developer` or `user`.
 - `opendap` outside a workspace reads only `PATH` (plugins installed by the devkit or a package manager put their executables there).
 

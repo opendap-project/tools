@@ -398,3 +398,99 @@ fn the_current_folder_never_chooses_the_workspace() {
     assert_eq!(o.status.code(), Some(2), "{}", stdout(&o));
     assert!(stderr(&o).contains("no tool evil"));
 }
+
+/// A plugin that prints the tool folders odw exports.
+fn env_plugin(f: &Fixture, rel: &str) {
+    f.write(
+        rel,
+        "#!/bin/sh\n# odapkit env: the env fixture\nfor v in ODAP_TOOLKIT_HOST_DIR ODAP_TOOLKIT_HARDWARE_DIR ODAP_TOOLKIT_HOOKS_DIR ODAP_TOOLS_DIR; do eval \"echo $v=\\${$v:-}\"; done\n",
+        true,
+    );
+}
+
+/// Today's layout (a repository per toolkit folder) and the merged `tools` root (one repository whose
+/// folders each hold a tools.toml) give the same tools and the same tool folders to plugins.
+#[test]
+fn both_toolkit_layouts_discover_the_same_tools_and_export_the_tool_folders() {
+    let today = Fixture::new();
+    today.write(
+        "ws/repos.tsv",
+        "path\trepository\npublic/toolkit/host\to/toolkit-host\npublic/toolkit/hardware\to/toolkit-hardware\n",
+        false,
+    );
+    let merged = Fixture::new();
+    merged.write(
+        "ws/repos.tsv",
+        "path\trepository\npublic/tools\to/tools\n",
+        false,
+    );
+    for (f, base) in [(&today, "ws/public/toolkit"), (&merged, "ws/public/tools")] {
+        f.write(
+            &format!("{base}/host/tools.toml"),
+            &tools_toml(&[("env", "preview")]),
+            false,
+        );
+        env_plugin(f, &format!("{base}/host/bin/odapkit-env"));
+        f.write(
+            &format!("{base}/hardware/tools.toml"),
+            &tools_toml(&[("sim", "stable")]),
+            false,
+        );
+        f.plugin(&format!("{base}/hardware/bin/odapkit-sim"), "sim");
+    }
+    let names = |f: &Fixture| -> Vec<String> {
+        let o = f.odw(&["help", "--json"], &[]);
+        assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+        assert_eq!(stderr(&o), "");
+        let doc: Value = serde_json::from_str(&stdout(&o)).unwrap();
+        let mut v: Vec<String> = doc["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|t| {
+                format!(
+                    "{} {}",
+                    t["name"].as_str().unwrap(),
+                    t["root"].as_str().unwrap()
+                )
+            })
+            .collect();
+        v.sort();
+        v
+    };
+    assert_eq!(
+        names(&today),
+        ["env public/toolkit/host", "sim public/toolkit/hardware"]
+    );
+    assert_eq!(
+        names(&merged),
+        ["env public/tools/host", "sim public/tools/hardware"]
+    );
+
+    let ws = |f: &Fixture| f.dir.join("ws").display().to_string();
+    let o = today.odw(&["env"], &[]);
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let w = ws(&today);
+    assert_eq!(
+        stdout(&o),
+        format!(
+            "ODAP_TOOLKIT_HOST_DIR={w}/public/toolkit/host\nODAP_TOOLKIT_HARDWARE_DIR={w}/public/toolkit/hardware\nODAP_TOOLKIT_HOOKS_DIR=\nODAP_TOOLS_DIR=\n"
+        )
+    );
+    let o = merged.odw(&["env"], &[]);
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let w = ws(&merged);
+    assert_eq!(
+        stdout(&o),
+        format!(
+            "ODAP_TOOLKIT_HOST_DIR={w}/public/tools/host\nODAP_TOOLKIT_HARDWARE_DIR={w}/public/tools/hardware\nODAP_TOOLKIT_HOOKS_DIR=\nODAP_TOOLS_DIR={w}/public/tools\n"
+        )
+    );
+    // A variable already set is kept.
+    let o = merged.odw(&["env"], &[("ODAP_TOOLKIT_HOST_DIR", "/mine")]);
+    assert!(
+        stdout(&o).starts_with("ODAP_TOOLKIT_HOST_DIR=/mine\n"),
+        "{}",
+        stdout(&o)
+    );
+}

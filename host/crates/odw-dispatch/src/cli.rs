@@ -1,9 +1,9 @@
 //! The umbrella's own command line (command standard §2, §4) and what each invocation does, as data:
 //! the binary prints it or `exec`s it. No I/O here.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use crate::discovery::{Host, Search, discover};
+use crate::discovery::{Host, Search, discover, tool_folders};
 use crate::error::DispatchError;
 use crate::help;
 use crate::model::{Front, valid_name};
@@ -162,21 +162,36 @@ fn exec(front: &Front, host: &dyn Host, search: &Search, name: &str, args: Vec<S
 }
 
 /// `ODAP_<NAME>_DIR` for the front's export roots that are not set already, so a plugin finds the
-/// shared helpers (toolkit-host) the way the umbrella found it.
+/// shared helpers (toolkit-host) the way the umbrella found it: a root of that name, else that folder
+/// of a root whose tool folders hold `tools.toml`. Such a root is exported too (`ODAP_TOOLS_DIR`).
 fn exported_roots(front: &Front, host: &dyn Host, search: &Search) -> Vec<(String, String)> {
     let all: Vec<ResolvedRoot> = roots(host, search.workspace.as_deref());
-    front
-        .export_roots
+    let folders: Vec<(&ResolvedRoot, Vec<String>)> = all
         .iter()
-        .filter_map(|name| {
-            let var = root_env_var(name);
-            if host.var(&var).is_some_and(|v| !v.is_empty()) {
-                return None;
-            }
-            let r = all.iter().find(|r| r.root.name == *name)?;
-            Some((var, r.dir.to_string_lossy().into_owned()))
-        })
-        .collect()
+        .map(|r| (r, tool_folders(host, r)))
+        .filter(|(_, f)| !f.is_empty())
+        .collect();
+    let mut out: Vec<(String, String)> = Vec::new();
+    let mut add = |var: String, dir: &Path| {
+        if !host.var(&var).is_some_and(|v| !v.is_empty()) && !out.iter().any(|(v, _)| *v == var) {
+            out.push((var, dir.to_string_lossy().into_owned()));
+        }
+    };
+    for e in front.export_roots {
+        let var = root_env_var(e.name);
+        if let Some(r) = all.iter().find(|r| r.root.name == e.name) {
+            add(var, &r.dir);
+        } else if let Some((r, _)) = folders
+            .iter()
+            .find(|(_, f)| f.iter().any(|n| n == e.folder))
+        {
+            add(var, &r.dir.join(e.folder));
+        }
+    }
+    for (r, _) in &folders {
+        add(root_env_var(&r.root.name), &r.dir);
+    }
+    out
 }
 
 #[cfg(test)]

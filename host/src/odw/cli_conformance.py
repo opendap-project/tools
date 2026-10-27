@@ -42,13 +42,17 @@ class UsageError(clikit.CliError):
 
 
 def summaries(ws, items):
-    """{executable path: summary} for every entry of the roots' tools.toml files."""
+    """{executable path: summary} for every entry of the roots' tools.toml files: each root's own, and one in
+    each folder directly below it (the merged `tools` root keeps one per tool folder), entries relative to it."""
     out = {}
     for root in sorted({e["root"] for e in items}):
-        f = pathlib.Path(ws) / root / "tools.toml"
-        if f.is_file():
-            for t in tomllib.loads(f.read_text()).get("tool", []):
-                out[f"{root}/{t['entry']}"] = t.get("summary", "")
+        top = pathlib.Path(ws) / root
+        files = [top / "tools.toml"] + sorted(d / "tools.toml" for d in top.glob("[!.]*/"))
+        for f in files:
+            if f.is_file():
+                base = f.parent.relative_to(ws).as_posix()
+                for t in tomllib.loads(f.read_text()).get("tool", []):
+                    out.setdefault(f"{base}/{t['entry']}", t.get("summary", ""))
     return out
 
 

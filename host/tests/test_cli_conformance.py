@@ -281,3 +281,15 @@ def test_closure_follows_modules_named_by_from_imports(tmp_path):
 def test_writing_to_os_devnull_is_not_a_state_change():
     f = cli_inventory.facts([("tools/x.py", 'import os\nnull = open(os.devnull, "w")\n')])
     assert f["writes"] == []
+
+
+@pytest.mark.parametrize("layout", ["public/toolkit/host", "public/tools/host"])
+def test_summaries_in_either_toolkit_layout(tmp_path, layout):
+    """A repository per toolkit folder, or the merged `tools` root whose folders hold their own tools.toml."""
+    folder = tmp_path / layout
+    (folder / "bin").mkdir(parents=True)
+    (folder / "tools.toml").write_text('schema = "opendap.tools/v1"\nfront = "odw"\n[[tool]]\nname = "good"\n'
+                                       'summary = "a conforming fixture"\nentry = "bin/odapkit-good"\n')
+    root = layout.rsplit("/", 1)[0] if layout.startswith("public/tools/") else layout
+    items = [{"root": root, "path": f"{layout}/bin/odapkit-good"}]
+    assert cli_conformance.summaries(tmp_path, items) == {f"{layout}/bin/odapkit-good": "a conforming fixture"}

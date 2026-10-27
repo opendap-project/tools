@@ -52,14 +52,55 @@ pub fn discover(host: &dyn Host, front: &Front, search: &Search) -> Catalog {
     catalog
 }
 
+/// The `tools.toml` files of a root: its own, then one in each folder directly below it (the merged
+/// `tools` root keeps one per tool folder), as (file, the folder entries are relative to, that folder's
+/// path from the workspace).
+pub fn manifests(host: &dyn Host, r: &ResolvedRoot) -> Vec<(PathBuf, PathBuf, String)> {
+    let mut out = vec![(r.dir.join("tools.toml"), r.dir.clone(), r.root.path.clone())];
+    for name in tool_folders(host, r) {
+        let dir = r.dir.join(&name);
+        out.push((
+            dir.join("tools.toml"),
+            dir,
+            format!("{}/{name}", r.root.path),
+        ));
+    }
+    out
+}
+
+/// The folders directly below a root that hold a `tools.toml`, sorted; hidden folders are skipped.
+pub fn tool_folders(host: &dyn Host, r: &ResolvedRoot) -> Vec<String> {
+    host.list_dir(&r.dir)
+        .into_iter()
+        .filter(|n| {
+            !n.starts_with('.')
+                && host
+                    .read_to_string(&r.dir.join(n).join("tools.toml"))
+                    .is_some()
+        })
+        .collect()
+}
+
 fn read_root(host: &dyn Host, front: &Front, r: &ResolvedRoot, catalog: &mut Catalog) {
-    let file = r.dir.join("tools.toml");
-    let Some(text) = host.read_to_string(&file) else {
+    for (file, base, label) in manifests(host, r) {
+        read_manifest(host, front, &file, &base, &label, catalog);
+    }
+}
+
+fn read_manifest(
+    host: &dyn Host,
+    front: &Front,
+    file: &Path,
+    base: &Path,
+    label: &str,
+    catalog: &mut Catalog,
+) {
+    let Some(text) = host.read_to_string(file) else {
         return;
     };
     let warn = |catalog: &mut Catalog, message: String| {
         catalog.warnings.push(Warning {
-            path: file.clone(),
+            path: file.to_path_buf(),
             message,
         })
     };
@@ -83,7 +124,7 @@ fn read_root(host: &dyn Host, front: &Front, r: &ResolvedRoot, catalog: &mut Cat
         if manifest::blocking_problem(&problems).is_some() {
             continue;
         }
-        let entry = r.dir.join(&e.entry);
+        let entry = base.join(&e.entry);
         if !host.is_executable(&entry) {
             warn(
                 catalog,
@@ -108,7 +149,7 @@ fn read_root(host: &dyn Host, front: &Front, r: &ResolvedRoot, catalog: &mut Cat
             audience: e.audience,
             stability: e.stability,
             replaces: e.replaces,
-            root: r.root.path.clone(),
+            root: label.to_string(),
         };
         catalog.tools.push(Tool {
             name: e.name,
@@ -211,13 +252,15 @@ mod tests {
             self.files.get(p).is_some_and(|(_, x)| *x)
         }
         fn list_dir(&self, p: &Path) -> Vec<String> {
+            // Files and folders directly below `p`, as a directory listing gives them.
             let mut v: Vec<String> = self
                 .files
                 .keys()
-                .filter(|k| k.parent() == Some(p))
-                .map(|k| k.file_name().unwrap().to_string_lossy().into_owned())
+                .filter_map(|k| k.strip_prefix(p).ok()?.components().next())
+                .map(|c| c.as_os_str().to_string_lossy().into_owned())
                 .collect();
             v.sort();
+            v.dedup();
             v
         }
         fn var(&self, k: &str) -> Option<String> {
@@ -296,6 +339,77 @@ mod tests {
             PathBuf::from("/elsewhere/bin/odapkit-sim")
         );
         assert_eq!(c.get("sim").unwrap().declared.as_ref().unwrap().root, "r/b");
+    }
+
+    #[test]
+    fn a_root_with_tool_folders_reads_each_folders_file_one_level_down() {
+        // The merged `tools` root: no root tools.toml, one per folder, entries relative to it.
+        let host = Fake::default()
+            .file("/ws/repos.tsv", "path\trepository\nt\to/tools\n", false)
+            .file("/ws/t/host/tools.toml", &tools_toml(&["plan"]), false)
+            .file("/ws/t/host/bin/odapkit-plan", "#!/bin/sh\n", true)
+            .file("/ws/t/hardware/tools.toml", &tools_toml(&["sim"]), false)
+            .file("/ws/t/hardware/bin/odapkit-sim", "#!/bin/sh\n", true)
+            // Hidden folders and deeper files are not read.
+            .file("/ws/t/.git/tools.toml", &tools_toml(&["hidden"]), false)
+            .file("/ws/t/.git/bin/odapkit-hidden", "#!/bin/sh\n", true)
+            .file("/ws/t/host/src/tools.toml", &tools_toml(&["deep"]), false)
+            .file("/ws/t/host/src/bin/odapkit-deep", "#!/bin/sh\n", true);
+        let c = discover(&host, &Front::ODW, &search(&[]));
+        let found: Vec<_> = c
+            .tools
+            .iter()
+            .map(|t| {
+                let root = t.declared.as_ref().unwrap().root.clone();
+                (t.name.as_str(), t.entry.to_str().unwrap().to_string(), root)
+            })
+            .collect();
+        assert_eq!(
+            found,
+            [
+                (
+                    "sim",
+                    "/ws/t/hardware/bin/odapkit-sim".into(),
+                    "t/hardware".into()
+                ),
+                (
+                    "plan",
+                    "/ws/t/host/bin/odapkit-plan".into(),
+                    "t/host".into()
+                ),
+            ]
+        );
+        assert!(c.warnings.is_empty(), "{:?}", c.warnings);
+    }
+
+    #[test]
+    fn a_roots_own_file_comes_before_its_folders() {
+        let host = Fake::default()
+            .file("/ws/repos.tsv", REPOS, false)
+            .file("/ws/r/a/tools.toml", &tools_toml(&["plan"]), false)
+            .file("/ws/r/a/bin/odapkit-plan", "#!/bin/sh\n", true)
+            .file(
+                "/ws/r/a/sub/tools.toml",
+                &tools_toml(&["plan", "sim"]),
+                false,
+            )
+            .file("/ws/r/a/sub/bin/odapkit-plan", "#!/bin/sh\n", true)
+            .file("/ws/r/a/sub/bin/odapkit-sim", "#!/bin/sh\n", true);
+        let c = discover(&host, &Front::ODW, &search(&[]));
+        assert_eq!(
+            c.get("plan").unwrap().entry,
+            PathBuf::from("/ws/r/a/bin/odapkit-plan")
+        );
+        assert_eq!(
+            c.get("sim").unwrap().entry,
+            PathBuf::from("/ws/r/a/sub/bin/odapkit-sim")
+        );
+        assert!(
+            c.warnings
+                .iter()
+                .any(|w| w.path == Path::new("/ws/r/a/sub/tools.toml")
+                    && w.message.contains("declared twice"))
+        );
     }
 
     #[test]

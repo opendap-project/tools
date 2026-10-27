@@ -12,18 +12,49 @@ pub struct Front {
     pub path_prefixes: &'static [&'static str],
     /// Built-in commands; a plugin never shadows one (§2).
     pub builtins: &'static [&'static str],
-    /// Repositories (manifest names) whose root is exported to plugins as `ODAP_<NAME>_DIR` when unset.
-    pub export_roots: &'static [&'static str],
+    /// Tool folders exported to plugins as `ODAP_<NAME>_DIR` when unset: each is a repository of its
+    /// own, or a folder of one root that holds its `tools.toml` (the merged `tools` root).
+    pub export_roots: &'static [ExportRoot],
+}
+
+/// A tool folder a front exports: the repository `name` (`toolkit-host`, so `ODAP_TOOLKIT_HOST_DIR`),
+/// or the `folder` of that name directly below a root (`host` in `tools`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ExportRoot {
+    pub name: &'static str,
+    pub folder: &'static str,
 }
 
 impl Front {
     /// The maintainers' umbrella. Plugins are still named `odapkit-<tool>` until the tools cut, so `PATH`
-    /// discovery accepts that prefix after `odw-`; plugins find the shared helpers through toolkit-host.
+    /// discovery accepts that prefix after `odw-`; plugins find the shared helpers through toolkit-host
+    /// and each other through the toolkit folders, in either layout.
     pub const ODW: Front = Front {
         name: "odw",
         path_prefixes: &["odw-", "odapkit-"],
         builtins: &["help", "check"],
-        export_roots: &["toolkit-host"],
+        export_roots: &[
+            ExportRoot {
+                name: "toolkit-host",
+                folder: "host",
+            },
+            ExportRoot {
+                name: "toolkit-hardware",
+                folder: "hardware",
+            },
+            ExportRoot {
+                name: "toolkit-hooks",
+                folder: "hooks",
+            },
+            ExportRoot {
+                name: "toolkit-image",
+                folder: "image",
+            },
+            ExportRoot {
+                name: "toolkit-verify",
+                folder: "verify",
+            },
+        ],
     };
 }
 
@@ -73,7 +104,8 @@ pub struct Declared {
     pub audience: Audience,
     pub stability: Stability,
     pub replaces: Option<String>,
-    /// The root's path as the workspace manifest lists it (`public/toolkit/host`).
+    /// The folder whose `tools.toml` declares the tool, from the workspace: a root as the manifest lists
+    /// it (`public/toolkit/host`), or a folder directly below one (`public/tools/host`).
     pub root: String,
 }
 
