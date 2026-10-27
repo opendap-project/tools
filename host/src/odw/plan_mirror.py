@@ -20,6 +20,7 @@ and reaches nothing. --json prints opendap.plan-mirror/v1 (schemas/plan-mirror.s
 Spec: docs/specs/programme-plan.md (Public tracking mirror).
 """
 import json
+import unicodedata
 import pathlib
 import re
 import subprocess
@@ -138,20 +139,21 @@ def build(prog, ws, cfg):
 
 def private_terms(ws, programme):
     """Regular expressions of the facts that never leave the private side, with what each one stands for."""
-    terms = [(re.compile(r"(?<![\w.-])private/"), "a private/ path")]
+    terms = [(r"(?<![\w.-])private/", "a private/ path")]
     for path, slug in _rows(pathlib.Path(ws)):
         if path.startswith("private/"):
             name = slug.split("/")[-1]
-            terms.append((re.compile(rf"(?<![\w/-]){re.escape(name)}(?![\w-])"), f"private repository {name}"))
-            terms.append((re.compile(re.escape(slug)), f"private repository {slug}"))
+            terms.append((rf"(?<![\w/-]){re.escape(name)}(?![\w-])", f"private repository {name}"))
+            terms.append((re.escape(slug), f"private repository {slug}"))
     decisions = pathlib.Path(programme) / "decisions.toml"
     for d in tomllib.loads(decisions.read_text()).get("decision", []) if decisions.is_file() else []:
-        terms.append((re.compile(rf"(?<![\w-]){re.escape(d['id'])}(?![\w-])"), f"decision {d['id']}"))
+        terms.append((rf"(?<![\w-]){re.escape(d['id'])}(?![\w-])", f"decision {d['id']}"))
     for entry in sorted(pathlib.Path(programme).iterdir()):
         name = entry.name + ("/" if entry.is_dir() else "")
         if not entry.name.startswith("."):
-            terms.append((re.compile(rf"(?<![\w/.-]){re.escape(name)}"), f"the programme's {name}"))
-    return terms
+            terms.append((rf"(?<![\w/.-]){re.escape(name)}", f"the programme's {name}"))
+    # Case and Unicode compatibility forms never hide a term (Private/Engineering, full-width letters).
+    return [(re.compile(rx, re.IGNORECASE), what) for rx, what in terms]
 
 
 def guard(doc, ws, programme):
@@ -159,7 +161,7 @@ def guard(doc, ws, programme):
     found = []
     terms = private_terms(ws, programme)
     for issue in doc["issues"]:
-        text = issue["title"] + "\n" + issue["body"]
+        text = unicodedata.normalize("NFKC", issue["title"] + "\n" + issue["body"])
         for rx, what in terms:
             for m in rx.finditer(text):
                 line = next(ln for ln in text.splitlines() if m.group(0) in ln)
