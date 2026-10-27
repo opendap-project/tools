@@ -17,13 +17,6 @@ audience = "maintainer"
 stability = "preview"
 
 [[tool]]
-name = "dru"
-summary = "Compose a KiCad project's .kicad_dru from its fab and product rule sources, or check it"
-entry = "bin/odapkit-dru"
-audience = "maintainer"
-stability = "preview"
-
-[[tool]]
 name = "parts"
 summary = "Sourcing evaluation matrix: stock, price breaks and lifecycle per part and channel, scored"
 entry = "bin/odapkit-parts"
