@@ -129,6 +129,49 @@ def test_identifier_rows_are_mechanical_only_when_safe(ws):
     assert got["env:ODAP_X;ODAP_Y"][1] == "count-mismatch"
 
 
+ROOTED = [  # (old, new, kind, notes, root): the root column names the owner the tool cannot infer
+    ("command:odapkit", "command:odw", "command", "the command", "libs"),
+    ("command:odapkit craft check", "command:odw craft check", "command", "", "tools"),
+    ("skill:/opendap:requirement", "skill:/opendap:docs-requirement", "skill", "", "libs"),
+    ("mfr:Murata", "mfr:murata", "identifier", "kicad-lib library key", ""),
+]
+
+
+def rooted_map(ws):
+    """The test map plus rows that carry a root column (the column is optional: other rows leave it empty)."""
+    lines = ["old\tnew\tkind\taction\tnotes\tscope\troot"]
+    lines += ["\t".join([*r, "test", ""]) for r in MAP if r[0] != "mfr:Murata"]
+    lines += ["\t".join([o, n, k, "rename", notes, "test", root]) for o, n, k, notes, root in ROOTED]
+    (ws.parent / "map.tsv").write_text("\n".join(lines) + "\n")
+    readme = ws / "public/libs/kicad/README.md"
+    readme.write_text(readme.read_text() + "Run odapkit or odapkit-docs; odapkit craft check; "
+                      "/opendap:requirement for a requirement.\n")
+    git(ws / "public/libs/kicad", "commit", "-q", "-am", "rooted")
+
+
+def test_root_column_names_the_owner_and_clears_a_plain_word(ws):
+    rooted_map(ws)
+    m = rename_map.load(ws, ws.parent / "map.tsv")
+    got = {i.row.old: (i.owner, i.reason) for i in map(lambda r: rename_map.identifier(m, r),
+                                                          rename_map.identifier_rows(m))}
+    assert got["command:odapkit"] == ("libs", None)  # a plain word whose root a maintainer set
+    assert got["command:odapkit craft check"] == ("tools", None)  # owner-unknown without the column
+    assert got["skill:/opendap:requirement"] == ("libs", None)  # written as it appears, so a token
+    assert got["mfr:Murata"] == ("libs", "plain-word")  # no root: the word also appears in prose
+
+
+def test_rooted_plain_word_is_rewritten_as_a_whole_token_only(ws, capsys):
+    rooted_map(ws)
+    code, out, _ = run(capsys, "plan", "libs", *args(ws), "--json")
+    doc = json.loads(out)
+    status = {i["old"]: i["status"] for i in doc["identifiers"]}
+    assert status["command:odapkit"] == "apply" and status["skill:/opendap:requirement"] == "apply"
+    assert status["command:odapkit craft check"] == "later" and status["mfr:Murata"] == "manual"
+    pairs = {(e["old"], e["new"]) for e in doc["edits"] if e["kind"] == "identifier"}
+    assert ("odapkit", "odw") in pairs and ("/opendap:requirement", "/opendap:docs-requirement") in pairs
+    assert not any(o in {"odapkit-docs", "requirement", "Murata"} for o, _ in pairs)
+
+
 def test_plan_on_the_sources_lists_every_move_and_rewrite(ws, capsys):
     before = digest(ws)
     code, out, _ = run(capsys, "plan", "libs", *args(ws), "--json")

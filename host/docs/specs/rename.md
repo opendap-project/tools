@@ -63,9 +63,9 @@ Every text file of the root (UTF-8, no NUL byte, at most 8 MiB) is read once. Fi
 | --- | --- |
 | `apply` | Rewritten: a safe token whose owner root is cut |
 | `later` | A safe token whose owner root is not cut yet |
-| `manual` | Needs a hand; `reason` says why: `plain-word` (a single word with no separator, such as a manufacturer name that also appears in prose), `owner-unknown`, `kind-mismatch`, `count-mismatch` |
+| `manual` | Needs a hand; `reason` says why: `plain-word` (a single word with no separator and no `root`, such as a manufacturer name that also appears in prose), `owner-unknown`, `kind-mismatch`, `count-mismatch` |
 
-The owner of an identifier is the row's `root` column; without one, a root named as a token in the new value (`blackbird-composer.service` → `blackbird`, `ODAP_LIBS_DIR` → `libs`); without one, the root of a source repository named in the old value or the notes (`kicad-lib library key` → `libs`). Rows whose action is not `rename` or `merge`, or whose values are not tokens (parentheses, brackets, ellipses, `(removed)`), are not scanned.
+The optional `root` column names the owner of an identifier row the tool cannot infer (`command:odapkit` → `tools`). Setting it on a plain word also states that the word is the identifier wherever it stands as a whole token, so it is rewritten (`odapkit`, never `odapkit-docs`); a word that also appears in prose keeps the column empty and stays `manual`. A value written as it appears in text is a token too (`skill:/opendap:requirement`, not the bare word). The owner of an identifier is the row's `root` column; without one, a root named as a token in the new value (`blackbird-composer.service` → `blackbird`, `ODAP_LIBS_DIR` → `libs`); without one, the root of a source repository named in the old value or the notes (`kicad-lib library key` → `libs`). Rows whose action is not `rename` or `merge`, or whose values are not tokens (parentheses, brackets, ellipses, `(removed)`), are not scanned.
 
 ## Apply
 
