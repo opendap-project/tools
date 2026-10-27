@@ -48,9 +48,24 @@ def repo_dir(name):
     return None
 
 
+def sibling_host(start):
+    """host/ of the same repository when `start` is one of its folders (the merged tools root): the nearest
+    folder at or above `start` with a .git is the repository's top, and its host/ holds odw.clikit."""
+    d = start = os.path.realpath(start)
+    while not os.path.exists(os.path.join(d, ".git")):
+        if d == os.path.dirname(d):
+            return None
+        d = os.path.dirname(d)
+    helper = os.path.join(d, "host", "src", "odw", "clikit.py")
+    if d != start and os.path.isfile(helper) and os.stat(helper).st_uid == os.getuid():
+        return os.path.join(d, "host")
+    return None
+
+
 def _clikit():
-    """odw.clikit, the command-line helpers of toolkit-host (ODAP_TOOLKIT_HOST_DIR or the workspace)."""
-    host = repo_dir("toolkit-host")
+    """odw.clikit, the command-line helpers of toolkit-host: host/ of this repository (the merged tools root),
+    else ODAP_TOOLKIT_HOST_DIR, else the workspace."""
+    host = sibling_host(os.path.join(HERE, "..")) or repo_dir("toolkit-host")
     if not host:
         print(f"{TOOL}: error repo.not_found: no toolkit-host checkout\n  hint: its odw.clikit runs this tool's "
               "command line\n  fix: export ODAP_TOOLKIT_HOST_DIR=<toolkit-host checkout>", file=sys.stderr)

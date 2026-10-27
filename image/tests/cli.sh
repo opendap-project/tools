@@ -29,6 +29,9 @@ for t in cross deploy dev-key image security-check sysroot; do
   case "$err" in *"error input.invalid:"*"hint: "*"fix: "*) ;; *) fail "$t unknown flag: stderr '$err'" ;; esac
 done
 
+# The toolkit-host lookup of lib/odapkit.sh and security-check, in both toolkit layouts.
+(cd "$root" && python3 -m unittest -q tests.test_host_lookup 2>"$tmp/err") || fail "host lookup: $(cat "$tmp/err")"
+
 run "$root/bin/odapkit-dev-key" create --dry-run
 [ "$rc" = 0 ] && [ ! -e "$tmp/data/opendap" ] || fail "dev-key create --dry-run: exit $rc or wrote $tmp/data"
 run "$root/bin/odapkit-dev-key" path --json

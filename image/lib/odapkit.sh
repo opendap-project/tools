@@ -35,9 +35,21 @@ workspace_root() {
 # True when FILE belongs to the user running the tool (POSIX: no test -O).
 _mine() { [ -n "$(find "$1" -prune -user "$(id -u)" 2>/dev/null)" ]; }
 
-# toolkit-host: $ODAP_TOOLKIT_HOST_DIR (odapkit sets it), else the workspace's repos.tsv: only a workspace
-# this user owns, and a folder inside it, so a repos.tsv someone else wrote never names code to source.
+# toolkit-host: host/ of this repository when this checkout is one of its folders (the merged tools root: the
+# nearest folder with a .git above it), else $ODAP_TOOLKIT_HOST_DIR (odapkit sets it), else the workspace's
+# repos.tsv: only a workspace this user owns, and a folder inside it, so a repos.tsv someone else wrote never
+# names code to source.
+_host_sibling() {
+  top="$(cd "$(dirname "$0")/.." && pwd)"
+  d="$top"
+  while [ ! -e "$d/.git" ]; do
+    [ "$d" = / ] && return 1
+    d="$(dirname "$d")"
+  done
+  [ "$d" != "$top" ] && [ -f "$d/host/lib/cli.sh" ] && _mine "$d/host/lib/cli.sh" && echo "$d/host"
+}
 _host_dir() {
+  _host_sibling && return 0
   [ -n "${ODAP_TOOLKIT_HOST_DIR:-}" ] && { echo "$ODAP_TOOLKIT_HOST_DIR"; return 0; }
   ws="$(workspace_root)" || return 1
   _mine "$ws/repos.tsv" || return 1
