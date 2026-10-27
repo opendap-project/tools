@@ -1,0 +1,11 @@
+(version 1)
+# Test fixture: a two-rule fab set (values are placeholders, not a fab's capabilities).
+
+(rule "Fab: track width"
+	(constraint track_width (min 0.1mm))
+)
+
+(rule "Fab: via hole"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.2mm))
+)

@@ -1,0 +1,6 @@
+# Sources of hardware/demo.kicad_dru, in order (test fixture).
+version = 1
+sources = [
+  "hardware/lib/opendap/design-rules/fab-demo/fab-demo.kicad_dru",
+  "hardware/rules/product.kicad_dru",
+]
