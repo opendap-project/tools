@@ -66,7 +66,7 @@ def _host_dir():
     if os.environ.get("ODAP_TOOLKIT_HOST_DIR"):
         return os.environ["ODAP_TOOLKIT_HOST_DIR"]
     while d != os.path.dirname(d):
-        if os.path.isfile(os.path.join(d, "repos.tsv")):
+        if os.path.isfile(os.path.join(d, "repos.tsv")) and os.stat(os.path.join(d, "repos.tsv")).st_uid == os.getuid():
             for line in open(os.path.join(d, "repos.tsv")).read().splitlines()[1:]:
                 path, _, slug = line.partition("\t")
                 full = os.path.realpath(os.path.join(d, path))  # only a folder inside the workspace
