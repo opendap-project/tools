@@ -26,9 +26,9 @@ Tests: `python3 -m unittest discover tests` (`test_parts.py` runs offline on syn
 - `tests/` — tests and their fixtures; `test_cli_contract.py` checks every tool's command line without KiCad, ngspice or the network, and pre-commit runs it
 - `tools/fab-package.sh` — fab package from a KiCad project (runs ERC/DRC through [toolkit-hooks](https://github.com/opendap-project/toolkit-hooks), found as the sibling `../hooks` or `$ODAP_TOOLKIT_HOOKS_DIR`, formerly `$OPENDAP_TOOLKIT_HOOKS`); `--check` runs only the checks and writes nothing, `--json` prints `opendap.fab-package/v1`
 - `tools/freecad-export.py` — STEP and other exports from FreeCAD
-- `tools/pcb-craft-check.py`, `tools/sch-craft-check.py` — the board and the schematic craft checks behind `odapkit craft`
-- `tools/craft/` — the craft rules as data (`rules.toml`) and their loader and table renderer (`craftrules.py`)
-- `tools/stackup/` — the field solver behind `odapkit stackup` (`fieldsolver.py`, closed forms in `analytic.py`; `explore.py` and `pdn.py` are its modules, run through `odapkit stackup`)
+- `tools/pcb-craft-check.py`, `tools/sch-craft-check.py` — the board and the schematic craft checks behind `odapkit craft`: their command lines, the limits they read from the rules data and each check's ID and level
+- `tools/craft/` — the craft rules as data (`rules.toml`) and their loader and table renderer (`craftrules.py`); the checks' models and reports: `pcbmodel.py` (the board) and `pcbreport.py` (DRC fold, report), `sexpr.py` (KiCad S-expressions), `schmodel.py` (the schematic and the symbol rules), `schdesign.py` (the design checks) and `schreport.py` (ERC fold, report). Each takes the check script's limits through `bind()`
+- `tools/stackup/` — `odapkit stackup`: the command line and its reports (`stackup.py`), the stack model and its cross-sections (`stackmodel.py`), design, check, validation and coupling (`stackcheck.py`), the field solver (`fieldsolver.py`, closed forms in `analytic.py`), the layer-count exploration (`explore.py`, its zones and dielectrics in `explorezones.py`) and the PDN model (`pdn.py`)
 - `tools/clihost.py`, `lib/cli.sh` — find toolkit-host's command-line helpers for the Python and shell tools
 - `tools.toml` — the tools this root declares to the maintainers' umbrella command
 - `tools/sourcing/` — the channel adapters, the matrix and the Rockchip DDR list reader behind `odapkit parts`
