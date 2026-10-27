@@ -27,8 +27,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 def find_workspace():
     d = HERE
     while d != os.path.dirname(d):
+        # Only a workspace this user owns: a repos.tsv someone else wrote never names code to import.
         if os.path.isfile(os.path.join(d, "repos.tsv")):
-            return d
+            return d if os.stat(os.path.join(d, "repos.tsv")).st_uid == os.getuid() else None
         d = os.path.dirname(d)
     return None
 
