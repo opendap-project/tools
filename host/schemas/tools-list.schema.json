@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/tools-list.schema.json",
+  "title": "The tools an umbrella command offers, as <front> help --json prints them",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "items"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opendap.tools-list/v1"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "summary",
+          "audience",
+          "stability",
+          "replaces",
+          "entry",
+          "root"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "audience": {
+            "enum": [
+              "maintainer",
+              "developer",
+              "user",
+              "unknown"
+            ]
+          },
+          "stability": {
+            "enum": [
+              "internal",
+              "preview",
+              "stable",
+              "deprecated",
+              "unknown"
+            ]
+          },
+          "replaces": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "entry": {
+            "type": "string",
+            "minLength": 1
+          },
+          "root": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

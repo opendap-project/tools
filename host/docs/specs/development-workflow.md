@@ -37,11 +37,13 @@ On a Linux host the build VM is optional: mkosi can run on the host itself. Only
 | Image builder | mkosi in the build VM | toolkit-image `odapkit image` |
 | Development key | One ed25519 key, host-wide in `~/.local/share/opendap/dev-ssh` | toolkit-image `odapkit dev-key` |
 | Emulator | QEMU with HVF on macOS, built from its pinned release with the patches OpenDAP carries (`qemu/patches/`: the D-Bus display's sound); socket_vmnet for a LAN address | `bin/odapkit qemu install` (its build tools from `Brewfile`); `bin/odapkit vmnet install` |
+| Maintainers' command | `odw` ([command standard](command-standard.md) §1–§4), a Rust binary from `crates/odw-dispatch`, built with the pinned Rust into this checkout's `target/release/odw` and linked as `~/.local/bin/odw`; `bin/odapkit` runs it under its earlier name and is linked as `~/.local/bin/odapkit` | `setup.sh` (`cargo build --release --locked --manifest-path crates/odw-dispatch/Cargo.toml --target-dir target`) |
 
 - **Sysroot.** Linking against libinput, libseat, GBM, EGL, Wayland or ALSA needs the target's headers and libraries.
   - It is built from the image definition, so binaries link against exactly what the image ships.
   - macOS volumes are case-insensitive and Linux headers are not (`ipt_ecn.h` and `ipt_ECN.h`), so it lives in a case-sensitive APFS sparse image under `~/.cache/opendap/`, with Spotlight indexing off.
   - Rebuild it when the image's package set changes.
+- **`odw` and `odapkit`.** `odw TOOL` finds the tool in the `tools.toml` of each workspace root (`repos.tsv` order; `ODAP_<ROOT>_DIR` moves a root, so `ODAP_TOOLKIT_HOST_DIR=<worktree>` runs a worktree's tools), then as `odw-TOOL` or `odapkit-TOOL` on `PATH`, and replaces itself with it. `odapkit` runs the `odw` its own checkout built, else the one on `PATH`, after setting `ODAP_TOOLKIT_HOST_DIR` to its checkout when unset; without a build it exits 1 with the `cargo build` command to run. Rebuild `odw` after changing `crates/odw-dispatch` (run `setup.sh` again, or the `cargo build` above); `tools.toml` changes need no rebuild.
 - **Pinning the remaining tools** (zig, cargo-zigbuild, QEMU) is open. Homebrew installs current versions today; mise is a candidate.
 
 ## 4. Loops

@@ -6,7 +6,7 @@ import tomllib
 
 import pytest
 
-from odw import (audit, cli_conformance, clikit, docs, noindex, plan, rename, requirements, sync,
+from odw import (audit, cli_conformance, clikit, docs, noindex, plan, rename, requirements, schemas, sync,
                  verify)
 
 HOST = pathlib.Path(__file__).resolve().parents[1]
@@ -94,23 +94,41 @@ def test_vmnet_status_json_has_a_schema():
     assert doc["schema"] == "opendap.vmnet-status/v1" and doc["running"] is False and r.returncode == 1
 
 
-def _umbrella(*args):
-    return subprocess.run([str(HOST / "bin" / "odapkit"), *args], capture_output=True, text=True)
+def _umbrella(*args, env=None):
+    return subprocess.run([str(HOST / "bin" / "odapkit"), *args], capture_output=True, text=True, env=env)
 
 
 def test_umbrella_help_json_lists_the_tools_with_a_schema():
     r = _umbrella("help", "--json")
     assert r.returncode == 0, r.stderr
     doc = json.loads(r.stdout)
-    assert doc["schema"] == "opendap.toolkit-tools/v1"
-    by_name = {t["name"]: t for t in doc["tools"]}
-    assert by_name["plan"]["summary"] and by_name["plan"]["path"].endswith("/bin/odapkit-plan")
-    for t in doc["tools"]:  # a tool of this checkout carries the summary tools.toml declares
-        if t["path"].startswith(f"{HOST}/bin/"):
-            assert t["summary"] == TOOLS[t["name"]]["summary"]
+    assert schemas.errors(doc, "tools-list") == []
+    by_name = {t["name"]: t for t in doc["items"]}
+    assert by_name["plan"]["entry"] == f"{HOST}/bin/odapkit-plan"
+    for name, tool in TOOLS.items():  # every tool of this checkout, as its tools.toml declares it
+        item = by_name[name]
+        assert (item["summary"], item["audience"], item["stability"]) == (
+            tool["summary"], tool["audience"], tool["stability"])
+        assert item["entry"] == str(HOST / tool["entry"])
+
+
+def test_umbrella_runs_the_declared_entry():
+    r = _umbrella("plan", "--help")
+    assert r.returncode == 0 and r.stdout.splitlines()[0] == f"odapkit plan: {TOOLS['plan']['summary']}"
 
 
 def test_umbrella_unknown_tool_is_an_error_with_a_code_and_a_fix():
     r = _umbrella("no-such-tool")
     assert r.returncode == 2
-    assert "error tool.not_found:" in r.stderr and "fix: odapkit help" in r.stderr
+    assert "error tool.not_found: no tool no-such-tool" in r.stderr and "fix: odw help" in r.stderr
+
+
+def test_umbrella_alias_without_odw_says_how_to_build_it(tmp_path):
+    """bin/odapkit runs odw; a copy of it with no build next to it and none on PATH fails with the fix."""
+    (tmp_path / "bin").mkdir()
+    alias = tmp_path / "bin" / "odapkit"
+    alias.write_text((HOST / "bin" / "odapkit").read_text())
+    alias.chmod(0o755)
+    r = subprocess.run([str(alias), "help"], capture_output=True, text=True, env={"PATH": "/usr/bin:/bin"})
+    assert r.returncode == 1
+    assert "error tool.not_found: odw is not built" in r.stderr and "fix: cargo build --release" in r.stderr

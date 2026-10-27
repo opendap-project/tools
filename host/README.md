@@ -35,7 +35,8 @@ Every command-line surface, from the `opendap` and `odw` umbrellas and their plu
 ## Layout
 
 - `setup.sh` — installs and checks everything; safe to run again
-- `bin/odapkit` — the Developer Toolkit's one command (RFC 0009): `odapkit <tool>` runs the `odapkit-<tool>` of any toolkit repository; `odapkit help` lists them. `setup.sh` links it into `~/.local/bin`
+- `crates/odw-dispatch` — `odw`, the maintainers' umbrella command ([command standard](docs/specs/command-standard.md) §1–§4): `odw <tool>` runs the tool a workspace root's `tools.toml` declares (then `odw-<tool>` or `odapkit-<tool>` on `PATH`); `odw help [--json] [--all]` lists them with summary, audience and stability. The dispatch is a library the `opendap` CLI can reuse. `setup.sh` builds it and links it into `~/.local/bin`
+- `bin/odapkit` — the same command under its earlier name (RFC 0009): an alias that runs `odw`, so every `odapkit <tool>` keeps working until the `tools` cut. `setup.sh` links it into `~/.local/bin`
 - `bin/odapkit-vmnet` — a LAN address for virtual devices: `odapkit vmnet install` once, as yourself (it asks for administrator rights only for the socket_vmnet daemon, and only on a terminal); `status [--json]`, `uninstall`; `--dry-run` names the steps
 - `bin/odapkit-qemu` — the QEMU that virtual devices run: `odapkit qemu install` builds QEMU's pinned release with the patches in `qemu/patches/` into `~/.local/opt/opendap` and links it into `~/.local/bin` (no administrator rights); `status [--json]`; `install --dry-run` names the steps
 - `bin/odapkit-noindex` — keeps generated trees (`target/`, `.venv/`, test caches) out of the Spotlight index: `odapkit noindex --apply <path>` ([development workflow](docs/specs/development-workflow.md), Generated trees)

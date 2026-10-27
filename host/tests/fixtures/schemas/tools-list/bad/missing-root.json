@@ -1,0 +1,3 @@
+{"schema": "opendap.tools-list/v1", "items": [
+  {"name": "plan", "summary": "s", "audience": "maintainer", "stability": "preview", "replaces": null, "entry": "/x"}
+]}

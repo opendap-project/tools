@@ -20,6 +20,7 @@ HOST_FIX = "{workspace}/public/toolkit/host/tests/fixtures"
 HW = "{workspace}/public/toolkit/hardware"
 JSON_PROBES = {
     "odapkit": ["help", "--json"],
+    "odw": ["help", "--json"],
     "odapkit-audit": ["--workspace", "{workspace}", "--json"],
     "odapkit-component": ["validate", "--json", f"{HW}/tests/fixtures/component/board"],
     "odapkit-craft": ["check", "--json", f"{HW}/tests/fixtures/craft-sch/bad.kicad_sym"],

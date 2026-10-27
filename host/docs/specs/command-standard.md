@@ -2,7 +2,7 @@
 
 - **Status:** accepted (2026-10-27), with [RFC 0017](https://github.com/opendap-project/rfcs/blob/main/text/0017-naming-and-topology.md). It applies to each root at its cut; until then [RFC 0009](https://github.com/opendap-project/rfcs/blob/main/text/0009-odapkit.md) and the [`opendap` CLI spec](https://github.com/opendap-project/cli/blob/main/docs/specs/opendap-cli.md) are in force for that root's tools (§10 lists the delta).
 - **Home:** this file; it moves to `tools/workspace/docs/specs/` at the `tools` cut (RFC 0017 §7).
-- **Schemas:** `opendap.tools/v1` (`tools.schema.json`), `opendap.check/v1` (`check.schema.json`), `opendap.check-result/v1`, in [`schemas/`](../../schemas/) ([workspace schemas](workspace-schemas.md)).
+- **Schemas:** `opendap.tools/v1` (`tools.schema.json`), `opendap.tools-list/v1` (`tools-list.schema.json`), `opendap.check/v1` (`check.schema.json`), `opendap.check-result/v1`, in [`schemas/`](../../schemas/) ([workspace schemas](workspace-schemas.md)).
 - **Requirements:** TK-003, TK-009, TK-010, TK-011.
 - **References:** Cloudflare's `cf` CLI and Forge, the pipeline that generates `cf`'s commands from the API schemas ([announcement](https://blog.cloudflare.com/cloudflare-cf-cli-launch/)); the UNIX conventions (clig.dev).
 
@@ -18,17 +18,19 @@ OpenDAP has two umbrella commands, one per side of the audience boundary. Both d
 | Grammar | `opendap <noun> <verb> [subject] [--flags]`, the CLI spec's closed verb set (§A.1) | `odw <tool> <verb> [subject] [--flags]` |
 | Built-in commands | the CLI's own (device, exec, file, log, screen, input, image, vm, doctor, self, …) | `help`, `check`; everything else is a plugin |
 | Needs a workspace checkout | never | yes, for discovery through the manifest; `PATH` otherwise |
-| Implementation | Rust (`host/cli`), the reference dispatch crate | Rust, reusing the same dispatch crate |
+| Implementation | Rust (`host/cli`), reusing the dispatch crate | Rust: the dispatch crate `odw-dispatch` and its `odw` binary (toolkit-host `crates/odw-dispatch`) |
 | Environment prefix | `OPENDAP_*` | `ODAP_*` (`ODAP_<ROOT>_DIR`) |
 
-Today `odw` is `odapkit` (`toolkit-host/bin/odapkit`, POSIX `sh`) and its plugins are `odapkit-<tool>` (§10).
+`odw` is built from `crates/odw-dispatch` (development workflow §3). `odapkit` (`bin/odapkit`) is its earlier name: an alias that runs `odw`, kept until the `tools` cut renames the call sites; the plugins are still named `odapkit-<tool>` (§10).
+
+**Reuse by `opendap`.** The crate holds no front of its own: a front is data (`Front`: its name, its plugin prefixes on `PATH`, its built-in commands, the roots it exports to plugins), discovery runs behind a `Host` port (files, folders, environment), and the interface returns what to do (print, `exec`, fail) instead of doing it. The CLI depends on the crate (MPL-2.0), declares `Front { name: "opendap", path_prefixes: ["opendap-"], builtins: <its nouns>, export_roots: [] }`, and calls it when its own subcommand parser does not know a noun; outside a workspace discovery reads `PATH` only (§3).
 
 ## 2. Dispatch
 
 - `<front> <tool> [ARGS…]` runs the plugin `<front>-<tool>` with `ARGS…`, replacing the umbrella's process (`exec`); its exit status is the plugin's.
 - `opendap` resolves its built-in commands first. A plugin never shadows a built-in: a `tools.toml` entry whose `name` is a built-in noun fails the conformance test.
 - A tool name is `^[a-z][a-z0-9-]*$`, short and unique across all `tools.toml` of one front. `odw` tool names carry no discipline prefix: `odw craft`, `odw stackup`, `odw sim`, `odw variant`, `odw bom`, `odw parts`, `odw image`, `odw plan`, `odw audit`, `odw sync`, `odw rename`, `odw req`, `odw rfc`, `odw verify`.
-- A name containing `/`, starting with `.` or `-`, or not found exits 2 with `<front>: no tool <name> (<front> help lists them)` on stderr.
+- A name containing `/`, starting with `.` or `-`, or not found exits 2 with `<front>: error tool.not_found: no tool <name> (<front> help lists them)` on stderr, followed by its hint and fix lines (§5). A name is never looked up as a path.
 
 ## 3. Discovery: `tools.toml`
 
@@ -55,7 +57,10 @@ Resolution order, first match wins:
 Rules:
 
 - Discovery never matches repository or folder names (today's `/toolkit-/` pattern goes).
-- Two entries with the same `name` for one front are an error reported by `odw doctor`; dispatch takes the first in manifest order.
+- Two entries with the same `name` for one front are an error reported by `odw doctor`; dispatch takes the first in manifest order. Until `odw doctor` exists, `<front> help` reports it on stderr.
+- An entry is not dispatched when its name breaks the pattern, it names a built-in, its `entry` leaves the root or is not an executable file; `<front> help` reports why on stderr. Other schema problems (a summary over 100 characters, an `audience` that does not fit the front) are reported the same way and the tool still runs. A `tools.toml` that does not parse is reported and skipped; the other roots still work. Running a tool prints no such report.
+- Until the `tools` cut, `odw` also accepts `odapkit-<tool>` on `PATH`, after `odw-<tool>` in the same folder.
+- `odw` sets `ODAP_TOOLKIT_HOST_DIR` for the tool it runs, when unset, to the toolkit-host root, so tools in other roots find the shared helpers.
 - `audience` follows the front: `odw` entries are `maintainer`; `opendap` entries are `developer` or `user`.
 - `opendap` outside a workspace reads only `PATH` (plugins installed by the devkit or a package manager put their executables there).
 
@@ -63,7 +68,7 @@ Rules:
 
 - `<front>` and `<front> help` print, on stdout, one line per tool: name, summary, audience, stability. Tools are grouped by stability (`stable`, `preview`, `deprecated` with its replacement); `internal` tools are listed only with `--all`.
 - `<front> help <tool>` runs `<front>-<tool> --help`.
-- `<front> help --json` prints `{"schema":"opendap.tools-list/v1","items":[{name, summary, audience, stability, replaces, entry, root}]}`, `root` empty for tools found on `PATH`.
+- `<front> help --json` prints `{"schema":"opendap.tools-list/v1","items":[{name, summary, audience, stability, replaces, entry, root}]}`: `entry` is the executable's absolute path, `root` the root's path in the workspace manifest, empty for tools found on `PATH`, whose `audience` and `stability` are `unknown`. `--all` adds `internal` tools, as for the text listing.
 - `opendap help` lists built-in commands first, then plugins. `opendap tools` keeps its meaning in the CLI spec (MCP tool definitions); it is not the plugin list.
 
 ## 5. Every command-line surface
@@ -153,9 +158,9 @@ A test in `tools/workspace`, run in every root's `full` stage for the tools that
 
 | Item | Today | This standard |
 | --- | --- | --- |
-| Maintainers' command | `odapkit` (POSIX `sh`), plugins `odapkit-<tool>` | `odw`, plugins `odw-<tool>`, Rust, shared dispatch crate |
-| Discovery | `bin/` of the repositories whose `repos.tsv` entry matches `/toolkit-/`, then `PATH`; no `tools.toml` exists yet | `tools.toml` per root, then `PATH` |
-| Help listing | name and the first comment or docstring line of each executable | name, summary, audience, stability; `--json` |
+| Maintainers' command | `odw` (Rust, `crates/odw-dispatch`) since 2026-10-27, with `odapkit` an alias that runs it; plugins `odapkit-<tool>` | `odw`, plugins `odw-<tool>`, Rust, shared dispatch crate |
+| Discovery | `tools.toml` per root, then `PATH` (since 2026-10-27; before, `bin/` of the repositories whose `repos.tsv` entry matched `/toolkit-/`) | `tools.toml` per root, then `PATH` |
+| Help listing | name, summary, audience, stability, grouped by stability; `--json` (since 2026-10-27) | name, summary, audience, stability; `--json` |
 | Unknown tool | exit 2 | unchanged |
 | `opendap` plugins | specified (CLI spec §3), not implemented: the CLI has no external-subcommand dispatch yet | §2–§5 |
 | `opendap help` and plugins | RFC 0008 left open whether the CLI lists toolkit tools | `opendap help` lists `opendap` plugins only; maintainer tools are never listed |
@@ -177,4 +182,3 @@ The 17 `odapkit-*` tools today (`toolkit-hardware`: component, craft, dru, parts
 - **CS-2** `odw` verbs: the CLI's closed verb set where one fits, or each tool's own verbs (`stackup explore`, `motion record`) documented in its `--help`. *Proposal:* closed set preferred, own verbs allowed and listed in `--help`.
 - **CS-3** Whether `opendap`, outside a workspace, also reads a `tools.toml` installed with the devkit (to show audience and stability for installed plugins). *Proposal:* yes, from `$XDG_DATA_HOME/opendap/tools/*.toml`, once the devkit ships plugins.
 - **CS-4** Which tools graduate after the first set: `component` (export validation) and `vmnet` (emulator bridged networking) serve developers too. *Proposal:* decide per tool when its developer use exists.
-- **CS-5** Help-list schema name: `opendap.tools-list/v1` needs a schema next to `opendap.tools/v1`.
