@@ -64,12 +64,15 @@ def design_files(project_dir):
 
 
 def anchor(path):
-    """The component root a variant file is reported against: the nearest folder above it with .git, else the
-    folder that holds variants/ (or hardware/variants/)."""
+    """The component root a variant file is reported against, the same in a repository of its own and in a merged
+    monorepo: the nearest folder holding component.toml, searched from the variant file's folder up to the
+    repository root (.git) at most; else the folder that holds variants/ (or hardware/variants/)."""
     d = os.path.dirname(os.path.abspath(path))
-    while d != os.path.dirname(d):
-        if os.path.exists(os.path.join(d, ".git")):
+    while True:
+        if os.path.isfile(os.path.join(d, "component.toml")):
             return d
+        if os.path.exists(os.path.join(d, ".git")) or os.path.dirname(d) == d:
+            break
         d = os.path.dirname(d)
     d = os.path.dirname(os.path.dirname(os.path.abspath(path)))
     return os.path.dirname(d) if os.path.basename(d) == "hardware" else d

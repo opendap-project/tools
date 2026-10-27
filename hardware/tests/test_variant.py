@@ -367,7 +367,7 @@ class KiCadFixture(unittest.TestCase):
         self.assertEqual(json.loads(read(os.path.join(self.out, "design", "tiny.kicad_pro")))["text_variables"]
                          ["VARIANT"], "variant-b")
         inputs = {i["path"] for i in self.m["inputs"]}
-        self.assertIn("tests/fixtures/variant/board/variants/variant-b.toml", inputs)
+        self.assertIn("variants/variant-b.toml", inputs)          # relative to the component, not the repository
         self.assertTrue(self.m["kicad"] and self.m["tool"]["sha256"])
 
     def test_variant_erc_and_drc(self):
@@ -390,6 +390,48 @@ class KiCadFixture(unittest.TestCase):
         open(os.path.join(busy, "keep.txt"), "w").close()
         self.assertEqual(run("apply", "variant-b", "--dir", VARIANTS, "--out", busy).returncode, 2)
         self.assertTrue(os.path.isfile(os.path.join(busy, "keep.txt")))
+
+
+class Anchor(unittest.TestCase):
+    """Manifest paths are relative to the component, whether it is its own repository or a folder of a monorepo."""
+
+    def test_layouts(self):
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        import build
+        with tempfile.TemporaryDirectory() as tmp:
+            own = os.path.join(tmp, "own", "board")              # a repository of its own
+            shutil.copytree(BOARD, own)
+            os.makedirs(os.path.join(own, ".git"))
+            merged = os.path.join(tmp, "mono", "devices", "board")  # a folder of a merged monorepo
+            shutil.copytree(BOARD, merged)
+            os.makedirs(os.path.join(tmp, "mono", ".git"))
+            for root in (own, merged):
+                self.assertEqual(build.anchor(os.path.join(root, "variants", "variant-b.toml")), root)
+            hw = os.path.join(tmp, "mono", "devices", "t1")      # variants under hardware/
+            os.makedirs(os.path.join(hw, "hardware", "variants"))
+            self.assertEqual(build.anchor(os.path.join(hw, "hardware", "variants", "x.toml")), hw)
+            marked = os.path.join(tmp, "mono", "devices", "marked")  # component.toml wins over the layout
+            os.makedirs(os.path.join(marked, "data", "variants"))
+            open(os.path.join(marked, "component.toml"), "w").close()
+            self.assertEqual(build.anchor(os.path.join(marked, "data", "variants", "x.toml")), marked)
+
+    @unittest.skipUnless(HAS_KICAD, "kicad-cli (KiCad 10) not installed")
+    def test_manifest_is_the_same_in_a_merged_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            merged = os.path.join(tmp, "mono", "devices", "board")
+            shutil.copytree(BOARD, merged)
+            os.makedirs(os.path.join(tmp, "mono", ".git"))
+            docs = []
+            for vdir in (VARIANTS, os.path.join(merged, "variants")):
+                r = run("apply", "variant-b", "--dir", vdir, "--out", os.path.join(tmp, f"o{len(docs)}"),
+                        "--no-checks", "--json")
+                self.assertEqual(r.returncode, 0, r.stderr)
+                docs.append(json.loads(r.stdout))
+            self.assertEqual(docs[0]["inputs"], docs[1]["inputs"])
+            self.assertIn({"path": "variants/variant-b.toml", "sha256": docs[1]["inputs"][0]["sha256"]},
+                          docs[1]["inputs"])
+            self.assertTrue(all(i["path"].startswith(("variants/", "blocks/", "hardware/tiny/"))
+                                for i in docs[1]["inputs"]))
 
 
 @unittest.skipUnless(HAS_KICAD, "kicad-cli (KiCad 10) not installed")
