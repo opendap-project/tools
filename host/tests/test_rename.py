@@ -305,6 +305,7 @@ def test_python_files_stay_within_budget():
 def test_roots_already_cut_come_from_the_workspace_not_the_rfc_order(tmp_path):
     from odw import rename_map
     (tmp_path / "repos.tsv").write_text("path\trepository\npublic/libs\topendap-project/libs\n"
-                                        "public/toolkit/host\topendap-project/toolkit-host\n")
+                                        "public/toolkit/host\topendap-project/toolkit-host\n"
+                                        "public/devices/t1/t1\topendap-project/t1\n")
     assert rename_map.cut_roots(tmp_path, "hats") == ["libs", "hats"]
     assert rename_map.cut_roots(tmp_path, "libs") == ["libs"]

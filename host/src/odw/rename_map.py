@@ -127,11 +127,12 @@ def _landing(text, root, notes):
 
 
 def cut_roots(ws, root):
-    """Roots the workspace lists as their own repository (opendap-project/<root>), in ORDER, then `root`."""
+    """Roots the workspace has as one repository at public/<root> (repos.tsv), in ORDER, then `root`; a repository
+    that only shares a root's name somewhere else (the t1 product repository today) is not a cut root."""
     names = set()
     for line in (pathlib.Path(ws) / "repos.tsv").read_text().splitlines()[1:]:
         cols = line.split("\t")
-        if len(cols) >= 2:
+        if len(cols) >= 2 and cols[0].strip() == f"public/{cols[1].strip().rsplit('/', 1)[-1]}":
             names.add(cols[1].strip().rsplit("/", 1)[-1])
     return list(dict.fromkeys([r for r in ORDER if r in names and r != root] + [root]))
 
