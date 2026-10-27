@@ -65,24 +65,15 @@ pub fn find_workspace(start: &Path) -> Option<PathBuf> {
         .map(Path::to_path_buf)
 }
 
-/// The workspace: `ODAP_WORKSPACE_DIR`, else above this executable (links resolved), else above the
-/// current folder.
+/// The workspace: `ODAP_WORKSPACE_DIR`, else the folder above this executable (links resolved) that
+/// holds `repos.tsv`. Never the current folder: a checkout someone else made would then choose what
+/// `odw` runs.
 pub fn workspace() -> Option<PathBuf> {
     if let Some(v) = std::env::var_os("ODAP_WORKSPACE_DIR").filter(|v| !v.is_empty()) {
         return Some(PathBuf::from(v));
     }
-    let exe = std::env::current_exe()
-        .ok()
-        .and_then(|e| e.canonicalize().ok());
-    exe.as_deref()
-        .and_then(Path::parent)
-        .and_then(find_workspace)
-        .or_else(|| {
-            std::env::current_dir()
-                .ok()
-                .as_deref()
-                .and_then(find_workspace)
-        })
+    let exe = std::env::current_exe().ok()?.canonicalize().ok()?;
+    exe.parent().and_then(find_workspace)
 }
 
 /// The search of this process: its workspace and its `PATH`.

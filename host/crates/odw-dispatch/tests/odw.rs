@@ -369,3 +369,32 @@ fn a_summary_over_the_limit_is_reported_and_the_tool_still_runs() {
     assert!(stdout(&o).contains(&format!("  sim              {long}")));
     assert_eq!(stdout(&f.odw(&["sim"], &[])).lines().next(), Some("sim "));
 }
+
+#[test]
+fn the_current_folder_never_chooses_the_workspace() {
+    // A copy of odw outside any workspace, run inside a folder that holds a repos.tsv and a tools.toml.
+    let outside = std::env::temp_dir().join(format!("odw-cwd-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&outside);
+    std::fs::create_dir_all(outside.join("bin")).unwrap();
+    let copy = outside.join("bin/odw");
+    std::fs::copy(ODW, &copy).unwrap();
+    let f = Fixture::new();
+    f.write("cwd/repos.tsv", "path\trepository\nr\to/r\n", false);
+    f.write(
+        "cwd/r/tools.toml",
+        &tools_toml(&[("evil", "stable")]),
+        false,
+    );
+    f.plugin("cwd/r/bin/odapkit-evil", "evil");
+    let o = Command::new(&copy)
+        .arg("evil")
+        .current_dir(f.dir.join("cwd"))
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin")
+        .stdin(Stdio::null())
+        .output()
+        .unwrap();
+    let _ = std::fs::remove_dir_all(&outside);
+    assert_eq!(o.status.code(), Some(2), "{}", stdout(&o));
+    assert!(stderr(&o).contains("no tool evil"));
+}

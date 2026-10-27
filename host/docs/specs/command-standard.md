@@ -57,6 +57,7 @@ Resolution order, first match wins:
 Rules:
 
 - Discovery never matches repository or folder names (today's `/toolkit-/` pattern goes).
+- The workspace is `ODAP_WORKSPACE_DIR`, else the folder above the umbrella's own executable that holds the manifest; never the current folder, so a checkout made by someone else cannot choose what runs. A root's path in the manifest stays inside the workspace (no absolute path, no `..`). Every root of the manifest is trusted as the workspace is: its `tools.toml` entries run as the maintainer.
 - Two entries with the same `name` for one front are an error reported by `odw doctor`; dispatch takes the first in manifest order. Until `odw doctor` exists, `<front> help` reports it on stderr.
 - An entry is not dispatched when its name breaks the pattern, it names a built-in, its `entry` leaves the root or is not an executable file; `<front> help` reports why on stderr. Other schema problems (a summary over 100 characters, an `audience` that does not fit the front) are reported the same way and the tool still runs. A `tools.toml` that does not parse is reported and skipped; the other roots still work. Running a tool prints no such report.
 - Until the `tools` cut, `odw` also accepts `odapkit-<tool>` on `PATH`, after `odw-<tool>` in the same folder.

@@ -144,7 +144,12 @@ pub fn parse_repos(text: &str) -> Vec<Root> {
             let mut cols = line.split('\t');
             let path = cols.next()?.trim();
             let repo = cols.next()?.trim();
-            if path.is_empty() || path.starts_with('#') {
+            // A root stays inside the workspace: no absolute path, no `..`.
+            if path.is_empty()
+                || path.starts_with('#')
+                || path.starts_with('/')
+                || path.split('/').any(|p| p == "..")
+            {
                 return None;
             }
             let name = repo.rsplit('/').next().unwrap_or(repo).to_string();
@@ -284,5 +289,15 @@ stability = "preview"
         assert_eq!(root_env_var(&roots[0].name), "ODAP_TOOLKIT_HOST_DIR");
         assert_eq!(root_env_var(&roots[1].name), "ODAP_GITHUB_DIR");
         assert_eq!(root_env_var("virtual-devices"), "ODAP_VIRTUAL_DEVICES_DIR");
+    }
+
+    #[test]
+    fn roots_outside_the_workspace_are_dropped() {
+        let roots =
+            parse_repos("path\trepository\n/etc\to/abs\n../up\to/up\na/../../b\to/mid\nok\to/ok\n");
+        assert_eq!(
+            roots.iter().map(|r| r.path.as_str()).collect::<Vec<_>>(),
+            ["ok"]
+        );
     }
 }
