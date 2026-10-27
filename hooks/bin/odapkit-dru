@@ -1,7 +1,7 @@
 #!/bin/sh
 # Compose a KiCad project's .kicad_dru from its fab and product rule sources, or check it.
 #
-# Usage: odapkit dru compose [--stdout] MANIFEST...   write <project>.kicad_dru from <project>.dru.toml
+# Usage: odapkit dru compose [--stdout|--dry-run] MANIFEST...   write <project>.kicad_dru from <project>.dru.toml
 #        odapkit dru check [--json] [MANIFEST...]     verify; no manifest = every *.dru.toml in the repo
 #
 # The engine is hooks/kicad-dru.py in this repository, the script the kicad-dru-composed

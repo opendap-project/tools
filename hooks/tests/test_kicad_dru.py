@@ -203,6 +203,18 @@ class KicadDru(unittest.TestCase):
         self.assertEqual(r.returncode, 1)
         self.assertIn("resolves outside the repository", r.stderr)
 
+    def test_compose_dry_run_writes_nothing(self):
+        r = self.run_tool("compose", "--dry-run", MANIFEST)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn(f"would compose {TARGET}", r.stdout)
+        self.assertFalse(os.path.exists(self.path(TARGET)))
+        with open(self.path(PRODUCT), "a") as f:
+            f.write('(rule "Fab: via hole"\n\t(constraint hole_size (min 0.3mm))\n)\n')
+        r = self.run_tool("compose", "--dry-run", MANIFEST)
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("duplicate rule name", r.stderr)
+        self.assertEqual(self.run_tool("compose", "--dry-run", "--stdout", MANIFEST).returncode, 2)
+
     def test_usage_error(self):
         self.assertEqual(self.run_tool("frobnicate").returncode, 2)
 

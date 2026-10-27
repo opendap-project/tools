@@ -18,6 +18,8 @@ comment naming the source and its sha256. Two rules with the same name fail the 
 Usage:
     kicad-dru.py compose MANIFEST...        write each manifest's .kicad_dru
     kicad-dru.py compose --stdout MANIFEST  print the composition instead
+    kicad-dru.py compose --dry-run MANIFEST...
+                                            compose and name each file it would write; write nothing
     kicad-dru.py check [--json] [MANIFEST...]
                                             verify each .kicad_dru equals its composition;
                                             with no manifest, every *.dru.toml in the git repository
@@ -263,9 +265,10 @@ def tracked_manifests():
 
 
 def cmd_compose(args):
-    to_stdout = "--stdout" in args
-    manifests = [a for a in args if a != "--stdout"]
-    if not manifests or any(a.startswith("-") for a in manifests) or (to_stdout and len(manifests) != 1):
+    to_stdout, dry_run = "--stdout" in args, "--dry-run" in args
+    manifests = [a for a in args if a not in ("--stdout", "--dry-run")]
+    if not manifests or any(a.startswith("-") for a in manifests) or (to_stdout and len(manifests) != 1) \
+            or (to_stdout and dry_run):
         return usage()
     for m in manifests:
         try:
@@ -275,6 +278,8 @@ def cmd_compose(args):
             return 1
         if to_stdout:
             sys.stdout.write(text)
+        elif dry_run:
+            print(f"would compose {target_of(m)} ({len(text.encode())} bytes)")
         else:
             # compose() confined the target to the repository and refused a link; O_NOFOLLOW
             # also refuses a link created since.
