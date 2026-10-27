@@ -69,8 +69,10 @@ def _host_dir():
         if os.path.isfile(os.path.join(d, "repos.tsv")):
             for line in open(os.path.join(d, "repos.tsv")).read().splitlines()[1:]:
                 path, _, slug = line.partition("\t")
-                if slug.split("/")[-1] == "toolkit-host" and os.path.isdir(os.path.join(d, path)):
-                    return os.path.join(d, path)
+                full = os.path.realpath(os.path.join(d, path))  # only a folder inside the workspace
+                if slug.split("/")[-1] == "toolkit-host" and full.startswith(os.path.realpath(d) + os.sep) \
+                        and os.path.isdir(full):
+                    return full
             return None
         d = os.path.dirname(d)
     return None
