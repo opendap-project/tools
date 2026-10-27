@@ -1,6 +1,6 @@
 # Verification
 
-- **Status:** Approved (TK-013), 2026-10-22, without lab instruments (TK-012).
+- **Status:** accepted (TK-013), 2026-10-22, without lab instruments (TK-012).
 - **Scope:** how OpenDAP verifies its technical promises by software first (simulations, static checks and the virtual T1) and by measurement on hardware later, with every result recorded against requirement IDs.
 
 Bit-perfect playback, DSD and DoP are verified by comparing captured bits, not by theory: the playback engine's output is captured at the ALSA boundary and compared with the source, with negative controls that must fail. A check that never fails proves nothing.
