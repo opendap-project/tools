@@ -4,8 +4,9 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use crate::manifest::{self, Root};
+use crate::manifest;
 use crate::model::{Catalog, Declared, Front, Tool, Warning, valid_name};
+use crate::workspace::{ResolvedRoot, roots};
 
 /// What discovery needs from the machine.
 pub trait Host {
@@ -26,33 +27,6 @@ pub trait Host {
 pub struct Search {
     pub workspace: Option<PathBuf>,
     pub path: Vec<PathBuf>,
-}
-
-/// A workspace root resolved to a folder (`ODAP_<NAME>_DIR` overrides the manifest's path).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ResolvedRoot {
-    pub root: Root,
-    pub dir: PathBuf,
-}
-
-/// The roots of the workspace manifest, in manifest order; empty outside a workspace.
-pub fn roots(host: &dyn Host, workspace: Option<&Path>) -> Vec<ResolvedRoot> {
-    let Some(ws) = workspace else {
-        return Vec::new();
-    };
-    let Some(text) = host.read_to_string(&ws.join("repos.tsv")) else {
-        return Vec::new();
-    };
-    manifest::parse_repos(&text)
-        .into_iter()
-        .map(|root| {
-            let dir = match host.var(&manifest::root_env_var(&root.name)) {
-                Some(v) if !v.is_empty() => PathBuf::from(v),
-                _ => ws.join(&root.path),
-            };
-            ResolvedRoot { root, dir }
-        })
-        .collect()
 }
 
 /// Every tool of the front, first match first.

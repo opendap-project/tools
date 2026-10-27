@@ -3,11 +3,11 @@
 
 use std::path::PathBuf;
 
-use crate::discovery::{Host, ResolvedRoot, Search, discover, roots};
+use crate::discovery::{Host, Search, discover};
 use crate::error::DispatchError;
 use crate::help;
-use crate::manifest::root_env_var;
 use crate::model::{Front, valid_name};
+use crate::workspace::{ResolvedRoot, root_env_var, roots};
 
 /// A parsed invocation.
 #[derive(Debug, Clone, PartialEq, Eq)]

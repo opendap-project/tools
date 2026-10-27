@@ -3,7 +3,7 @@
 
 use std::io::Read;
 use std::os::unix::fs::PermissionsExt;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::discovery::{Host, Search};
 
@@ -57,32 +57,13 @@ impl Host for FsHost {
     }
 }
 
-/// The nearest folder at or above `start` that holds `repos.tsv`.
-pub fn find_workspace(start: &Path) -> Option<PathBuf> {
-    start
-        .ancestors()
-        .find(|d| d.join("repos.tsv").is_file())
-        .map(Path::to_path_buf)
-}
-
-/// The workspace: `ODAP_WORKSPACE_DIR`, else the folder above this executable (links resolved) that
-/// holds `repos.tsv`. Never the current folder: a checkout someone else made would then choose what
-/// `odw` runs.
-pub fn workspace() -> Option<PathBuf> {
-    if let Some(v) = std::env::var_os("ODAP_WORKSPACE_DIR").filter(|v| !v.is_empty()) {
-        return Some(PathBuf::from(v));
-    }
-    let exe = std::env::current_exe().ok()?.canonicalize().ok()?;
-    exe.parent().and_then(find_workspace)
-}
-
 /// The search of this process: its workspace and its `PATH`.
 pub fn search() -> Search {
     let path = std::env::var_os("PATH")
         .map(|p| std::env::split_paths(&p).collect())
         .unwrap_or_default();
     Search {
-        workspace: workspace(),
+        workspace: crate::workspace::workspace(),
         path,
     }
 }

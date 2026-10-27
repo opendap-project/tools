@@ -127,62 +127,6 @@ pub fn blocking_problem(problems: &[Problem]) -> Option<&str> {
         .map(|p| p.message.as_str())
 }
 
-/// A root of the workspace manifest.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Root {
-    /// The path from the workspace (`public/toolkit/host`).
-    pub path: String,
-    /// The repository's name without its owner (`toolkit-host`).
-    pub name: String,
-}
-
-/// The rows of `repos.tsv` (a header line, then `path<TAB>owner/repository`).
-pub fn parse_repos(text: &str) -> Vec<Root> {
-    text.lines()
-        .skip(1)
-        .filter_map(|line| {
-            let mut cols = line.split('\t');
-            let path = cols.next()?.trim();
-            let repo = cols.next()?.trim();
-            // A root stays inside the workspace: no absolute path, no `..`.
-            if path.is_empty()
-                || path.starts_with('#')
-                || path.starts_with('/')
-                || path.split('/').any(|p| p == "..")
-            {
-                return None;
-            }
-            let name = repo.rsplit('/').next().unwrap_or(repo).to_string();
-            Some(Root {
-                path: path.to_string(),
-                name,
-            })
-        })
-        .collect()
-}
-
-/// `ODAP_<NAME>_DIR` for a repository name: upper case, every other character an underscore
-/// (`toolkit-host` → `ODAP_TOOLKIT_HOST_DIR`, `.github` → `ODAP_GITHUB_DIR`).
-pub fn root_env_var(name: &str) -> String {
-    let mut s: String = name
-        .chars()
-        .map(|c| {
-            if c.is_ascii_alphanumeric() {
-                c.to_ascii_uppercase()
-            } else {
-                '_'
-            }
-        })
-        .collect();
-    while s.starts_with('_') {
-        s.remove(0);
-    }
-    while s.ends_with('_') {
-        s.pop();
-    }
-    format!("ODAP_{s}_DIR")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -270,34 +214,6 @@ stability = "preview"
                 && p[0]
                     .message
                     .contains("audience maintainer on front opendap")
-        );
-    }
-
-    #[test]
-    fn repos_rows_and_env_names() {
-        let roots = parse_repos(
-            "path\trepository\npublic/toolkit/host\topendap-project/toolkit-host\npublic/.github\topendap-project/.github\n\n",
-        );
-        assert_eq!(roots.len(), 2);
-        assert_eq!(
-            roots[0],
-            Root {
-                path: "public/toolkit/host".into(),
-                name: "toolkit-host".into()
-            }
-        );
-        assert_eq!(root_env_var(&roots[0].name), "ODAP_TOOLKIT_HOST_DIR");
-        assert_eq!(root_env_var(&roots[1].name), "ODAP_GITHUB_DIR");
-        assert_eq!(root_env_var("virtual-devices"), "ODAP_VIRTUAL_DEVICES_DIR");
-    }
-
-    #[test]
-    fn roots_outside_the_workspace_are_dropped() {
-        let roots =
-            parse_repos("path\trepository\n/etc\to/abs\n../up\to/up\na/../../b\to/mid\nok\to/ok\n");
-        assert_eq!(
-            roots.iter().map(|r| r.path.as_str()).collect::<Vec<_>>(),
-            ["ok"]
         );
     }
 }
