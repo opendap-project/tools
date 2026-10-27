@@ -9,6 +9,7 @@ brew "reuse"
 brew "yq"
 brew "jq"
 brew "gh"
+brew "git-filter-repo"   # history-preserving moves for the topology cutover (odapkit rename merge)
 
 # Python (per-study simulation environments)
 brew "uv"
