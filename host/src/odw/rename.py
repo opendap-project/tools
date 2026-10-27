@@ -2,7 +2,7 @@
 
 Usage: odapkit rename merge ROOT --into DIR [...]   (step 2, the history merge: odw/rename_merge.py)
        odapkit rename (plan | apply | check) ROOT [--workspace DIR] [--map TSV] [--root-dir DIR] [--cut ROOTS]
-       [--landing REPO=DIR] [--dry-run] [--json | --text]
+       [--landing REPO=DIR] [--kind KINDS] [--dry-run] [--json | --text]
 
 plan (a dry run, the default) lists every move, delete, identifier rewrite and link or URL rewrite the root needs;
 apply performs them in the merged root checkout with `git mv` and two local commits (moves, then references) and
@@ -18,7 +18,7 @@ import pathlib
 import subprocess
 import sys
 
-from odw import audit, clikit, rename_map, rename_rewrite as rw, workspace
+from odw import audit, clikit, rename_keys as rk, rename_map, rename_rewrite as rw, workspace
 
 TOOL = "odapkit rename"
 
@@ -162,9 +162,11 @@ def _read_text(path):
         return None
 
 
-def _identifiers(m, root, cut):
-    apply, scan = [], []
+def _identifiers(m, root, cut, kinds=None):
+    apply, keys, scan = [], [], []
     for r in rename_map.identifier_rows(m):
+        if kinds and rk.kind_of(r.old) not in kinds:
+            continue
         i = rename_map.identifier(m, r)
         if i.reason is None and i.owner in cut:
             status = "apply"
@@ -173,17 +175,21 @@ def _identifiers(m, root, cut):
         else:
             status = "manual"
         if status == "apply":
-            apply += list(zip(i.old, i.new))
+            (keys if rk.is_key_row(r) else apply).extend((o, n, r.line) for o, n in zip(i.old, i.new))
         if not (i.reason or "").startswith("action-") and i.reason not in {"unparsed", "not-a-token"}:
             scan.append((i, status))
-    return apply, scan
+    return [(o, n) for o, n, _ in apply], keys, scan
 
 
-def build(m, root, ws, root_dir, cut):
+def build(m, root, ws, root_dir, cut, kinds=None):
     kind, files = view(m, root, ws, root_dir)
     plan = Plan(root, cut, kind)
     prefixes = _rows(m, root, files, plan)
     moves = {mv["from"]: mv["to"] for mv in plan.moves}
+    pairs, keys, scan = _identifiers(m, root, cut, kinds)
+    key_table = {o: n for o, n, _ in keys}
+    rk.plan_moves(plan, files, moves, key_table, {o: line for o, _, line in keys})
+    key_patterns = rk.patterns(key_table)
     own = rw.Paths(moves, deleted=[d["path"] for d in plan.deletes], prefixes=prefixes)
     cache = {root: own}
 
@@ -193,7 +199,6 @@ def build(m, root, ws, root_dir, cut):
         return cache[r]
 
     sources = {s.name: s for s in m.sources.values() if s.root in cut}
-    pairs, scan = _identifiers(m, root, cut)
     table = dict(pairs)
     pattern = rw.identifier_pattern(pairs)
     values = {v: (i, st) for i, st in scan for v in i.old}
@@ -215,7 +220,8 @@ def build(m, root, ws, root_dir, cut):
             new, e3 = rw.to_relative(new, root, dst)
             edits += e2 + e3
         new, e4 = rw.identifiers(new, pattern, table)
-        edits += e4
+        new, e5 = rk.rewrite(new, key_patterns, key_table)
+        edits += e4 + e5
         for e in edits:
             plan.edits.append({"path": dst, "source": src, "kind": e.kind, "line": e.line, "old": e.old, "new": e.new})
         if new != text:
@@ -260,7 +266,7 @@ def _prune(root_dir, rels):
             d = d.parent
 
 
-def apply(m, root, ws, root_dir, cut):
+def apply(m, root, ws, root_dir, cut, kinds=None):
     if root_dir is None or not (root_dir / ".git").exists():
         raise Refused("rename.no-root", f"no root checkout at {root_dir}",
                       "apply runs in the root repository after its sources are merged into it with history "
@@ -281,7 +287,7 @@ def apply(m, root, ws, root_dir, cut):
                       + ", ".join(l[3:] for l in dirty[:5]),
                       "apply never runs over uncommitted work, yours or someone else's; commit, or ask its owner",
                       f"git -C {root_dir} status")
-    plan = build(m, root, ws, root_dir, cut)
+    plan = build(m, root, ws, root_dir, cut, kinds)
     if plan.conflicts:
         raise Refused("rename.conflict", f"{len(plan.conflicts)} conflicting targets, first {plan.conflicts[0]['path']}",
                       "two rows move files to one path, or a target exists; fix the rename map",
@@ -318,8 +324,8 @@ def _rel(p, root_dir):
     return p
 
 
-def check(m, root, ws, root_dir, cut):
-    plan = build(m, root, ws, root_dir, cut)
+def check(m, root, ws, root_dir, cut, kinds=None):
+    plan = build(m, root, ws, root_dir, cut, kinds)
     res = []
 
     def add(id_, verdict, message, path=None, line=None, **kw):
@@ -390,6 +396,8 @@ def _parser():
     ap.add_argument("--cut", help="roots already cut, comma-separated (default: the RFC 0017 order up to ROOT)")
     ap.add_argument("--landing", action="append", default=[], metavar="REPO=DIR",
                     help="where a source repository lands in the root, when the map does not say")
+    ap.add_argument("--kind", help="only identifier rows of these kinds, comma-separated (`mfr`, `env`); path "
+                    "rows, links and URLs still apply")
     ap.add_argument("--dry-run", action="store_true", help="apply: print the plan and change nothing")
     fmt = ap.add_mutually_exclusive_group()
     fmt.add_argument("--json", action="store_true", help="JSON (the default when stdout is not a terminal)")
@@ -429,16 +437,17 @@ def _main(argv):
                           f"roots in the map: {', '.join(m.roots)}", f"odapkit rename plan {m.roots[0]}", 2)
         root_dir = pathlib.Path(args.root_dir) if args.root_dir else ws / "public" / args.root
         cut = m.cut(args.root, [c for c in (args.cut or "").split(",") if c], ws)
+        kinds = {k for k in (args.kind or "").split(",") if k}
         if args.verb == "check":
-            doc = check(m, args.root, ws, root_dir, cut)
+            doc = check(m, args.root, ws, root_dir, cut, kinds)
             fails = [r for r in doc["results"] if r["verdict"] == "fail"]
             _emit(doc, as_json, "\n".join(f"{r['verdict']} {r['id']}: {r['message']}" for r in doc["results"]
                                           if r["verdict"] != "pass"))
             return 1 if fails else 0
         if args.verb == "plan" or args.dry_run:
-            doc = document(build(m, args.root, ws, root_dir, cut))
+            doc = document(build(m, args.root, ws, root_dir, cut, kinds))
         else:
-            doc = apply(m, args.root, ws, root_dir, cut)
+            doc = apply(m, args.root, ws, root_dir, cut, kinds)
         _emit(doc, as_json, _text_plan(doc))
         return 0
     except Refused as e:

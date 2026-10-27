@@ -124,7 +124,7 @@ def test_identifier_rows_are_mechanical_only_when_safe(ws):
     got = {i.row.old: (i.owner, i.reason) for i in map(lambda r: rename_map.identifier(m, r),
                                                           rename_map.identifier_rows(m))}
     assert got["env:ODAP_KICAD_LIB_DIR"] == ("libs", None)
-    assert got["mfr:Murata"] == ("libs", "plain-word")  # owner from the notes; a plain word needs a hand
+    assert got["mfr:Murata"] == ("libs", None)  # owner from the notes; a maker key is rewritten in key contexts only
     assert got["crate:odap-composer"] == ("blackbird", None)
     assert got["env:ODAP_X;ODAP_Y"][1] == "count-mismatch"
 
@@ -157,7 +157,7 @@ def test_root_column_names_the_owner_and_clears_a_plain_word(ws):
     assert got["command:odapkit"] == ("libs", None)  # a plain word whose root a maintainer set
     assert got["command:odapkit craft check"] == ("tools", None)  # owner-unknown without the column
     assert got["skill:/opendap:requirement"] == ("libs", None)  # written as it appears, so a token
-    assert got["mfr:Murata"] == ("libs", "plain-word")  # no root: the word also appears in prose
+    assert got["mfr:Murata"] == ("libs", None)  # a maker key is never a plain word (tests/test_rename_keys.py)
 
 
 def test_rooted_plain_word_is_rewritten_as_a_whole_token_only(ws, capsys):
@@ -166,7 +166,7 @@ def test_rooted_plain_word_is_rewritten_as_a_whole_token_only(ws, capsys):
     doc = json.loads(out)
     status = {i["old"]: i["status"] for i in doc["identifiers"]}
     assert status["command:odapkit"] == "apply" and status["skill:/opendap:requirement"] == "apply"
-    assert status["command:odapkit craft check"] == "later" and status["mfr:Murata"] == "manual"
+    assert status["command:odapkit craft check"] == "later" and status["mfr:Murata"] == "apply"
     pairs = {(e["old"], e["new"]) for e in doc["edits"] if e["kind"] == "identifier"}
     assert ("odapkit", "odw") in pairs and ("/opendap:requirement", "/opendap:docs-requirement") in pairs
     assert not any(o in {"odapkit-docs", "requirement", "Murata"} for o, _ in pairs)
@@ -189,7 +189,7 @@ def test_plan_on_the_sources_lists_every_move_and_rewrite(ws, capsys):
     assert [(c["direction"], c["to"]) for c in doc["cross_root"]] == [("out", "tools/electronics/check.py")]
     assert [x["from"] for x in doc["missing"]] == ["kicad/gone.md"]
     ids = {i["old"]: i["status"] for i in doc["identifiers"]}
-    assert ids == {"env:ODAP_KICAD_LIB_DIR": "apply", "mfr:Murata": "manual", "crate:odap-composer": "later"}
+    assert ids == {"env:ODAP_KICAD_LIB_DIR": "apply", "mfr:Murata": "apply", "crate:odap-composer": "later"}
     edits = {(e["path"], e["kind"], e["old"], e["new"]) for e in doc["edits"]}
     assert ("kicad/README.md", "link", "docs/guide.md#use", "docs/guides/guide.md#use") in edits
     assert ("kicad/README.md", "link", "symbols/ECS.kicad_sym", "symbols/ecs.kicad_sym") in edits
@@ -244,7 +244,7 @@ def test_check_lists_old_names_until_applied(ws, merged, capsys):
     doc = json.loads(out)
     assert code == 0, [r for r in doc["results"] if r["verdict"] == "fail"]
     warns = {r["id"] for r in doc["results"] if r["verdict"] == "warn"}
-    assert "rename.manual-identifier:mfr:Murata" in warns
+    assert not any("mfr:Murata" in w for w in warns) and "Murata parts" in (merged / "kicad/README.md").read_text()
 
 
 def test_plan_after_apply_is_empty(ws, merged, capsys):

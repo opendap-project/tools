@@ -212,8 +212,9 @@ def identifier(m, r):
         reason = "count-mismatch"
     elif any(set(v) & UNSAFE or not v for v in olds + news) or any(v.startswith("(") for v in news):
         reason = "not-a-token"
-    elif not r.root and any(not (set(v) & SEPARATORS or " " in v) for v in olds):
-        reason = "plain-word"  # a `root` set by hand says the word is the identifier wherever it stands alone
+    elif not r.root and kind_o != "mfr" and any(not (set(v) & SEPARATORS or " " in v) for v in olds):
+        reason = "plain-word"  # a `root` set by hand says the word is the identifier wherever it stands alone;
+        # maker keys (`mfr:`) are rewritten in key contexts only (odw/rename_keys.py), never as plain words
     elif own is None:
         reason = "owner-unknown"
     return Identifier(r, olds, news, own, reason)

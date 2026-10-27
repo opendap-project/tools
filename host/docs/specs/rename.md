@@ -1,7 +1,7 @@
 # Rename
 
 - **Status:** draft
-- **Tool:** `odapkit rename` (`src/odw/rename.py`, `src/odw/rename_map.py`, `src/odw/rename_rewrite.py`, `src/odw/rename_merge.py`, `src/odw/rename_merge_git.py`); schemas [`schemas/rename-plan.schema.json`](../../schemas/rename-plan.schema.json) and [`schemas/rename-merge.schema.json`](../../schemas/rename-merge.schema.json)
+- **Tool:** `odapkit rename` (`src/odw/rename.py`, `src/odw/rename_map.py`, `src/odw/rename_rewrite.py`, `src/odw/rename_keys.py`, `src/odw/rename_merge.py`, `src/odw/rename_merge_git.py`); schemas [`schemas/rename-plan.schema.json`](../../schemas/rename-plan.schema.json) and [`schemas/rename-merge.schema.json`](../../schemas/rename-merge.schema.json)
 - **Applies:** [RFC 0017](https://github.com/opendap-project/rfcs/blob/main/text/0017-naming-and-topology.md) §7, steps 2 to 4 (merge with history, apply the rename map, rewrite links), one root at a time
 
 The topology cutover moves each root's source repositories into one repository and renames what the rename map lists. `odapkit rename merge` builds the root repository from its sources with their history; `odapkit rename` then applies the mechanical part of the map to it: it moves files with `git mv`, rewrites relative Markdown links, GitHub URLs and identifiers, and reports what is left. It never touches another root or repository and never pushes.
@@ -11,6 +11,7 @@ odapkit rename merge libs --map rename-map.tsv --into ../libs --dry-run   # sour
 odapkit rename merge libs --map rename-map.tsv --into ../libs            # the new root, with history
 odapkit rename plan libs --map rename-map.tsv            # dry run: every move and rewrite
 odapkit rename plan libs --map rename-map.tsv --json     # the same as opendap.rename-plan/v1
+odapkit rename plan libs --map rename-map.tsv --kind mfr # only the maker-key rows
 odapkit rename apply libs --map rename-map.tsv --root-dir ../libs
 odapkit rename check libs --map rename-map.tsv --root-dir ../libs --json
 ```
@@ -47,7 +48,9 @@ A repository's landing folder is the single folder its repository row names (`(k
 | A target in another root | `cross_root` (`out` or `in`): moved at the later root's cut, never by this one |
 | `merge`, `convert`, `split`, `extract`, `generate`, `archive`, or several targets | `pending`: done by the tool that renders, converts or generates the file, or by hand |
 
-A move whose source is gone and whose target exists is `done`; one whose source and target are both gone is `missing` (a stale row). Two rows moving files to one path, or a target that exists and stays (compared without case, for case-insensitive file systems), is a `conflict`.
+A move whose source is gone and whose target exists is `done`; one whose source and target are both gone is `missing` (a stale row). Two rows moving files to one path, or a target that exists and stays (compared without case, for case-insensitive file systems), is a `conflict`; so is a merge clash, two files that end at one path through maker keys (`Rockchip.kicad_sym` and `Rockchip_PMIC.kicad_sym` both becoming `rockchip.kicad_sym`), whose reason names both files.
+
+**`--kind K[,K]`** limits the identifier rows to those kinds (`mfr`, `env`, `crate`, …), so one kind can land on its own; path rows, links and URLs apply as without it.
 
 ## Rewrites
 
@@ -66,7 +69,7 @@ Every text file of the root (UTF-8, no NUL byte, at most 8 MiB) is read once. Fi
 | --- | --- |
 | `apply` | Rewritten: a safe token whose owner root is cut |
 | `later` | A safe token whose owner root is not cut yet |
-| `manual` | Needs a hand; `reason` says why: `plain-word` (a single word with no separator and no `root`, such as a manufacturer name that also appears in prose), `owner-unknown`, `kind-mismatch`, `count-mismatch` |
+| `manual` | Needs a hand; `reason` says why: `plain-word` (a single word with no separator and no `root`, which may also appear in prose), `owner-unknown`, `kind-mismatch`, `count-mismatch` |
 
 The optional `root` column names the owner of an identifier row the tool cannot infer (`command:odapkit` → `tools`). Setting it on a plain word also states that the word is the identifier wherever it stands as a whole token, so it is rewritten (`odapkit`, never `odapkit-docs`); a word that also appears in prose keeps the column empty and stays `manual`. A value written as it appears in text is a token too (`skill:/opendap:requirement`, not the bare word). The owner of an identifier is the row's `root` column; without one, a root named as a token in the new value (`blackbird-composer.service` → `blackbird`, `ODAP_LIBS_DIR` → `libs`); without one, the root of a source repository named in the old value or the notes (`kicad-lib library key` → `libs`). Rows whose action is not `rename` or `merge`, or whose values are not tokens (parentheses, brackets, ellipses, `(removed)`), are not scanned.
 
@@ -108,6 +111,19 @@ A git step that fails after the root is created (`merge.git`) removes what the m
 
 After the merge, `odapkit rename plan ROOT --root-dir DIR` reads the merged root (`view: root`) and `apply` continues the cut.
 
+**Maker keys** (`mfr:` rows) are rewritten by context, never as whole tokens: a maker key (`Texas_Instruments`, `Murata`, `Diodes-Inc.`) is also the maker's name in prose, and a hyphen does not make a value a key (`G-Switch` is a display name too). The key is rewritten only where the text uses it as one:
+
+| Context | Example |
+| --- | --- |
+| A library id: the key, a colon and no space | `"Murata:LBES5PL2EL-923"` |
+| A library file or folder | `Murata.kicad_sym`, `Murata.pretty`, `${OPENDAP_KICAD_3DMODELS}/Murata.3dshapes/` |
+| A path segment followed by a file name with an extension, a further `/`, or a closing backtick or quote | `parts/Murata/GRM.md`, `bga/Micron/x/`, `` `parts/Murata/` `` |
+| The value of a `library` field in TOML, JSON or Python (any case) | `library = "Murata"`, `"library": "Murata"`, `LIBRARY = "OpenDAP_Device"` |
+| A lib table entry | `(name "Murata")` |
+| A code span holding only the key | `` `Murata` `` |
+
+URL text (`Texas-Instruments%20BQ.pdf`), display slashes (`Microchip/Atmel`, `NXP/Nexperia`), prose and footprint names (`Texas_DBV0005A_…`) stay. Files and folders whose path has the key as a segment move with the other moves: a folder named as the key (`parts/Murata/`), or `<key>.kicad_sym`, `<key>.pretty`, `<key>.3dshapes`. A `mfr:` row is never `plain-word`; it still needs an owner (the `root` column, or a source repository in the notes).
+
 ## Apply
 
 `apply` refuses, changing nothing, when:
@@ -130,5 +146,6 @@ Otherwise it moves every file with `git mv` in two steps through a temporary fol
 
 ## Limits
 
-- Only Markdown links are rewritten as paths. Paths inside other formats (KiCad library tables, TOML, YAML, scripts) change through identifier rows or the pending rows' own tools; `check` does not look for them.
+- Only Markdown links are rewritten as paths. Paths inside other formats (KiCad library tables, TOML, YAML, scripts) change through identifier rows, the maker-key contexts, or the pending rows' own tools; `check` does not look for them otherwise.
+- A maker-key context the table does not list (a path built in code, a cache path that follows the display name) is left for a hand.
 - `merge` joins one branch per source and no tags; it creates no GitHub repository and pushes nothing. `apply` does not render shared configuration, archive repositories or update `repos.tsv`.
