@@ -45,3 +45,12 @@ repos:
         language: system
         pass_filenames: false
         files: ^(tools/craft/|tools/(pcb|sch)-craft-check\.py$|tests/test_craft_rules\.py$|tests/fixtures/craft-rules/|schemas/craft-rules\.schema\.json$)
+  # Every tool's command-line contract, without KiCad, ngspice or the network.
+  - repo: local
+    hooks:
+      - id: cli-contract
+        name: command-line contract (tests/test_cli_contract.py)
+        entry: python3 -m unittest tests.test_cli_contract
+        language: system
+        pass_filenames: false
+        files: ^(bin|lib|tools|tests)/|^tools\.toml$

@@ -17,6 +17,13 @@ names and file paths listed once; every listed file exists inside export/ (no li
 files in export/ that are not listed are reported as warnings (README.md and component.yaml are
 not exported files).
 
+Examples:
+    odapkit component validate --json .
+    odapkit component validate export/component.yaml
+
+Errors carry a stable dotted code, a hint and a fix (toolkit-host's odw.clikit; with --json, also an
+opendap.error/v1 document on stdout).
+
 Exit status: 0 valid, 1 invalid, 2 usage error.
 """
 import json
@@ -28,6 +35,11 @@ import yaml
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 SCHEMA = os.path.join(HERE, "..", "schemas", "component.schema.json")
+sys.path.insert(0, os.path.join(HERE, "..", "tools"))
+from clihost import load, summary  # noqa: E402
+
+TOOL = "odapkit component"
+clikit = load(TOOL)
 NOT_EXPORTED = {"component.yaml", "README.md", ".DS_Store"}
 
 
@@ -84,17 +96,20 @@ def validate(path, schema):
 
 def main(argv):
     if argv and argv[0] in ("-h", "--help", "help"):
-        print(__doc__.split("\n", 1)[1].strip())
+        print(f"{TOOL}: {summary(clikit, 'component')}\n\n" + __doc__.split("\n", 1)[1].strip())
         return 0
+    as_json = "--json" in argv
+
+    def usage(message):
+        return clikit.report(TOOL, clikit.CliError("input.invalid", message, "usage: odapkit component validate "
+                                                   "[--json] [PATH...]", f"{TOOL} --help", status=2), as_json)
     if not argv or argv[0] != "validate":
-        print("usage: odapkit component validate [--json] [PATH...]", file=sys.stderr)
-        return 2
+        return usage(f"unknown command {argv[0]}" if argv else "no command (validate)")
     args = argv[1:]
-    as_json = "--json" in args
     paths = [a for a in args if a != "--json"]
-    if any(p.startswith("-") for p in paths):
-        print("usage: odapkit component validate [--json] [PATH...]", file=sys.stderr)
-        return 2
+    flags = [p for p in paths if p.startswith("-")]
+    if flags:
+        return usage(f"unknown flag {flags[0]}")
     with open(SCHEMA) as f:
         schema = json.load(f)
     items = []

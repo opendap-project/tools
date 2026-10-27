@@ -86,12 +86,18 @@ class Quiet:
         self.null.close()
 
 
-try:
-    with Quiet():
-        import pcbnew
-except ImportError:  # pragma: no cover
-    sys.exit("pcb-craft-check: pcbnew not found: run it with KiCad's Python, or through "
-             "`odapkit craft check`")
+pcbnew = None  # KiCad's module, imported once a board is checked: --help and usage errors need no KiCad
+
+
+def load_pcbnew():
+    global pcbnew
+    try:
+        with Quiet():
+            import pcbnew as module
+    except ImportError:  # pragma: no cover
+        sys.exit("pcb-craft-check: pcbnew not found: run it with KiCad's Python, or through "
+                 "`odapkit craft check`")
+    pcbnew = module
 
 
 # ---------------------------------------------------------------- helpers
@@ -837,6 +843,7 @@ def main(argv):
     if not os.path.exists(path):
         print(f"pcb-craft-check: {path} not found", file=sys.stderr)
         return 2
+    load_pcbnew()
     cfg_path = cfg_path or path[: -len(".kicad_pcb")] + ".craft.toml"
     cfg = load_config(cfg_path)
     target = target or cfg.get("target", "Q1")

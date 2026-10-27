@@ -3,8 +3,8 @@
 
 Usage:
     odapkit parts matrix CANDIDATES.toml --out DIR [--offline] [--max-age HOURS]
-                         [--cache DIR] [--no-findchips] [--json]
-    odapkit parts matrix --render MATRIX.json --out DIR [--columns a,b,c] [--json]
+                         [--cache DIR] [--no-findchips] [--json] [--dry-run]
+    odapkit parts matrix --render MATRIX.json --out DIR [--columns a,b,c] [--json] [--dry-run]
     odapkit parts rk-ddr-list LIST.pdf [--soc RK3566] [--type LPDDR4] [--package 200ball]
                          [--density 16,32,64] [--supported] [--format csv|json|toml]
     odapkit parts channels
@@ -29,6 +29,10 @@ channels     prints how each channel is read on this host (keys present or not).
 Keyed channels (optional; skipped, and reported as such, when unset): MOUSER_API_KEY,
 ELEMENT14_API_KEY (Newark), ARROW_API_KEY with ARROW_LOGIN, TTI_API_KEY.
 
+--dry-run (matrix) reads the candidates or the saved JSON, names the files it would write, and fetches
+and writes nothing. Errors carry a stable dotted code, a hint and a fix (toolkit-host's odw.clikit).
+Example: odapkit parts matrix candidates.toml --out ../private/sourcing --dry-run
+
 Exit status: 0 done, 1 a fetch or parse failed for every channel, 2 usage or file error
 (including a --render JSON without columns, or a column no candidate has).
 Standard library only (Python 3.11 or later); rk-ddr-list on a PDF needs pdftotext.
@@ -41,13 +45,28 @@ HERE = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "tools"))
 
 from sourcing import channels, matrix, rkddr  # noqa: E402
+from clihost import load, summary  # noqa: E402
+
+TOOL = "odapkit parts"
+clikit = load(TOOL)
+FILES = ("matrix.md", "matrix.csv", "listings.csv")
 
 
 def usage(msg=None):
-    if msg:
-        print(f"odapkit parts: {msg}", file=sys.stderr)
+    clikit.report(TOOL, clikit.CliError("input.invalid", msg or "no command", "the usage is in odapkit parts --help",
+                                        f"{TOOL} --help", 2))
     print(__doc__.split("\n", 2)[2].split("\n\n")[0], file=sys.stderr)
     return 2
+
+
+def fail(code, e, hint, fix):
+    return clikit.report(TOOL, clikit.CliError(code, str(e), hint, fix, 2))
+
+
+def would_write(out, names):
+    for n in names:
+        print(f"{TOOL}: would write {os.path.join(out, n)}", file=sys.stderr)
+    return 0
 
 
 def opt(args, name, default=None):
@@ -68,7 +87,7 @@ def flag(args, name):
     return False
 
 
-def cmd_render(args, out, as_json):
+def cmd_render(args, out, as_json, dry_run):
     path = opt(args, "--render")
     cols = opt(args, "--columns")
     fetch_only = [a for a in ("--cache", "--max-age", "--offline", "--no-findchips") if a in args]
@@ -80,8 +99,10 @@ def cmd_render(args, out, as_json):
     try:
         doc, spec = matrix.load_saved(path, None if cols is None else [c for c in cols.split(",") if c])
     except (OSError, matrix.MatrixError, ValueError) as e:
-        print(f"odapkit parts: {e}", file=sys.stderr)
-        return 2
+        return fail("matrix.invalid", e, "a saved matrix.json from odapkit parts matrix, with its columns",
+                    f"{TOOL} matrix --render MATRIX.json --out DIR --columns a,b,c")
+    if dry_run:
+        return would_write(out, FILES)
     md = matrix.render_all(doc["results"], spec, out, doc.get("generated"))
     if as_json:
         print(json.dumps(doc, indent=1, ensure_ascii=False))
@@ -94,8 +115,9 @@ def cmd_render(args, out, as_json):
 def cmd_matrix(args):
     out = opt(args, "--out")
     as_json = flag(args, "--json")
+    dry_run = flag(args, "--dry-run")
     if "--render" in args:
-        return cmd_render(args, out, as_json)
+        return cmd_render(args, out, as_json, dry_run)
     if "--columns" in args:
         return usage("--columns applies to matrix --render only (a candidates file states its columns)")
     cache = opt(args, "--cache", channels.DEFAULT_CACHE)
@@ -110,8 +132,10 @@ def cmd_matrix(args):
     try:
         spec = matrix.load(path)
     except (OSError, matrix.MatrixError, ValueError) as e:
-        print(f"odapkit parts: {e}", file=sys.stderr)
-        return 2
+        return fail("candidates.invalid", e, "the candidates format is docs/specs/sourcing-matrix.md",
+                    f"{TOOL} --help")
+    if dry_run:
+        return would_write(out, FILES + ("matrix.json",))
     fetcher = channels.Fetcher(cache_dir=cache, offline=offline, max_age_hours=max_age)
 
     def progress(mpn, r):
@@ -146,8 +170,8 @@ def cmd_rk(args):
             with open(src, encoding="utf-8") as f:
                 text = f.read()
     except (OSError, RuntimeError) as e:
-        print(f"odapkit parts: {e}", file=sys.stderr)
-        return 2
+        return fail("ddr_list.unreadable", e, "a Rockchip DDR support list PDF needs poppler's pdftotext",
+                    "brew install poppler")
     rows = rkddr.parse(text, soc)
     if typ:
         rows = [r for r in rows if typ.upper() in r["type"].upper()]
@@ -208,7 +232,7 @@ def cmd_channels(_args):
 
 def main(argv):
     if not argv or argv[0] in ("-h", "--help", "help"):
-        print(__doc__.split("\n", 1)[1].strip())
+        print(f"{TOOL}: {summary(clikit, 'parts')}\n\n" + __doc__.split("\n", 1)[1].strip())
         return 0 if argv else 2
     cmd, args = argv[0], list(argv[1:])
     if cmd == "matrix":

@@ -6,7 +6,7 @@ Part of the [OpenDAP](https://github.com/opendap-project) Developer Toolkit, whi
 
 ## Tools
 
-Reached through the Developer Toolkit's command, `odapkit <tool>` (RFC 0009), from `bin/`:
+Reached through the Developer Toolkit's command, `odapkit <tool>` (RFC 0009), from `bin/`, and declared in `tools.toml`, whose summary is the first line of each tool's `--help`. Every tool follows the [command standard](https://github.com/opendap-project/toolkit-host/blob/main/docs/specs/command-standard.md): an unknown flag exits 2; errors carry a stable dotted code, a hint and a fix, from toolkit-host's [shared helpers](https://github.com/opendap-project/toolkit-host/blob/main/docs/specs/cli-conformance.md#shared-helper) (`tools/clihost.py`, `lib/cli.sh`); `--json` documents carry a `schema`; `odapkit sim` and `odapkit parts matrix` take `--dry-run`.
 
 - `odapkit dru compose|check` — composes a KiCad project's `<project>.kicad_dru` from the fab rule set and the product rules listed in `<project>.dru.toml`, or checks that it is up to date. It runs [toolkit-hooks](https://github.com/opendap-project/toolkit-hooks)' `kicad-dru.py`, the script of the `kicad-dru-composed` pre-commit hook, where the manifest format is documented.
 - `odapkit sim [run|list|fetch]` — runs the simulation regression checks of a board's `sim/*/checks.toml` ([spec](docs/specs/simulation-checks.md)).
@@ -23,14 +23,16 @@ Tests: `python3 -m unittest discover tests` (`test_parts.py` runs offline on syn
 
 - `bin/` — the `odapkit-*` tools
 - `schemas/` — JSON Schemas (MPL-2.0)
-- `tests/` — tests and their fixtures
-- `tools/fab-package.sh` — fab package from a KiCad project (runs ERC/DRC through [toolkit-hooks](https://github.com/opendap-project/toolkit-hooks), found as the sibling `../hooks` or `$OPENDAP_TOOLKIT_HOOKS`)
+- `tests/` — tests and their fixtures; `test_cli_contract.py` checks every tool's command line without KiCad, ngspice or the network, and pre-commit runs it
+- `tools/fab-package.sh` — fab package from a KiCad project (runs ERC/DRC through [toolkit-hooks](https://github.com/opendap-project/toolkit-hooks), found as the sibling `../hooks` or `$ODAP_TOOLKIT_HOOKS_DIR`, formerly `$OPENDAP_TOOLKIT_HOOKS`); `--check` runs only the checks and writes nothing, `--json` prints `opendap.fab-package/v1`
 - `tools/freecad-export.py` — STEP and other exports from FreeCAD
 - `tools/pcb-craft-check.py`, `tools/sch-craft-check.py` — the board and the schematic craft checks behind `odapkit craft`
 - `tools/craft/` — the craft rules as data (`rules.toml`) and their loader and table renderer (`craftrules.py`)
-- `tools/stackup/` — the field solver behind `odapkit stackup` (`fieldsolver.py`, closed forms in `analytic.py`)
+- `tools/stackup/` — the field solver behind `odapkit stackup` (`fieldsolver.py`, closed forms in `analytic.py`; `explore.py` and `pdn.py` are its modules, run through `odapkit stackup`)
+- `tools/clihost.py`, `lib/cli.sh` — find toolkit-host's command-line helpers for the Python and shell tools
+- `tools.toml` — the tools this root declares to the maintainers' umbrella command
 - `tools/sourcing/` — the channel adapters, the matrix and the Rockchip DDR list reader behind `odapkit parts`
-- `tools/parts-sync.py` — fetches the files listed in parts-lib's `manifest.toml` into `~/.cache/opendap/parts/` (`--mpn` for one part)
+- `tools/parts-sync.py` — fetches the files listed in parts-lib's `manifest.toml` into `~/.cache/opendap/parts/` (`--mpn` for one part; `--check` verifies the cache and downloads nothing)
 - `docs/` — requirements, the component export contract, simulation checks, the stackup method and the sourcing matrix tool
 
 ## License

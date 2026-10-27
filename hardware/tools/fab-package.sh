@@ -1,20 +1,40 @@
 #!/bin/sh
 # Build a fab + assembly package for one KiCad project, locally.
-# Usage: fab-package.sh PROJECT.kicad_pro [--out DIR] [--skip-checks]
+# Usage: fab-package.sh PROJECT.kicad_pro [--out DIR] [--skip-checks] [--json]
+#        fab-package.sh PROJECT.kicad_pro --check
 # Output (default): <project dir>/fab/<name>-<git describe>/  (fab/ is never committed)
+# --check runs only the checks the package needs (the project's files, ERC and DRC) and writes
+# nothing. --json prints opendap.fab-package/v1 (name, revision, out, files) on stdout and the
+# progress on stderr. toolkit-hooks is the sibling ../hooks, or $ODAP_TOOLKIT_HOOKS_DIR (or the
+# former $OPENDAP_TOOLKIT_HOOKS).
+# Example: fab-package.sh hardware/board.kicad_pro --check
+# Exit status: 0 package written (or checks pass), 1 a check or an export failed, 2 usage error.
 set -eu
-pro=""; out=""; skip=0
+usage() {
+  printf 'fab-package.sh: error input.invalid: %s\n  hint: the usage is in fab-package.sh --help\n  fix: fab-package.sh --help\n' "$1" >&2
+  exit 2
+}
+pro=""; out=""; skip=0; check=0; json=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --out) out="$2"; shift 2;;
+    -h|--help) sed -n '2,13s/^# \{0,1\}//p' "$0"; exit 0;;
+    --out) [ $# -ge 2 ] || usage "--out needs a DIR"; out="$2"; shift 2;;
     --skip-checks) skip=1; shift;;
+    --check) check=1; shift;;
+    --json) json=1; shift;;
+    -*) usage "unknown flag $1";;
     *) pro="$1"; shift;;
   esac
 done
-[ -f "$pro" ] || { echo "usage: fab-package.sh PROJECT.kicad_pro [--out DIR] [--skip-checks]" >&2; exit 2; }
+[ -f "$pro" ] || usage "no project file ${pro:-given} (PROJECT.kicad_pro)"
 here="$(cd "$(dirname "$0")/.." && pwd)"
-hooks="${OPENDAP_TOOLKIT_HOOKS:-$here/../hooks}"   # toolkit-hooks checkout (sibling in the workspace)
-[ -x "$hooks/hooks/kicad-check.sh" ] || { echo "toolkit-hooks not found: set OPENDAP_TOOLKIT_HOOKS" >&2; exit 2; }
+hooks="${ODAP_TOOLKIT_HOOKS_DIR:-${OPENDAP_TOOLKIT_HOOKS:-$here/../hooks}}"   # toolkit-hooks (sibling in the workspace)
+[ -x "$hooks/hooks/kicad-check.sh" ] || {
+  printf 'fab-package.sh: error repo.not_found: toolkit-hooks not found at %s\n  hint: ERC and DRC run through its hooks/kicad-check.sh\n  fix: export ODAP_TOOLKIT_HOOKS_DIR=<toolkit-hooks checkout>\n' "$hooks" >&2
+  exit 2
+}
+# With --json, stdout carries only the document: the progress goes to stderr.
+if [ "$json" = 1 ]; then exec 3>&1 1>&2; fi
 dir="$(cd "$(dirname "$pro")" && pwd)"; name="$(basename "$pro" .kicad_pro)"
 pcb="$dir/$name.kicad_pcb"; sch="$dir/$name.kicad_sch"
 kicad_cli="${KICAD_CLI:-/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli}"
@@ -22,6 +42,14 @@ kicad_py="${KICAD_PYTHON:-/Applications/KiCad/KiCad.app/Contents/Frameworks/Pyth
 [ -x "$kicad_cli" ] || kicad_cli="$(command -v kicad-cli)"
 rev="$(git -C "$dir" describe --tags --always --dirty 2>/dev/null || echo untracked)"
 
+if [ $check -eq 1 ]; then
+  [ -f "$pcb" ] && [ -f "$sch" ] || { echo "fab-package.sh: $name needs $name.kicad_pcb and $name.kicad_sch" >&2; exit 1; }
+  echo "== ERC / DRC"
+  "$hooks/hooks/kicad-check.sh" erc "$sch"
+  "$hooks/hooks/kicad-check.sh" drc "$pcb"
+  echo "== Checks pass: $name ($rev); nothing written"
+  exit 0
+fi
 if [ $skip -eq 0 ]; then
   echo "== ERC / DRC"
   "$hooks/hooks/kicad-check.sh" erc "$sch"
@@ -66,3 +94,9 @@ echo "== Interactive HTML BOM"
   (cd "$out" && find . -type f ! -name MANIFEST.txt ! -name kicad-cli.log | sort)
 } > "$out/MANIFEST.txt"
 echo "== Package ready: $out"
+if [ "$json" = 1 ]; then
+  files="$(cd "$out" && find . -type f ! -name kicad-cli.log | sort | sed 's|^\./||' |
+    awk 'BEGIN { ORS = "" } { gsub(/\\/, "\\\\"); gsub(/"/, "\\\""); printf "%s\"%s\"", (NR > 1 ? ", " : ""), $0 }')"
+  printf '{"schema": "opendap.fab-package/v1", "name": "%s", "revision": "%s", "out": "%s", "files": [%s]}\n' \
+    "$name" "$rev" "$out" "$files" >&3
+fi

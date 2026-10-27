@@ -3,9 +3,9 @@
 
 Usage:
     odapkit sim [run] [PATH] [--only GLOB]... [--json] [--report FILE] [--fetch]
-                [--allow-missing-models]
+                [--allow-missing-models] [--dry-run]
     odapkit sim list [PATH] [--json]
-    odapkit sim fetch [PATH]
+    odapkit sim fetch [PATH] [--dry-run]
 
 PATH is a repository (its sim/*/checks.toml are run), a folder of studies (*/checks.toml) or one
 study (checks.toml). Default: the current folder.
@@ -15,7 +15,7 @@ run    runs every check, prints a pass/fail table and writes a JSON report (defa
        report instead of the table. --only keeps the checks whose "study/id" matches GLOB.
        --fetch first fetches missing vendor models. A check whose model is missing is "blocked",
        which fails the run unless --allow-missing-models.
-list   prints the checks without running them.
+list   prints the checks without running them (--json: opendap.sim-checks/v1, its items).
 fetch  fetches the vendor models the checks declare: parts-sync (parts-lib manifest.toml) into
        the parts cache, then each model file is extracted into the study, verified by sha256 and
        required to be ignored by git (vendor models are never committed).
@@ -49,6 +49,9 @@ checks.toml (one per study, next to its netlists):
     models = ["tps62136"]            # optional: [[model]] ids it needs
     timeout = 600                    # optional, seconds (default 1800)
 
+--dry-run (run, fetch) names the checks, report and models it would run, write and fetch, and does none of
+it (example: odapkit sim --dry-run). Errors carry a dotted code, a hint and a fix (toolkit-host's odw.clikit).
+
 Environment: JOBS (parallel runs, default 2), NGSPICE (the ngspice binary, default ngspice).
 Exit status: 0 every check passed, 1 a check failed, errored or is blocked, 2 usage error.
 Standard library only (Python 3.11 or later).
@@ -69,6 +72,12 @@ import zipfile
 if sys.version_info < (3, 11):
     sys.exit("odapkit sim: Python 3.11 or later is needed (tomllib)")
 import tomllib
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "tools"))
+from clihost import load, summary  # noqa: E402
+
+TOOL = "odapkit sim"
+clikit = load(TOOL)
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 PARTS_SYNC = os.path.join(HERE, "..", "tools", "parts-sync.py")
@@ -371,7 +380,7 @@ def ngspice_version():
 
 def parse(argv):
     opts = {"cmd": "run", "path": ".", "only": [], "json": False, "report": None, "fetch": False,
-            "allow_missing": False}
+            "allow_missing": False, "dry_run": False}
     args = list(argv)
     if args and args[0] in ("run", "list", "fetch"):
         opts["cmd"] = args.pop(0)
@@ -388,6 +397,8 @@ def parse(argv):
             opts["fetch"] = True
         elif a == "--allow-missing-models":
             opts["allow_missing"] = True
+        elif a == "--dry-run":
+            opts["dry_run"] = True
         elif a.startswith("-"):
             return None
         else:
@@ -401,16 +412,18 @@ def parse(argv):
 
 def main(argv):
     if argv and argv[0] in ("-h", "--help", "help"):
-        print(__doc__)
+        print(f"{TOOL}: {summary(clikit, 'sim')}\n" + __doc__.split("\n", 1)[1])
         return 0
     opts = parse(argv)
+    fail = lambda code, msg, hint, fix, status=1: clikit.report(  # noqa: E731
+        TOOL, clikit.CliError(code, msg, hint, fix, status), "--json" in argv)
     if opts is None or not os.path.isdir(opts["path"]):
-        print(__doc__.split("checks.toml (one")[0].rstrip(), file=sys.stderr)
-        return 2
+        return fail("input.invalid", "bad arguments" if opts is None else f"no folder {opts['path']}",
+                    "one PATH at most, and only the flags --help lists", f"{TOOL} --help", 2)
     base, files = discover(opts["path"])
     if not files:
-        print(f"odapkit sim: no checks.toml under {opts['path']}", file=sys.stderr)
-        return 1
+        return fail("checks.not_found", f"no checks.toml under {opts['path']}",
+                    "a study keeps its checks in sim/<study>/checks.toml", f"{TOOL} list PATH")
     models, checks = {}, []
     try:
         for f in files:
@@ -418,15 +431,15 @@ def main(argv):
             models[os.path.dirname(f)] = m
             checks += c
     except ConfigError as e:
-        print(f"odapkit sim: {e}", file=sys.stderr)
-        return 1
+        return fail("checks.invalid", str(e), "the checks.toml format is in odapkit sim --help", f"{TOOL} --help")
     if opts["only"]:
         checks = [c for c in checks if any(fnmatch.fnmatch(f"{c['study']}/{c['id']}", g) for g in opts["only"])]
     log = lambda s: s and print(s, file=sys.stderr)
 
     if opts["cmd"] == "list":
         if opts["json"]:
-            print(json.dumps([{k: v for k, v in c.items() if k != "dir"} for c in checks], indent=2))
+            print(json.dumps({"schema": "opendap.sim-checks/v1",
+                              "items": [{k: v for k, v in c.items() if k != "dir"} for c in checks]}, indent=2))
         else:
             for c in checks:
                 lim = " ".join(f"{k} {c[k]:g}" for k in ("min", "max") if k in c)
@@ -437,6 +450,11 @@ def main(argv):
         needed = {(c["dir"], mid) for c in checks for mid in c.get("models", [])}
         if opts["cmd"] == "fetch":
             needed = {(d, mid) for d, ms in models.items() for mid in ms}
+        if opts["dry_run"]:
+            for d, mid in sorted(needed):
+                print(f"{TOOL}: would fetch {os.path.basename(d)}/{mid}", file=sys.stderr)
+            if opts["cmd"] == "fetch":
+                return 0
         ok = True
         for d, mid in sorted(needed):
             state = fetch_model(d, models[d][mid], log)
@@ -445,6 +463,12 @@ def main(argv):
         if opts["cmd"] == "fetch":
             return 0 if ok else 1
 
+    if opts["dry_run"]:
+        for c in checks:
+            print(f"{TOOL}: would run {c['study']}/{c['id']}", file=sys.stderr)
+        report = opts["report"] or os.path.join(base, "results", "regression.json")
+        print(f"{TOOL}: would write {report}", file=sys.stderr)
+        return 0
     jobs = max(1, int(os.environ.get("JOBS", "2")))
     with cf.ThreadPoolExecutor(jobs) as ex:
         results = list(ex.map(lambda c: run_check(c, models[c["dir"]]), checks))

@@ -79,7 +79,7 @@ Each candidate gets reasons, each `pass`, `conditional` or `fail`; the verdict i
 
 ## Outputs
 
-In `--out DIR` (required; a private location):
+In `--out DIR` (required; a private location; `--dry-run` reads the candidates or the saved JSON, names these files and fetches and writes nothing):
 
 - `matrix.md`: the ranked table, the reasons per candidate and the channel coverage per query; URLs are autolinks (`<https://…>`), so the file passes markdownlint without exclusions;
 - `matrix.csv`: one row per candidate (prices with stock, list prices, LCSC prices, build price and its basis, first and last fetch time, reasons);

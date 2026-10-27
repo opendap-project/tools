@@ -187,7 +187,7 @@ def main(args):
     doc = load(args.file)
     rows = evaluate(doc)
     if args.json:
-        print(json.dumps({"rows": rows}, indent=2))
+        print(json.dumps({"schema": "opendap.stackup-pdn/v1", "rows": rows}, indent=2))
     else:
         rep = doc.get("sweep", {}).get("report_mhz", [1, 10, 50, 100])
         print(f"{'case':<26}{'rail':<14}{'d µm':>6}{'target mΩ':>11}{'peak mΩ':>9}{'at MHz':>8}{'margin':>8}"
@@ -199,8 +199,3 @@ def main(args):
                   + "  ".join(f"{r['z_at_mhz'][str(m)]:>10.1f}" for m in rep)
                   + ("" if r["ok"] else "  OVER"))
     return 0 if all(r["ok"] for r in rows) else 1
-
-
-if __name__ == "__main__":
-    print("run through: odapkit stackup pdn FILE", file=sys.stderr)
-    sys.exit(2)

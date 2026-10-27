@@ -63,7 +63,7 @@ class Stackup(unittest.TestCase):
     def test_design_reproduces_recorded_width(self):
         r = self.run_tool("design", FIXTURE, "--only", "SL50", "--json")
         self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertAlmostEqual(json.loads(r.stdout)[0]["width_um"], 118.5, delta=1.0)
+        self.assertAlmostEqual(json.loads(r.stdout)["items"][0]["width_um"], 118.5, delta=1.0)
 
     def test_stale_and_off_target_fail(self):
         path = self.variant("width_um = 172.5\nz_ohm = 50.0", "width_um = 120.0\nz_ohm = 50.0")
@@ -195,7 +195,7 @@ class Coupling(unittest.TestCase):
         self.addCleanup(os.remove, path)
         r = subprocess.run([TOOL, "coupling", path, "--json"], capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-        out = {o["name"]: o for o in json.loads(r.stdout)}
+        out = {o["name"]: o for o in json.loads(r.stdout)["items"]}
         self.assertGreater(out["stacked"]["kb_pct"], 3.0)
         self.assertLess(out["apart"]["kb_pct"], 0.5)
         self.assertAlmostEqual(out["stacked"]["z_a_ohm"], out["stacked"]["z_b_ohm"], delta=0.5)
@@ -212,7 +212,7 @@ class Coupling(unittest.TestCase):
         self.addCleanup(os.remove, path)
         r = subprocess.run([TOOL, "coupling", path, "--json"], capture_output=True, text=True)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-        out = {o["name"]: o for o in json.loads(r.stdout)}
+        out = {o["name"]: o for o in json.loads(r.stdout)["items"]}
         self.assertGreater(out["near"]["kb_pct"], out["far"]["kb_pct"])
         self.assertGreater(out["far"]["kb_pct"], 0)
 

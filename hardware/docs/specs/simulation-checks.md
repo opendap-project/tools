@@ -5,12 +5,12 @@ A board's ngspice studies live in `sim/<study>/` of its repository. Each study t
 ## Running
 
 ```sh
-odapkit sim list  [PATH]            # the checks, without running them
-odapkit sim fetch [PATH]            # vendor models into the studies (never committed)
-odapkit sim [run] [PATH] [--only 'output-stage/*'] [--json] [--report FILE] [--fetch] [--allow-missing-models]
+odapkit sim list  [PATH] [--json]   # the checks, without running them (opendap.sim-checks/v1)
+odapkit sim fetch [PATH] [--dry-run] # vendor models into the studies (never committed)
+odapkit sim [run] [PATH] [--only 'output-stage/*'] [--json] [--report FILE] [--fetch] [--allow-missing-models] [--dry-run]
 ```
 
-`PATH` is a repository (its `sim/*/checks.toml`), a folder of studies, or one study; the default is the current folder. `JOBS` sets how many checks run at once (default 2), `NGSPICE` the ngspice binary. The report goes to `<sim folder>/results/regression.json` (`results/` is git-ignored in board repositories).
+`PATH` is a repository (its `sim/*/checks.toml`), a folder of studies, or one study; the default is the current folder. `JOBS` sets how many checks run at once (default 2), `NGSPICE` the ngspice binary. The report goes to `<sim folder>/results/regression.json` (`results/` is git-ignored in board repositories). `--dry-run` names the checks it would run, the report it would write and the models it would fetch, and does none of it.
 
 | Status | Meaning |
 |---|---|

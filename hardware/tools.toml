@@ -1,0 +1,45 @@
+# The tools this root adds to the maintainers' umbrella command (command standard §3).
+schema = "opendap.tools/v1"
+front = "odw"
+
+[[tool]]
+name = "component"
+summary = "Validate a component's export/component.yaml against the component export contract"
+entry = "bin/odapkit-component"
+audience = "maintainer"
+stability = "preview"
+
+[[tool]]
+name = "craft"
+summary = "Check a KiCad board, schematic or symbol library against the OpenDAP craft standard, by level"
+entry = "bin/odapkit-craft"
+audience = "maintainer"
+stability = "preview"
+
+[[tool]]
+name = "dru"
+summary = "Compose a KiCad project's .kicad_dru from its fab and product rule sources, or check it"
+entry = "bin/odapkit-dru"
+audience = "maintainer"
+stability = "preview"
+
+[[tool]]
+name = "parts"
+summary = "Sourcing evaluation matrix: stock, price breaks and lifecycle per part and channel, scored"
+entry = "bin/odapkit-parts"
+audience = "maintainer"
+stability = "preview"
+
+[[tool]]
+name = "sim"
+summary = "Run a board's simulation regression checks (ngspice) against limits from its constraints and ADRs"
+entry = "bin/odapkit-sim"
+audience = "maintainer"
+stability = "preview"
+
+[[tool]]
+name = "stackup"
+summary = "Layer stack and impedance-controlled trace geometry of a PCB: a 2D quasi-static field solver"
+entry = "bin/odapkit-stackup"
+audience = "maintainer"
+stability = "preview"

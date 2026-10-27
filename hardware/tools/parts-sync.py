@@ -2,9 +2,11 @@
 """Fetch the external part files listed in libs/parts/manifest.toml into the local cache
 (~/.cache/opendap/parts/<manufacturer>/<mpn>/) and verify their sha256.
 
-  parts-sync.py [MANIFEST] [--json] [--mpn MPN]...
+  parts-sync.py [MANIFEST] [--json] [--check] [--mpn MPN]...
 
---mpn limits the run to the entries of those parts (repeatable).
+--mpn limits the run to the entries of those parts (repeatable). --check downloads and writes
+nothing: it verifies the files already cached and reports the others as "missing" (exit 1).
+--json prints opendap.parts-sync/v1.
 
 Files without a sha256 in the manifest are downloaded and their hash is printed, so it can be
 recorded. Empty downloads, and datasheets that are not PDFs (a blocked or moved page), are
@@ -13,12 +15,21 @@ deleted and reported as errors. Entries with an empty url (no public file) are r
 import hashlib, json, os, re, sys, tomllib, urllib.request
 
 def main(argv):
-    as_json = "--json" in argv
+    if any(a in ("-h", "--help") for a in argv):
+        print(__doc__.strip())
+        return 0
+    as_json, check = "--json" in argv, "--check" in argv
     mpns, args, it = set(), [], iter(argv)
     for a in it:
         if a == "--mpn":
             mpns.add(next(it, ""))
-        elif not a.startswith("--"):
+        elif a in ("--json", "--check"):
+            pass
+        elif a.startswith("-"):
+            print(f"parts-sync: error input.invalid: unknown flag {a}\n  hint: the usage is in parts-sync.py --help\n"
+                  "  fix: parts-sync.py --help", file=sys.stderr)
+            return 2
+        else:
             args.append(a)
     here = os.path.dirname(os.path.abspath(__file__))
     manifest = args[0] if args else os.path.join(here, "..", "..", "..", "libs", "parts", "manifest.toml")
@@ -32,11 +43,13 @@ def main(argv):
             results.append({"mpn": f["mpn"], "kind": f["kind"], "status": "no-public-file"}); continue
         slug = lambda s: re.sub(r"[^A-Za-z0-9._-]+", "-", s)
         d = os.path.join(cache, slug(f["manufacturer"]), slug(f["mpn"]))
-        os.makedirs(d, exist_ok=True)
         name = os.path.basename(f["url"].split("?")[0]) or f"{f['kind']}.bin"
         path = os.path.join(d, name)
         status = "cached"
+        if check and not os.path.exists(path):
+            ok = False; results.append({"mpn": f["mpn"], "kind": f["kind"], "status": "missing", "path": path}); continue
         if not os.path.exists(path):
+            os.makedirs(d, exist_ok=True)
             try:
                 req = urllib.request.Request(f["url"], headers={"User-Agent": "opendap-parts-sync"})
                 with urllib.request.urlopen(req, timeout=120) as r, open(path, "wb") as out:
@@ -46,7 +59,9 @@ def main(argv):
                 ok = False; results.append({"mpn": f["mpn"], "kind": f["kind"], "status": "error", "error": str(e)}); continue
         data = open(path, "rb").read()
         if not data or (f["kind"] == "datasheet" and not data.startswith(b"%PDF-")):
-            os.remove(path); ok = False
+            if not check:
+                os.remove(path)
+            ok = False
             results.append({"mpn": f["mpn"], "kind": f["kind"], "status": "error", "error": "empty or not a PDF (blocked or moved page)"}); continue
         digest = hashlib.sha256(data).hexdigest()
         want = f.get("sha256")

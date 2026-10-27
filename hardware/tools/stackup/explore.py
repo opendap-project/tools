@@ -645,7 +645,7 @@ def main(args):
         write_csv(rows, args.csv)
     summ = summary(rows)
     if args.json:
-        print(json.dumps({"summary": summ}, indent=2, default=str))
+        print(json.dumps({"schema": "opendap.stackup-explore/v1", "summary": summ}, indent=2, default=str))
     else:
         for s in summ:
             b = s["best"]
@@ -660,8 +660,3 @@ def main(args):
                 print("top" + (f" [{r['variant']}]" if r.get("variant") else "") + ": "
                       + json.dumps({k: v for k, v in r.items() if not k.startswith("_")}, default=str))
     return 0 if any(r["status"] == "pass" for r in rows) else 1
-
-
-if __name__ == "__main__":
-    print("run through: odapkit stackup explore FILE", file=sys.stderr)
-    sys.exit(2)

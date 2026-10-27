@@ -114,23 +114,41 @@ def render(text, rules):
     return out
 
 
+USAGE = """usage: odapkit craft rules render SPEC.md [--check] [--rules FILE] [--json]
+
+Writes the standard's rule tables in SPEC.md from the rules data (default tools/craft/rules.toml), between
+their `odapkit craft rules` markers; --check only reports a stale table (exit 1). --json prints
+opendap.craft-rules-render/v1: spec, current, written.
+
+Example: odapkit craft rules render docs/specs/pcb-craft-standard.md --check --json
+Exit status: 0 current or written, 1 stale or invalid rules, 2 usage error."""
+
+
+def _usage_error(message):
+    print(f"odapkit craft rules: error input.invalid: {message}\n  hint: {USAGE.splitlines()[0]}\n"
+          "  fix: odapkit craft rules --help", file=sys.stderr)
+    return 2
+
+
 def main(argv):
-    usage = "usage: odapkit craft rules render SPEC.md [--check] [--rules FILE]"
     args = list(argv)
-    check = "--check" in args
-    if check:
-        args.remove("--check")
+    if any(a in ("-h", "--help") for a in args):
+        print(USAGE)
+        return 0
+    check, as_json = "--check" in args, "--json" in args
+    args = [a for a in args if a not in ("--check", "--json")]
     path = RULES
     if "--rules" in args:
         i = args.index("--rules")
         if i + 1 >= len(args):
-            print(usage, file=sys.stderr)
-            return 2
+            return _usage_error("--rules needs a FILE")
         path = args[i + 1]
         del args[i:i + 2]
+    flags = [a for a in args if a.startswith("-")]
+    if flags:
+        return _usage_error(f"unknown flag {flags[0]}")
     if len(args) != 2 or args[0] != "render":
-        print(usage, file=sys.stderr)
-        return 2
+        return _usage_error("render SPEC.md is the one command")
     spec = args[1]
     with open(spec, encoding="utf-8") as fh:
         text = fh.read()
@@ -139,12 +157,16 @@ def main(argv):
     except (ValueError, KeyError) as e:
         print(f"odapkit craft rules: {spec}: {e}", file=sys.stderr)
         return 1
+    written = not check and out != text
+    if as_json:
+        print(json.dumps({"schema": "opendap.craft-rules-render/v1", "spec": spec, "current": out == text,
+                          "written": written}))
     if check:
         if out != text:
             print(f"odapkit craft rules: {spec} is not current (run: odapkit craft rules render {spec})", file=sys.stderr)
             return 1
         return 0
-    if out != text:
+    if written:
         with open(spec, "w", encoding="utf-8") as fh:
             fh.write(out)
     return 0

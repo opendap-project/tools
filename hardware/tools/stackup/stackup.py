@@ -44,8 +44,13 @@ from dataclasses import dataclass
 HERE = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, HERE)
 
-import analytic  # noqa: E402
-import fieldsolver as fs  # noqa: E402
+try:  # numpy, scipy and scikit-fem: tools/stackup's own environment (uv run, as odapkit stackup runs it)
+    import analytic  # noqa: E402
+    import fieldsolver as fs  # noqa: E402
+    MISSING = None
+except ImportError as e:  # elsewhere --help and usage errors still work; a command says what to run
+    analytic = fs = None
+    MISSING = e
 
 COUPLING_KEYS = {"name", "layers", "reference", "width_um", "offset_um", "classes", "notes"}
 CLASS_KEYS = {"name", "type", "target_ohm", "tolerance_pct", "design_window_pct", "layer",
@@ -546,6 +551,11 @@ def main(argv=None):
     p.add_argument("file")
     p.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
+    if MISSING is not None:
+        print(f"odapkit stackup: error env.missing: {MISSING}\n  hint: the solver runs in tools/stackup's locked "
+              "environment\n  fix: odapkit stackup " + " ".join(argv if argv is not None else sys.argv[1:]),
+              file=sys.stderr)
+        return 2
 
     if args.cmd == "pdn":
         import pdn
@@ -567,7 +577,7 @@ def main(argv=None):
         if args.cmd == "validate":
             rep = validate()
             if args.json:
-                print(json.dumps(rep, indent=2))
+                print(json.dumps({"schema": "opendap.stackup-validate/v1", **rep}, indent=2))
             else:
                 for r in rep["rows"]:
                     err = "" if r["error_pct"] is None else f"{r['error_pct']:+.2f} %" + ("" if r["limit_pct"] is None else f" (limit {r['limit_pct']} %)")
@@ -584,7 +594,7 @@ def main(argv=None):
                     raise StackupError(f"coupling {case.get('name')}: unknown keys {sorted(unknown)}")
                 out.append(coupling(doc, layers, case))
             if args.json:
-                print(json.dumps(out, indent=2))
+                print(json.dumps({"schema": "opendap.stackup-coupling/v1", "items": out}, indent=2))
             else:
                 for o in out:
                     print(f"{o['name']:<28}{'/'.join(o['layers']):<8} offset {o['offset_um']:>6.0f} µm  "
@@ -593,7 +603,7 @@ def main(argv=None):
         if args.cmd == "stack":
             rep = stack_report(doc, layers)
             if args.json:
-                print(json.dumps(rep, indent=2))
+                print(json.dumps({"schema": "opendap.stackup-stack/v1", **rep}, indent=2))
             else:
                 print(f"{'layer':<13}{'type':<11}{'t µm':>7}{'er':>6}{'z µm':>9}  role")
                 for r in rep["layers"]:
@@ -612,7 +622,7 @@ def main(argv=None):
                 z, r = impedance(doc, layers, cls, Geometry(geo["width_um"], geo["gap_um"]))
                 out.append({"name": cls["name"], **geo, "z_ohm": round(z, 2)})
             if args.json:
-                print(json.dumps(out, indent=2))
+                print(json.dumps({"schema": "opendap.stackup-design/v1", "items": out}, indent=2))
             else:
                 for o in out:
                     print(f"{o['name']:<20} width_um = {o['width_um']:<7} gap_um = {_fmt(o['gap_um'])!s:<7} z_ohm = {o['z_ohm']}")
@@ -622,7 +632,7 @@ def main(argv=None):
         stack = stack_report(doc, layers)
         ok = stack["ok"] and all(r["status"] == "pass" for r in res)
         if args.json:
-            print(json.dumps({"stack": stack, "classes": res, "ok": ok}, indent=2))
+            print(json.dumps({"schema": "opendap.stackup-check/v1", "stack": stack, "classes": res, "ok": ok}, indent=2))
         else:
             print(f"{'class':<20}{'layer':<6}{'ref':<10}{'W µm':>7}{'S µm':>7}{'Z Ω':>8}{'target':>8}"
                   f"{'worst-case Ω':>16}  status")
