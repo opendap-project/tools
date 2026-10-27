@@ -95,8 +95,9 @@ echo "== Interactive HTML BOM"
 } > "$out/MANIFEST.txt"
 echo "== Package ready: $out"
 if [ "$json" = 1 ]; then
-  files="$(cd "$out" && find . -type f ! -name kicad-cli.log | sort | sed 's|^\./||' |
-    awk 'BEGIN { ORS = "" } { gsub(/\\/, "\\\\"); gsub(/"/, "\\\""); printf "%s\"%s\"", (NR > 1 ? ", " : ""), $0 }')"
-  printf '{"schema": "opendap.fab-package/v1", "name": "%s", "revision": "%s", "out": "%s", "files": [%s]}\n' \
-    "$name" "$rev" "$out" "$files" >&3
+  # Each line a JSON string: backslash and quote escaped, control characters dropped.
+  jstr() { tr -d '\000-\010\013-\037' | awk 'BEGIN { ORS = "" } { gsub(/\\/, "\\\\"); gsub(/"/, "\\\""); gsub(/\t/, "\\t"); printf "%s\"%s\"", (NR > 1 ? ", " : ""), $0 }'; }
+  files="$(cd "$out" && find . -type f ! -name kicad-cli.log | sort | sed 's|^\./||' | jstr)"
+  printf '{"schema": "opendap.fab-package/v1", "name": %s, "revision": %s, "out": %s, "files": [%s]}\n' \
+    "$(printf '%s\n' "$name" | jstr)" "$(printf '%s\n' "$rev" | jstr)" "$(printf '%s\n' "$out" | jstr)" "$files" >&3
 fi

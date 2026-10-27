@@ -7,11 +7,15 @@ cli_root="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/.." &&
 : "${CLI_TOOL:=odapkit ${0##*/odapkit-}}"
 CLI_JSON="${CLI_JSON:-0}"
 
+# True when FILE belongs to the user running the tool (POSIX: no test -O).
+_cli_mine() { [ -n "$(find "$1" -prune -user "$(id -u)" 2>/dev/null)" ]; }
+
 _cli_host() {
   [ -n "${ODAP_TOOLKIT_HOST_DIR:-}" ] && { echo "$ODAP_TOOLKIT_HOST_DIR"; return 0; }
   d="$cli_root"
   while [ "$d" != / ]; do
-    if [ -f "$d/repos.tsv" ]; then
+    # Only a workspace this user owns: a repos.tsv someone else wrote never names code to source.
+    if [ -f "$d/repos.tsv" ] && _cli_mine "$d/repos.tsv"; then
       p="$(awk -F'\t' 'NR > 1 { n = split($2, a, "/"); if (a[n] == "toolkit-host" && $1 !~ /(^\/|\.\.)/) print $1 }' "$d/repos.tsv")"
       [ -n "$p" ] && echo "$d/$p"
       return 0
@@ -20,7 +24,7 @@ _cli_host() {
   done
 }
 _cli_h="$(_cli_host || true)"
-if [ -n "$_cli_h" ] && [ -f "$_cli_h/lib/cli.sh" ]; then
+if [ -n "$_cli_h" ] && [ -f "$_cli_h/lib/cli.sh" ] && _cli_mine "$_cli_h/lib/cli.sh"; then
   # shellcheck source=/dev/null
   . "$_cli_h/lib/cli.sh"
 else

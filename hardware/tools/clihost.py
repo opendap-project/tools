@@ -18,7 +18,8 @@ def host_dir():
     d = ROOT
     while d != os.path.dirname(d):
         tsv = os.path.join(d, "repos.tsv")
-        if os.path.isfile(tsv):
+        # Only a workspace this user owns: a repos.tsv someone else wrote never names code to import.
+        if os.path.isfile(tsv) and os.stat(tsv).st_uid == os.getuid():
             for line in open(tsv).read().splitlines()[1:]:
                 path, _, slug = line.partition("\t")
                 full = os.path.realpath(os.path.join(d, path))
@@ -32,7 +33,8 @@ def host_dir():
 
 def load(tool):
     host = host_dir()
-    if not host or not os.path.isfile(os.path.join(host, "src", "odw", "clikit.py")):
+    helper = os.path.join(host or "", "src", "odw", "clikit.py")
+    if not host or not os.path.isfile(helper) or os.stat(helper).st_uid != os.getuid():
         sys.stderr.write(f"{tool}: error repo.not_found: no toolkit-host checkout\n"
                          "  hint: toolkit-host's odw.clikit runs this tool's command line\n"
                          "  fix: export ODAP_TOOLKIT_HOST_DIR=<toolkit-host checkout>\n")
