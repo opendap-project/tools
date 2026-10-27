@@ -4,7 +4,7 @@ import textwrap
 
 import pytest
 
-from odw import plan
+from odw import plan, schemas
 
 TASK = """\
 id = "{id}"
@@ -152,7 +152,14 @@ def test_render_and_check_index(prog):
 def test_cli_list_json(prog, capsys):
     rc = plan.main(["--programme", str(prog.root), "--claims", str(prog.claims_dir), "list", "--ready", "--json"])
     assert rc == 0
-    assert [t["id"] for t in json.loads(capsys.readouterr().out)] == ["AA-05", "AA-02"]
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["schema"] == "opendap.plan-tasks/v1" and schemas.errors(doc, "plan-tasks") == []
+    assert [t["id"] for t in doc["items"]] == ["AA-05", "AA-02"]
+
+
+def test_cli_next_json_is_a_plan_tasks_document(prog, capsys):
+    assert plan.main(["--programme", str(prog.root), "--claims", str(prog.claims_dir), "--json", "next"]) == 0
+    assert [t["id"] for t in json.loads(capsys.readouterr().out)["items"]] == ["AA-05"]
 
 
 def test_cli_check_exit_status(prog):

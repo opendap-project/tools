@@ -2,7 +2,8 @@
 
 Usage:
     odapkit plan [--programme DIR] [--claims DIR] [--json] COMMAND
-      list [--ready] [--phase N] [--status S]   tasks, in phase then id order
+      list [--ready] [--phase N] [--status S]   tasks, in phase then id order (--json: opendap.plan-tasks/v1,
+                                                its `items`; next prints the same document)
       next                                      the first ready task
       get ID                                    one task record (`show` is the former spelling)
       check                                     schemas, file names, dependencies, decisions, cycles
@@ -358,7 +359,8 @@ def _main(argv):
 
     def show(tasks):
         if as_json:
-            print(json.dumps([{k: t[k] for k in FIELDS if k in t} for t in tasks], ensure_ascii=False, indent=1))
+            items = [{k: t[k] for k in FIELDS if k in t} for t in tasks]
+            print(json.dumps({"schema": "opendap.plan-tasks/v1", "items": items}, ensure_ascii=False, indent=1))
         else:
             for t in tasks:
                 print(f"{t['id']:8} {t['phase']:>2} {t['status']:7} {t['title']}")

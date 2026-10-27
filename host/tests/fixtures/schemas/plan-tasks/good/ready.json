@@ -1,0 +1,11 @@
+{
+ "schema": "opendap.plan-tasks/v1",
+ "items": [
+  {
+   "id": "AA-01",
+   "phase": 0,
+   "title": "A task",
+   "status": "todo"
+  }
+ ]
+}

@@ -23,7 +23,7 @@ JSON_PROBES = {
     "odapkit-cli": ["list", "--workspace", "{workspace}", "--root", "public/toolkit/host", "--json"],
     "odapkit-docs": ["check", "--json", "{workspace}/public/toolkit/host/README.md"],
     "odapkit-noindex": ["--dry-run", "--json", "{workspace}/public/toolkit/host"],
-    "odapkit-plan": ["--programme", f"{HOST_FIX}/programme", "--json", "get", "XX-01"],
+    "odapkit-plan": ["--programme", f"{HOST_FIX}/programme", "--json", "list"],
     # No public rename map exists to plan from: the probe reads the error document of a refused call.
     "odapkit-rename": ["plan", "no-such-root", "--workspace", "{workspace}", "--map", "/dev/null", "--json"],
     "odapkit-req": ["index", "--workspace", "{workspace}", "--json"],
