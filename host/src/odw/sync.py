@@ -4,7 +4,9 @@ Usage: odapkit sync [--workspace DIR] [--templates DIR] (--check | --apply [--dr
 
 `<templates>/sync.toml` (opendap.sync/v1) lists [[file]] entries: a `template` path, the `target` path inside each
 repository, the repository globs it applies to (`repos`, over the paths in every repos.tsv) and `when`: `always`
-(the file must exist and match) or `present` (it must match where a repository has it). --check reports every
+(the file must exist and match) or `present` (it must match where a repository has it). [[generated]] entries render a `target` per repository
+from a workspace `source` with a named `generator` (`codeowners`: .github/CODEOWNERS from owners.tsv, odw.owners);
+`repos` may include `.`, the workspace repository. --check reports every
 target that is missing or differs (exit 1); --apply writes them, and with --dry-run only names them. --json prints
 opendap.check-result/v1: with --check each drift fails; with --apply each target written (or that would be) is
 `info`. Default templates: <workspace>/templates.
@@ -20,7 +22,7 @@ import subprocess
 import sys
 import tomllib
 
-from odw import audit, clikit, workspace
+from odw import audit, clikit, owners, workspace
 
 TOOL = "odapkit sync"
 
@@ -152,6 +154,33 @@ def _block_drift(ws, templates):
     return out
 
 
+GENERATORS = {"codeowners": (owners.read, owners.render)}
+
+
+def _generated_drift(ws, templates, repos):
+    """(Drift, wanted text) for every [[generated]] target that is missing or differs."""
+    doc = tomllib.loads((pathlib.Path(templates) / "sync.toml").read_text())
+    out = []
+    for g in doc.get("generated", []):
+        if g.get("generator") not in GENERATORS:
+            raise clikit.CliError("sync.invalid", f"unknown generator {g.get('generator')!r} in sync.toml",
+                                  f"the generators are {', '.join(GENERATORS)}", f"{TOOL} --check --json")
+        load, render = GENERATORS[g["generator"]]
+        data = load(ws / g["source"])
+        for r in owners.candidates(ws, repos):
+            if not any(fnmatch.fnmatch(r, p) for p in g["repos"]) or any(fnmatch.fnmatch(r, p) for p in g.get("exclude", [])):
+                continue
+            want = render(data, r)
+            path = ws / r / g["target"]
+            if want is None:
+                continue
+            if not path.exists():
+                out.append((Drift(r, g["target"], f"generated {g['source']}", "missing"), want))
+            elif path.read_text() != want:
+                out.append((Drift(r, g["target"], f"generated {g['source']}", "differs"), want))
+    return out
+
+
 def check(ws, templates):
     ws, templates = pathlib.Path(ws), pathlib.Path(templates)
     repos = [r for r in audit.repositories(ws) if (ws / r / ".git").exists()]
@@ -167,7 +196,8 @@ def check(ws, templates):
                     out.append(Drift(r, e["target"], e["template"], "missing"))
             elif path.read_bytes() != want:
                 out.append(Drift(r, e["target"], e["template"], "differs"))
-    return out + [d for d, *_ in _block_drift(ws, templates)] + _hook_drift(ws, repos)
+    return (out + [d for d, *_ in _block_drift(ws, templates)] + [d for d, _ in _generated_drift(ws, templates, repos)]
+            + _hook_drift(ws, repos))
 
 
 HOOK = ".git/hooks/pre-commit"
@@ -194,8 +224,13 @@ def apply(ws, templates):
     for d, want, text, blk in _block_drift(ws, templates):
         (ws / d.repo / d.target).write_text(_compose(blk, want, text))
         changed.append(d)
+    for d, want in _generated_drift(ws, templates, audit.repositories(ws)):
+        path = ws / d.repo / d.target
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(want)
+        changed.append(d)
     for d in check(ws, templates):
-        if d.template == "block":
+        if d.template == "block" or d.template.startswith("generated "):
             continue
         if d.template == "pre-commit install":
             if shutil.which("pre-commit"):

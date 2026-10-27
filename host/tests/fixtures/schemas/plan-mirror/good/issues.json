@@ -1,0 +1,5 @@
+{"schema": "opendap.plan-mirror/v1", "repository": "o/rfcs", "label": "tracking", "dry_run": false,
+ "issues": [{"rfc": "0001", "title": "Tracking: RFC 0001: First", "body": "<!-- odapkit plan mirror: rfc 0001 -->\nbody\n",
+   "tasks": [{"id": "T-01", "title": "Apply", "status": "done", "evidence": ["o/a@abc1234"]}],
+   "action": "created", "url": "https://github.com/o/rfcs/issues/1"}],
+ "unmapped": [{"id": "T-04", "reason": "no RFC"}]}

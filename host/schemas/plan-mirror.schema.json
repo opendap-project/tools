@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/plan-mirror.schema.json",
+  "title": "The public tracking issues of a programme (odapkit plan mirror --json)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "repository", "label", "dry_run", "issues", "unmapped"],
+  "properties": {
+    "schema": {"const": "opendap.plan-mirror/v1"},
+    "repository": {"type": "string", "pattern": "^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$"},
+    "label": {"type": "string", "minLength": 1},
+    "dry_run": {"type": "boolean"},
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rfc", "title", "body", "tasks"],
+        "properties": {
+          "rfc": {"type": "string", "pattern": "^[0-9]{4}$"},
+          "title": {"type": "string", "minLength": 1},
+          "body": {"type": "string", "pattern": "^<!-- odapkit plan mirror: rfc [0-9]{4} -->\n"},
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "title", "status", "evidence"],
+              "properties": {
+                "id": {"type": "string", "pattern": "^[A-Z][A-Z0-9]*-[0-9]{2,}$"},
+                "title": {"type": "string", "minLength": 1},
+                "status": {"enum": ["todo", "doing", "review", "done", "blocked", "decision", "dropped"]},
+                "evidence": {"type": "array", "items": {"type": "string", "pattern": "^[A-Za-z0-9-]+/[A-Za-z0-9._-]+@[0-9a-f]{7,40}$"}}
+              }
+            }
+          },
+          "action": {"enum": ["created", "updated", "unchanged"]},
+          "url": {"type": "string", "format": "uri"}
+        }
+      }
+    },
+    "unmapped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "reason"],
+        "properties": {"id": {"type": "string"}, "reason": {"type": "string"}}
+      }
+    }
+  }
+}

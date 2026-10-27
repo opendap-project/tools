@@ -11,6 +11,8 @@ Usage:
       release ID                                drop your claim; the task goes back to todo
       done ID --evidence REPO=SHA... --docs P... [--tests T...]
       render [--check]                          write tasks/INDEX.md, or check it is current
+      mirror [--workspace DIR] [--dry-run]      the public tasks as one tracking issue per accepted RFC
+                                                (odw.plan_mirror; --json: opendap.plan-mirror/v1)
     claim, release, done and render take --dry-run: they validate, name the files they would change and write
     nothing.
 
@@ -29,7 +31,7 @@ import socket
 import sys
 import tomllib
 
-from odw import clikit, schemas, workspace
+from odw import clikit, plan_mirror, schemas, workspace
 
 TOOL = "odapkit plan"
 
@@ -313,7 +315,8 @@ def _parser():
     ap = clikit.Parser(prog=TOOL, summary=clikit.summary("plan"), description="A maintainers' programme as data.",
                        examples=["odapkit plan list --ready --json", "odapkit plan get HL-53",
                                  "odapkit plan claim HL-53 --dry-run",
-                                 "odapkit plan done HL-53 --evidence public/toolkit/host=abc1234 --docs README.md"])
+                                 "odapkit plan done HL-53 --evidence public/toolkit/host=abc1234 --docs README.md",
+                                 "odapkit plan mirror --dry-run"])
     ap.add_argument("--programme")
     ap.add_argument("--claims")
     ap.add_argument("--json", action="store_true")
@@ -342,7 +345,10 @@ def _parser():
     hm.add_argument("--workspace")
     rd = sub.add_parser("render")
     rd.add_argument("--check", action="store_true")
-    for p in (rl, cl, dn, rd):
+    mr = sub.add_parser("mirror", help="the public tasks as one tracking issue per accepted RFC")
+    mr.add_argument("--workspace")
+    mr.add_argument("--json", action="store_true", dest="json_sub")
+    for p in (rl, cl, dn, rd, mr):
         p.add_argument("--dry-run", action="store_true", help="validate and name the files; write nothing")
     return ap
 
@@ -402,6 +408,11 @@ def _main(argv):
                 for f in found:
                     print(f"{f['rule']}: {f['problem']} ({f['detail']})")
             return 1 if found else 0
+        elif args.cmd == "mirror":
+            ws = pathlib.Path(args.workspace) if args.workspace else workspace.root(root)
+            if ws is None:
+                raise clikit.no_workspace(f"{TOOL} mirror")
+            return plan_mirror.run(prog, ws, args.dry_run, as_json)
         elif args.cmd == "render":
             if args.check:
                 if prog.index_is_current():

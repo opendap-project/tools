@@ -17,6 +17,9 @@ The formats the maintainers' tools read and write. Each one is a schema with goo
 | `verification` (`opendap.verification/v1`) | A verification matrix: its vocabulary and one case per row, observed by hand or proven again by named check results ([verification matrices](verification.md)) | `odapkit verify` |
 | `rename-plan` (`opendap.rename-plan/v1`) | What one root's cut moves and rewrites: moves, deletes, rows done, missing, pending or crossing roots, conflicts, identifier rows with their status (apply, later, manual) and every link, URL and identifier edit ([rename](rename.md)) | `odapkit rename` |
 | `homes` (`opendap.homes/v1`) | A programme's rules and the permanent homes that state them (path and phrase), or the decision a rule waits for | `odw plan homes` |
+| `owners` | The workspace's `owners.tsv`, read as one object per row: a public repository path glob (optionally `:` and a pattern inside the repository) and its owners (`@user`, `@org/team`) ([workspace sync](workspace-sync.md)) | `odapkit sync` (`.github/CODEOWNERS`) |
+| `plan-mirror-config` (`opendap.plan-mirror-config/v1`) | A programme's `mirror.toml`: the RFC repository, the workspace repository, the issue label, the RFC per phase, and per-task RFCs and public titles ([programme plan](programme-plan.md)) | `odapkit plan mirror` |
+| `plan-mirror` (`opendap.plan-mirror/v1`) | What `odapkit plan mirror --json` prints: one issue per accepted RFC (title, body with its marker, tasks with public evidence, and after a real run its action and URL) and the unmapped tasks | `odapkit plan mirror` |
 | `task` | A maintainers' programme task record (one TOML file per task): phase, dependencies, blocking decisions, status, and the tests, docs and commit evidence a `done` task must carry | `odw plan` |
 | `decisions` | A programme's decisions file: each decision's question, options, recommendation and status; a `decided` entry records the decision, its date and who took it | `odw plan` |
 

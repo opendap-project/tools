@@ -1,0 +1,243 @@
+"""odw plan mirror: the public part of a programme as GitHub issues, one tracking issue per accepted RFC.
+
+`odapkit plan mirror [--workspace DIR] [--dry-run]` reads the programme's tasks with `visibility = "public"` and
+groups them by the RFC they apply: the task's entry in `[task_rfc]` of the programme's mirror.toml, else the
+first `RFC NNNN` in its public title, else `[phase_rfc]` for its phase. A task's public title is its entry in
+`[public_title]`, else its title. A task whose RFC is missing or not Accepted is
+reported as unmapped and mirrored nowhere. Each issue carries the RFC's title and link, a checklist with each
+task's id, title and status, and the evidence commits of public repositories; private evidence, sources and
+notes are never read into it.
+
+Before anything is printed or sent, the generated text is checked for private facts: a `private/` path, the
+name or GitHub slug of a repository listed under private/ in any repos.tsv, a path of the programme's own
+files, or the id of one of its decisions. One is enough to refuse the whole run (`mirror.private_fact`); the fix
+is a `[public_title]` entry, a reworded title or a private task, never an edit of the issue.
+
+The real run creates the label if missing, then creates or updates each issue in `repository`, matched by the
+hidden marker `<!-- odapkit plan mirror: rfc NNNN -->` on its first line and by its author being the account
+that runs the mirror. It never closes, reopens, deletes or edits any other issue. --dry-run prints the issues
+and reaches nothing. --json prints opendap.plan-mirror/v1 (schemas/plan-mirror.schema.json).
+Spec: docs/specs/programme-plan.md (Public tracking mirror).
+"""
+import json
+import pathlib
+import re
+import subprocess
+import tomllib
+import urllib.parse
+
+from odw import clikit, rfcstatus, schemas
+
+TOOL = "odapkit plan mirror"
+SCHEMA = "opendap.plan-mirror/v1"
+CONFIG = "mirror.toml"
+MARKER = "<!-- odapkit plan mirror: rfc {} -->"
+RFC_IN_TITLE = re.compile(r"\bRFC (\d{4})\b")
+CLOSED = ("done", "dropped")
+LABEL = {"color": "0e8a16", "description": "Implementation status of an accepted RFC, generated from the task records"}
+
+
+class NotFound(Exception):
+    """A GitHub API path that answered 404."""
+
+
+def load_config(root):
+    path = pathlib.Path(root) / CONFIG
+    if not path.is_file():
+        raise clikit.CliError("mirror.no_config", f"no {path}",
+                              "the programme folder holds mirror.toml (opendap.plan-mirror-config/v1)",
+                              f"odapkit plan --programme DIR mirror --dry-run", status=2)
+    cfg = tomllib.loads(path.read_text())
+    errs = schemas.errors(cfg, "plan-mirror-config")
+    if errs:
+        raise clikit.CliError("mirror.invalid_config", f"{path}: " + "; ".join(errs),
+                              "mirror.toml breaks schemas/plan-mirror-config.schema.json", f"$EDITOR {path}", status=2)
+    return cfg
+
+
+def _rows(ws):
+    for f in [ws / "repos.tsv", *sorted(ws.glob("*/*/repos.tsv"))]:
+        if f.is_file():
+            for line in f.read_text().splitlines()[1:]:
+                if "\t" in line:
+                    yield line.split("\t")[:2]
+
+
+def accepted_rfcs(ws, repos):
+    """{number: {title, file, status}} for every RFC under the rfcs repository's text/."""
+    d = rfcstatus._rfc_dir(ws, repos)
+    out = {}
+    for f in sorted(d.glob("*.md")) if d else []:
+        m = rfcstatus.NUMBER.search(f.as_posix())
+        if m:
+            text = f.read_text(errors="replace")
+            title = next((ln[2:].strip() for ln in text.splitlines() if ln.startswith("# ")), f.stem)
+            out[m.group(1)] = {"title": title, "file": f.name, "status": rfcstatus._status_word(text)}
+    return out
+
+
+def public_title(task, cfg):
+    return cfg.get("public_title", {}).get(task["id"], task["title"])
+
+
+def rfc_of(task, cfg):
+    if task["id"] in cfg.get("task_rfc", {}):
+        return cfg["task_rfc"][task["id"]]
+    m = RFC_IN_TITLE.search(public_title(task, cfg))
+    return m.group(1) if m else cfg.get("phase_rfc", {}).get(str(task["phase"]))
+
+
+def _evidence(task, public, cfg):
+    out = []
+    for repo, sha in task.get("evidence", {}).items():
+        slug = cfg["workspace"] if repo in ("workspace", ".") else public.get(repo)
+        if slug:
+            out.append(f"{slug}@{sha}")
+    return out
+
+
+def _body(number, rfc, cfg, items):
+    url = f"https://github.com/{cfg['repository']}/blob/main/text/{rfc['file']}"
+    done = sum(t["status"] in CLOSED for t in items)
+    lines = [MARKER.format(number),
+             f"Implementation status of [{rfc['title']}]({url}): the public tasks that apply it.", "",
+             f"**{done} of {len(items)} done.**", ""]
+    for t in items:
+        box = "x" if t["status"] in CLOSED else " "
+        ev = f" ({', '.join(t['evidence'])})" if t["evidence"] else ""
+        lines.append(f"- [{box}] **{t['id']}** {t['title']}: {t['status']}{ev}")
+    lines += ["", "Generated by `odapkit plan mirror` from the maintainers' task records; "
+              "edits to this issue are replaced on the next run."]
+    return "\n".join(lines) + "\n"
+
+
+def build(prog, ws, cfg):
+    """The opendap.plan-mirror/v1 document: one issue per accepted RFC with public tasks, and the unmapped."""
+    ws = pathlib.Path(ws)
+    repos = rfcstatus._repos(ws)
+    rfcs = accepted_rfcs(ws, repos)
+    public = {p: r for p, r in _rows(ws) if not p.startswith("private/")}
+    groups, unmapped = {}, []
+    for t in prog.tasks():
+        if t.get("visibility") != "public":
+            continue
+        n = rfc_of(t, cfg)
+        if n is None:
+            unmapped.append({"id": t["id"], "reason": "no RFC: none in the title, task_rfc or phase_rfc"})
+        elif rfcs.get(n, {}).get("status") != "accepted":
+            word = rfcs[n]["status"] or "no status" if n in rfcs else "missing"
+            unmapped.append({"id": t["id"], "reason": f"RFC {n} is not accepted ({word})"})
+        else:
+            groups.setdefault(n, []).append({"id": t["id"], "title": public_title(t, cfg), "status": t["status"],
+                                             "evidence": _evidence(t, public, cfg)})
+    issues = [{"rfc": n, "title": f"Tracking: {rfcs[n]['title']}", "body": _body(n, rfcs[n], cfg, items),
+               "tasks": items} for n, items in sorted(groups.items())]
+    return {"schema": SCHEMA, "repository": cfg["repository"], "label": cfg["label"], "dry_run": True,
+            "issues": issues, "unmapped": unmapped}
+
+
+def private_terms(ws, programme):
+    """Regular expressions of the facts that never leave the private side, with what each one stands for."""
+    terms = [(re.compile(r"(?<![\w.-])private/"), "a private/ path")]
+    for path, slug in _rows(pathlib.Path(ws)):
+        if path.startswith("private/"):
+            name = slug.split("/")[-1]
+            terms.append((re.compile(rf"(?<![\w/-]){re.escape(name)}(?![\w-])"), f"private repository {name}"))
+            terms.append((re.compile(re.escape(slug)), f"private repository {slug}"))
+    decisions = pathlib.Path(programme) / "decisions.toml"
+    for d in tomllib.loads(decisions.read_text()).get("decision", []) if decisions.is_file() else []:
+        terms.append((re.compile(rf"(?<![\w-]){re.escape(d['id'])}(?![\w-])"), f"decision {d['id']}"))
+    for entry in sorted(pathlib.Path(programme).iterdir()):
+        name = entry.name + ("/" if entry.is_dir() else "")
+        if not entry.name.startswith("."):
+            terms.append((re.compile(rf"(?<![\w/.-]){re.escape(name)}"), f"the programme's {name}"))
+    return terms
+
+
+def guard(doc, ws, programme):
+    """Refuse the run when any issue would publish a private fact."""
+    found = []
+    terms = private_terms(ws, programme)
+    for issue in doc["issues"]:
+        text = issue["title"] + "\n" + issue["body"]
+        for rx, what in terms:
+            for m in rx.finditer(text):
+                line = next(ln for ln in text.splitlines() if m.group(0) in ln)
+                tid = re.search(r"\*\*([A-Z][A-Z0-9]*-\d+)\*\*", line)
+                found.append(f"{tid.group(1) if tid else 'RFC ' + issue['rfc']}: {what}")
+    if found:
+        raise clikit.CliError("mirror.private_fact", "the issues would publish private facts: "
+                              + "; ".join(sorted(set(found))),
+                              "a public task's title states public facts only",
+                              "reword the task's title or set visibility = \"private\", then odapkit plan mirror --dry-run")
+
+
+class GitHub:
+    """The GitHub REST API through the gh CLI (its authentication and host)."""
+
+    def api(self, method, path, payload=None):
+        cmd = ["gh", "api", "--method", method, path]
+        if method == "GET" and "?" in path:
+            cmd += ["--paginate", "--slurp"]
+        if payload is not None:
+            cmd += ["--input", "-"]
+        r = subprocess.run(cmd, input=json.dumps(payload) if payload is not None else None,
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            if "HTTP 404" in r.stderr:
+                raise NotFound(path)
+            raise clikit.CliError("mirror.github", f"gh api {method} {path}: {r.stderr.strip()}",
+                                  "gh needs a login with write access to the issues of the repository",
+                                  "gh auth status")
+        out = json.loads(r.stdout) if r.stdout.strip() else None
+        if "--slurp" in cmd and isinstance(out, list):
+            out = [x for page in out for x in (page if isinstance(page, list) else [page])]
+        return out
+
+
+def publish(doc, gh):
+    """Create or update the mirror's own issues; return one action per issue."""
+    repo, label = doc["repository"], doc["label"]
+    me = gh.api("GET", "user")["login"]
+    try:
+        gh.api("GET", f"repos/{repo}/labels/{urllib.parse.quote(label)}")
+    except NotFound:
+        gh.api("POST", f"repos/{repo}/labels", {"name": label, **LABEL})
+    ours = {}
+    for i in gh.api("GET", f"repos/{repo}/issues?state=all&per_page=100&labels={urllib.parse.quote(label)}"):
+        first = (i.get("body") or "").split("\n", 1)[0]
+        m = re.fullmatch(re.escape(MARKER).replace(r"\{\}", r"(\d{4})"), first)
+        if m and i["user"]["login"] == me and "pull_request" not in i:
+            ours.setdefault(m.group(1), i)
+    actions = []
+    for issue in doc["issues"]:
+        old = ours.get(issue["rfc"])
+        if old is None:
+            new = gh.api("POST", f"repos/{repo}/issues", {"title": issue["title"], "body": issue["body"],
+                                                          "labels": [label]})
+            actions.append({"rfc": issue["rfc"], "action": "created", "url": new["html_url"]})
+        elif old["title"] != issue["title"] or (old.get("body") or "") != issue["body"]:
+            gh.api("PATCH", f"repos/{repo}/issues/{old['number']}", {"title": issue["title"], "body": issue["body"]})
+            actions.append({"rfc": issue["rfc"], "action": "updated", "url": old["html_url"]})
+        else:
+            actions.append({"rfc": issue["rfc"], "action": "unchanged", "url": old["html_url"]})
+    return actions
+
+
+def run(prog, ws, dry_run, as_json):
+    cfg = load_config(prog.root)
+    doc = build(prog, ws, cfg)
+    guard(doc, ws, prog.root)
+    if not dry_run:
+        doc["dry_run"] = False
+        for issue, act in zip(doc["issues"], publish(doc, GitHub())):
+            issue.update(action=act["action"], url=act["url"])
+    if as_json:
+        print(json.dumps(doc, ensure_ascii=False, indent=1))
+        return 0
+    for issue in doc["issues"]:
+        head = f"{issue.get('action', 'would write')} {issue.get('url', '')}".strip()
+        print(f"== {issue['title']} ({head})\n{issue['body']}" if dry_run else f"{head}  {issue['title']}")
+    for u in doc["unmapped"]:
+        print(f"unmapped {u['id']}: {u['reason']}")
+    return 0

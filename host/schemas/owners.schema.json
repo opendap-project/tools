@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/owners.schema.json",
+  "title": "Ownership rows (owners.tsv at the workspace root, read as one object per row)",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["path", "owner"],
+    "properties": {
+      "path": {
+        "description": "A glob over repository paths as repos.tsv writes them ('.' is the workspace repository), optionally followed by ':' and a CODEOWNERS pattern inside the repository. Public paths only.",
+        "type": "string",
+        "pattern": "^(\\.|[A-Za-z0-9*?._/\\[\\]-]+)(:\\S+)?$",
+        "not": {"pattern": "^private(/|$)"}
+      },
+      "owner": {
+        "description": "One or more GitHub handles or teams separated by spaces.",
+        "type": "string",
+        "pattern": "^@[A-Za-z0-9-]+(/[A-Za-z0-9._-]+)?( @[A-Za-z0-9-]+(/[A-Za-z0-9._-]+)?)*$"
+      }
+    }
+  }
+}
