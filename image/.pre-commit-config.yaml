@@ -19,7 +19,7 @@ repos:
     hooks:
       - id: markdownlint-cli2
   - repo: https://github.com/opendap-project/toolkit-hooks
-    rev: v0.3.0
+    rev: v0.4.1
     hooks:
       - id: no-stray-files
   # Shell scripts (found by their shebang): shellcheck, pinned through shellcheck-py.
