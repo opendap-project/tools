@@ -132,6 +132,13 @@ class Programme:
             for b in t.get("blocked_by", []):
                 if b not in decs:
                     problems.append(f"{name}: blocked by unknown decision {b}")
+            if t.get("visibility") == "public":
+                # Public tasks are mirrored as public issues: they carry public facts only.
+                repos = t.get("repos", [])
+                if repos and all(r.startswith("private/") for r in repos):
+                    problems.append(f"{name}: a public task whose repositories are all private (make it private)")
+                if any("private/" in t.get(k, "") for k in ("title", "notes")):
+                    problems.append(f"{name}: a public task names a private path in its title or notes")
         graph = {t["id"]: [d for d in t.get("depends_on", []) if d in ids] for t in ts if "id" in t}
         seen, stack = {}, []
 

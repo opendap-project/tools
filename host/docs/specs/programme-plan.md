@@ -20,7 +20,7 @@ A programme is a piece of maintainers' work that spans many sessions and reposit
 - A task is **ready** when its status is `todo`, every task it depends on is `done` and every decision blocking it is `decided`. `next` is the first ready task by phase, then id.
 - `claim` takes a ready task (or renews your own claim): status `doing` and a claim file. A live claim of another session is refused; an expired one is free. `release` drops the claim and puts a `doing` task back to `todo`.
 - `done` needs at least one evidence commit (`REPO=SHA`) and the docs the task updated; it removes the claim. The task schema refuses a `done` record without them.
-- `check` reports schema errors, file names that do not match their id, unknown dependencies or decisions, and dependency cycles. Programmes run `check` in their repository's pre-commit.
+- `check` reports schema errors, file names that do not match their id, unknown dependencies or decisions, dependency cycles, and public tasks that carry private facts (repositories all private, or a private path in the title or notes), since public tasks are mirrored as public issues. Programmes run `check` in their repository's pre-commit.
 - `homes` lists the rules found only in the programme: a rule with no home, a home that is missing, or a home that no longer states the rule (case and spacing ignored). It exits 1 while any is listed; a programme ends when it exits 0, so deleting the programme loses no rule.
 - Records are written with a fixed field order so diffs stay small.
 - Sessions set `ODAP_SESSION` to name themselves in claims; otherwise the tool uses user, host and parent process.

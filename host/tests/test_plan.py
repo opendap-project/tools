@@ -175,3 +175,16 @@ def test_done_keeps_every_repeated_evidence_and_docs_flag(prog, monkeypatch):
                       "--evidence", "a=1111111", "--evidence", "b=2222222", "--docs", "d1", "--docs", "d2"]) == 0
     t = plan.Programme(root, claims_dir=claims).task("XX-01")
     assert t["evidence"] == {"a": "1111111", "b": "2222222"} and t["docs"] == ["d1", "d2"]
+
+
+def test_check_refuses_private_facts_in_public_tasks(prog):
+    root = prog.root
+    (root / "tasks" / "PB-01.toml").write_text(TASK.format(
+        id="PB-01", phase=0, title="Move costing to a private repository", deps="[]", blocked="[]",
+        status="todo", docs="[]", evidence="{}").replace('visibility = "private"', 'visibility = "public"'))
+    (root / "tasks" / "PB-02.toml").write_text(TASK.format(
+        id="PB-02", phase=0, title="Tidy", deps="[]", blocked="[]", status="todo", docs="[]", evidence="{}")
+        .replace('repos = []', 'repos = ["private/engineering"]').replace('visibility = "private"', 'visibility = "public"'))
+    problems = "\n".join(prog.check())
+    assert "PB-01.toml: a public task names a private path" in problems
+    assert "PB-02.toml: a public task whose repositories are all private" in problems
