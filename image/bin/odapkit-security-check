@@ -6,9 +6,20 @@ through ODAP_BLACKBIRD_OS_DIR or the workspace's repos.tsv), downloads the curre
 package indexes and lists every package with a newer version available. Records the run in
 <workspace>/.state/security-check so the weekly reminder knows when it last ran.
 
+Usage: odapkit security-check [--json] [--dry-run] [--help]
+  --json     opendap.check-result/v1: one `fail` per package with a newer version, or one `pass`
+  --dry-run  checks as usual but does not record the run in .state/security-check
+
+Errors carry a dotted code, a hint and a fix (odw.clikit from toolkit-host; with --json, also an
+opendap.error/v1 document on stdout).
+
+Examples:
+  odapkit security-check
+  odapkit security-check --json --dry-run
+
 Exit code: 0 = up to date, 1 = updates available, 2 = error.
 """
-import glob, json, lzma, os, re, sys, time, urllib.error, urllib.request
+import datetime, glob, json, lzma, os, re, sys, time, tomllib, urllib.error, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -32,11 +43,23 @@ def repo_dir(name):
             path, _, slug = line.partition("\t")
             if slug.split("/")[-1] == name and os.path.isdir(os.path.join(ws, path)):
                 return os.path.join(ws, path)
-    sys.exit(f"odapkit security-check: no {name} checkout (set {var})")
+    return None
 
 
+def _clikit():
+    """odw.clikit, the command-line helpers of toolkit-host (ODAP_TOOLKIT_HOST_DIR or the workspace)."""
+    host = repo_dir("toolkit-host")
+    if not host:
+        print(f"{TOOL}: error repo.not_found: no toolkit-host checkout\n  hint: its odw.clikit runs this tool's "
+              "command line\n  fix: export ODAP_TOOLKIT_HOST_DIR=<toolkit-host checkout>", file=sys.stderr)
+        sys.exit(2)
+    sys.path.insert(0, os.path.join(host, "src"))
+    from odw import clikit
+    return clikit
+
+
+TOOL = "odapkit security-check"
 WORKSPACE = find_workspace() or os.path.expanduser("~/.local/state/opendap")
-REPO = repo_dir("blackbird-os")
 ARCH = "arm64"
 INDEXES = [  # (label, base URL, suite)
     ("security", "https://security.debian.org/debian-security", "trixie-security"),
@@ -93,13 +116,36 @@ def index(base, suite):
             pkgs[f["Package"]] = f["Version"]
     return pkgs
 
-def main():
-    if any(a in ("-h", "--help") for a in sys.argv[1:]):
-        print(__doc__.strip())
-        return 0
-    manifests = sorted(glob.glob(os.path.join(REPO, "image", "mkosi.output", "*.manifest")), key=os.path.getmtime)
+def _summary():
+    tools = tomllib.loads(open(os.path.join(HERE, "..", "tools.toml")).read()).get("tool", [])
+    return next(t["summary"] for t in tools if t["name"] == "security-check")
+
+
+def check_result(newer):
+    results = [{"id": f"{label}/{name}", "rule": f"trixie-{label}", "verdict": "fail",
+                "message": f"{name}: {have} -> {new}", "value": new} for label, name, have, new in sorted(newer)]
+    results = results or [{"id": "images", "verdict": "pass",
+                           "message": "up to date with trixie-security, trixie-updates and the pinned backports"}]
+    return {"schema": "opendap.check-result/v1", "tool": {"name": TOOL},
+            "subject": {"repo": "blackbird-os", "path": "image/mkosi.output"},
+            "generated": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "results": results}
+
+
+def run(argv, clikit):
+    ap = clikit.Parser(prog=TOOL, summary=_summary(), description=__doc__.split("\n\n")[1],
+                       examples=["odapkit security-check", "odapkit security-check --json --dry-run"])
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--dry-run", action="store_true", help="do not record the run in .state/security-check")
+    args = ap.parse_args(argv)
+    repo = repo_dir("blackbird-os")
+    if not repo:
+        raise clikit.CliError("repo.not_found", "no blackbird-os checkout", "the images are built from blackbird-os",
+                              "export ODAP_BLACKBIRD_OS_DIR=<blackbird-os checkout>", status=2)
+    manifests = sorted(glob.glob(os.path.join(repo, "image", "mkosi.output", "*.manifest")), key=os.path.getmtime)
     if not manifests:
-        print("No image manifest found: build an image first (odapkit image build).", file=sys.stderr); return 2
+        raise clikit.CliError("manifest.not_found", "no image manifest in blackbird-os image/mkosi.output",
+                              "build an image first", "odapkit image build", status=2)
     installed = {}  # union of every built output (qemu, oci, t1, …)
     for m in manifests:
         for p in json.load(open(m)).get("packages", []):
@@ -108,15 +154,27 @@ def main():
     pinned_backports = {n for n in installed if n.startswith("linux-") or "+bpo" in installed[n] or "~bpo" in installed[n]}
     newer = []
     for label, base, suite in INDEXES:
-        avail = index(base, suite)
+        try:
+            avail = index(base, suite)
+        except (OSError, AttributeError, lzma.LZMAError) as e:
+            raise clikit.CliError("download.failed", f"{suite} index from {base}: {e}",
+                                  "the Debian archive or the network did not answer",
+                                  f"curl -I {base}/dists/{suite}/Release", status=2) from e
         for name, have in installed.items():
             if label == "backports" and name not in pinned_backports:
                 continue
             if name in avail and vercmp(avail[name], have) > 0:
                 newer.append((label, name, have, avail[name]))
-    os.makedirs(os.path.join(WORKSPACE, ".state"), exist_ok=True)
-    with open(os.path.join(WORKSPACE, ".state", "security-check"), "w") as f:
-        f.write(f"{int(time.time())}\n{len(newer)} updates\n{' '.join(os.path.basename(m) for m in manifests)}\n")
+    record = os.path.join(WORKSPACE, ".state", "security-check")
+    if args.dry_run:
+        print(f"{TOOL}: would record the run in {record}", file=sys.stderr)
+    else:
+        os.makedirs(os.path.dirname(record), exist_ok=True)
+        with open(record, "w") as f:
+            f.write(f"{int(time.time())}\n{len(newer)} updates\n{' '.join(os.path.basename(m) for m in manifests)}\n")
+    if args.json:
+        print(json.dumps(check_result(newer)))
+        return 1 if newer else 0
     print(f"Image manifests: {', '.join(os.path.basename(m) for m in manifests)} ({len(installed)} packages)")
     if not newer:
         print("Up to date with trixie-security, trixie-updates and the pinned backports."); return 0
@@ -124,6 +182,12 @@ def main():
     for label, name, have, new in sorted(newer):
         print(f"  [{label}] {name}: {have} -> {new}")
     return 1
+
+
+def main(argv=None):
+    clikit = _clikit()
+    return clikit.main(TOOL, lambda a: run(a, clikit), argv)
+
 
 if __name__ == "__main__":
     sys.exit(main())

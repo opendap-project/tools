@@ -1,0 +1,45 @@
+# The tools this root adds to the maintainers' umbrella command (command standard §3).
+schema = "opendap.tools/v1"
+front = "odw"
+
+[[tool]]
+name = "cross"
+summary = "Cross-build the Cargo workspace in the current directory for Blackbird OS on aarch64"
+entry = "bin/odapkit-cross"
+audience = "maintainer"
+stability = "preview"
+
+[[tool]]
+name = "deploy"
+summary = "Deploy the Cargo workspace's binaries to a running device, without rebuilding the image"
+entry = "bin/odapkit-deploy"
+audience = "maintainer"
+stability = "preview"
+
+[[tool]]
+name = "dev-key"
+summary = "The development SSH key that Blackbird OS qemu images accept for root (never device images)"
+entry = "bin/odapkit-dev-key"
+audience = "maintainer"
+stability = "preview"
+
+[[tool]]
+name = "image"
+summary = "Build Blackbird OS images (blackbird-os image/) with mkosi in the image build VM"
+entry = "bin/odapkit-image"
+audience = "maintainer"
+stability = "preview"
+
+[[tool]]
+name = "security-check"
+summary = "Check the built Blackbird OS images against Debian's security, updates and backports archives"
+entry = "bin/odapkit-security-check"
+audience = "maintainer"
+stability = "preview"
+
+[[tool]]
+name = "sysroot"
+summary = "The cross-compilation sysroot of Blackbird OS images, installed on the host for odapkit cross"
+entry = "bin/odapkit-sysroot"
+audience = "maintainer"
+stability = "preview"

@@ -1,7 +1,7 @@
 #!/bin/sh
 # Deploy the Cargo workspace's binaries to a running device, without rebuilding the image.
 # The workspace is the one in the current directory; they go as a development system extension.
-# Usage: odapkit deploy [--debug] [crate…]
+# Usage: odapkit deploy [--debug] [--dry-run] [--json] [crate…]
 #   crate   binaries to deploy (default: [workspace.metadata.odap] deploy in Cargo.toml). Naming
 #           crates updates only those in the extension and keeps the others; the default list
 #           replaces the extension, so a crate dropped from the list leaves the device too.
@@ -9,18 +9,51 @@
 # `systemd-sysext refresh`; the units in [workspace.metadata.odap] restart are restarted.
 # `systemd-sysext unmerge` and removing the directory return the device to its image.
 # Target: the running virtual device (odap-vdev ssh); ODAP_DEVICE_SSH="ssh …" for another one.
+# --dry-run names the crates, the extension, the target and the units to restart, and builds and
+# sends nothing. --json prints opendap.deploy/v1 (extension, crates, profile, restart, target, done).
+# Examples:
+#   odapkit deploy --dry-run
+#   odapkit deploy --json odap-composer
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/../lib/odapkit.sh"
-[ -f Cargo.toml ] || die "run in a Cargo workspace" 2
 profile=release flag=--release
-if [ "${1:-}" = --debug ]; then profile=debug flag=; shift; fi
+names=""
+for a in "$@"; do
+  case "$a" in
+    --debug) profile=debug flag= ;;
+    -*) cli_flag "$a" ;;
+    *) names="$names $a" ;;
+  esac
+done
+# shellcheck disable=SC2086
+set -- $names
+[ -f Cargo.toml ] || cli_fail "cargo.not_found" "no Cargo.toml in $PWD" "deploy runs in the Cargo workspace it deploys" \
+  "cd <cargo workspace> && odapkit deploy" 2
 meta() { awk -v key="$1" '/^\[workspace\.metadata\.odap\]/ {f=1; next} /^\[/ {f=0} f && $1 == key { sub(/^[^=]*=[ ]*\[/, ""); sub(/\].*$/, ""); gsub(/[",]/, " "); print }' Cargo.toml; }
 crates="${*:-$(meta deploy)}"
 keep=0; [ $# -gt 0 ] && keep=1
-[ -n "$crates" ] || die "no crates given and no [workspace.metadata.odap] deploy list" 2
+[ -n "$crates" ] || cli_fail "deploy.no_crates" "no crates given and no [workspace.metadata.odap] deploy list" \
+  "name the crates, or list them in Cargo.toml" "odapkit deploy <crate>" 2
 restart="$(meta restart)"
 name="odap-dev-$(basename "$PWD")"
+target="${ODAP_DEVICE_SSH:-odap-vdev ssh}"
+
+result() {
+  if [ "$CLI_JSON" = 1 ]; then
+    js_list() { sep=""; printf '['; for x in $1; do printf '%s%s' "$sep" "$(cli_json_str "$x")"; sep=", "; done; printf ']'; }
+    printf '{"schema": "opendap.deploy/v1", "extension": %s, "crates": %s, "profile": %s, "restart": %s, "target": %s, "done": %s}\n' \
+      "$(cli_json_str "$name")" "$(js_list "$crates")" "$(cli_json_str "$profile")" "$(js_list "$restart")" \
+      "$(cli_json_str "$target")" "$1"
+  fi
+}
+if [ "$DRY_RUN" = 1 ]; then
+  echo "$CLI_TOOL: would build $crates ($profile) with odapkit cross" >&2
+  echo "$CLI_TOOL: would install them in /var/lib/extensions/$name on $target and refresh systemd-sysext" >&2
+  [ -z "$restart" ] || echo "$CLI_TOOL: would restart $restart" >&2
+  result false
+  exit 0
+fi
 
 pkgs=""; for c in $crates; do pkgs="$pkgs -p $c"; done
 # shellcheck disable=SC2086
@@ -45,4 +78,4 @@ COPYFILE_DISABLE=1 tar --no-mac-metadata --no-xattrs -C "$stage" -cf - usr | $re
   sync
   systemd-sysext refresh
   for u in $restart; do systemctl restart \$u; done"
-echo "deployed $name: $crates"
+if [ "$CLI_JSON" = 1 ]; then result true; else echo "deployed $name: $crates"; fi

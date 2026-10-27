@@ -1,6 +1,7 @@
 #!/bin/sh
 # Build Blackbird OS images (blackbird-os image/) with mkosi in the image build VM.
 # Usage: odapkit image build [PROFILE] | path [PROFILE] | vm start|stop|status|shell|idle-stop
+#        [--dry-run] [--json]
 #   build   build PROFILE (default: qemu); prints the output's path. While it builds, the output
 #           has a <output>.building marker next to it
 #   path    the output of PROFILE (blackbird-os image/mkosi.output/)
@@ -14,20 +15,31 @@
 #   every image with a UI (not sysroot): Blackbird UI's fonts (blackbird-ui export/fonts) at
 #           /usr/share/fonts/opendap, where the session's SLINT_FONT_PATH finds the script
 #           companions (they are Git LFS objects: a checkout without them is refused)
+# --dry-run: build, vm start and vm stop check their inputs, name what they would run and change
+# nothing. --json: path prints opendap.image-output/v1 (profile, path, exists, building), vm status
+# opendap.build-vm/v1 (vm, status); errors print opendap.error/v1.
 # Environment: ODAP_BUILD_VM (default: blackbird-os-build), ODAP_BUILD_VM_IDLE (minutes, default 10),
 # ODAP_<REPO>_DIR to point at checkouts.
+# Examples:
+#   odapkit image build qemu --dry-run
+#   odapkit image path qemu --json
+#   odapkit image vm status --json
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/../lib/odapkit.sh"
 vm="${ODAP_BUILD_VM:-blackbird-os-build}"
-command -v limactl >/dev/null || die "limactl not found: install toolkit-host (Brewfile)"
+need_lima() {
+  command -v limactl >/dev/null || cli_fail "tool.missing" "limactl not found" "Lima comes with toolkit-host's Brewfile" \
+    "brew bundle --file \"\$ODAP_TOOLKIT_HOST_DIR/Brewfile\""
+}
 
-vm_status() { limactl list --format '{{.Status}}' "$vm" 2>/dev/null || echo absent; }
+vm_status() { need_lima; limactl list --format '{{.Status}}' "$vm" 2>/dev/null || echo absent; }
 
 vm_has_mount() { limactl list --format '{{range .Config.Mounts}}{{.Location}}{{"\n"}}{{end}}' "$vm" 2>/dev/null | grep -qx "$1"; }
 
 vm_up() {
-  ws="$(workspace_root)" || die "no workspace (repos.tsv) above this checkout" 2
+  ws="$(workspace_root)" || cli_fail "workspace.not_found" "no workspace (repos.tsv) above this checkout" \
+    "the build VM mounts the workspace" "cd <workspace> && odapkit image vm start" 2
   data="$(odap_data)"; mkdir -p "$data"
   if [ "$(vm_status)" = absent ] || [ -z "$(vm_status)" ]; then
     cfg="$(odap_cache)/build-vm.yaml"; mkdir -p "$(odap_cache)"
@@ -84,39 +96,76 @@ output() {
   esac
 }
 
-case "${1:-}" in
+cmd=""; arg=""
+while [ $# -gt 0 ]; do
+  [ "$cmd" = vm ] && [ "$arg" = shell ] && break
+  case "$1" in
+    -*) cli_flag "$1" ;;
+    *) if [ -z "$cmd" ]; then cmd="$1"; elif [ -z "$arg" ]; then arg="$1"; else cli_usage "unexpected argument $1"; fi ;;
+  esac
+  shift
+done
+
+case "$cmd" in
   build)
-    profile="${2:-qemu}"
+    profile="${arg:-qemu}"
     os="$(repo_dir blackbird-os)"
-    [ -d "$os/image/mkosi.profiles/$profile" ] || die "no profile $profile in $os/image/mkosi.profiles" 2
+    [ -d "$os/image/mkosi.profiles/$profile" ] || cli_fail "image.no_profile" "no profile $profile in $os/image/mkosi.profiles" \
+      "a profile is a folder of mkosi.profiles" "ls $os/image/mkosi.profiles" 2
     set --
     case "$profile" in
       qemu)
-        set -- "$@" --extra-tree="$("$here/odapkit-dev-key" tree)" --include="$(repo_dir virtual-devices)/export/bsp";;
+        if [ "$DRY_RUN" = 1 ]; then
+          "$here/odapkit-dev-key" tree --dry-run >/dev/null; tree="$(odap_data)/dev-ssh/tree"
+        else tree="$("$here/odapkit-dev-key" tree)"; fi
+        set -- "$@" --extra-tree="$tree" --include="$(repo_dir virtual-devices)/export/bsp";;
     esac
     if [ "$profile" != sysroot ]; then
       fonts="$(repo_dir blackbird-ui)/export/fonts"
       for f in "$fonts"/*.otf; do
-        [ "$(head -c 4 "$f")" = OTTO ] || die "$f is not a font (a Git LFS pointer? run git lfs pull in blackbird-ui)" 1
+        [ "$(head -c 4 "$f" 2>/dev/null)" = OTTO ] || cli_fail "fonts.not_fonts" "$f is not a font" \
+          "the fonts are Git LFS objects; a checkout without them has pointers" "git -C $(repo_dir blackbird-ui) lfs pull"
       done
       set -- "$@" --extra-tree="$fonts:/usr/share/fonts/opendap"
+    fi
+    if [ "$DRY_RUN" = 1 ]; then
+      echo "$CLI_TOOL: would start the build VM $vm if it is not running" >&2
+      echo "$CLI_TOOL: would build $profile: mkosi -C $os/image --profile=$profile $* -f build" >&2
+      echo "$CLI_TOOL: would write $(output "$profile")" >&2
+      exit 0
     fi
     used; vm_up; watch_idle
     # While it builds, a marker next to the output tells its users (odap-vdev status: building).
     marker="$(output "$profile").building"
     mkdir -p "$(dirname "$marker")"; : > "$marker"
     trap 'rm -f "$marker"; used' EXIT INT TERM
-    limactl shell "$vm" -- sudo mkosi -C "$os/image" --profile="$profile" "$@" -f build >&2
+    limactl shell "$vm" -- sudo mkosi -C "$os/image" --profile="$profile" "$@" -f build >&2 ||
+      cli_fail "image.build_failed" "mkosi could not build $profile" "its output above says why" \
+        "odapkit image vm shell -- sudo mkosi -C $os/image --profile=$profile summary"
     output "$profile";;
-  path) output "${2:-qemu}";;
+  path)
+    o="$(output "${arg:-qemu}")"
+    if [ "$CLI_JSON" = 1 ]; then
+      exists=false; [ -e "$o" ] && exists=true
+      building=false; [ -e "$o.building" ] && building=true
+      printf '{"schema": "opendap.image-output/v1", "profile": %s, "path": %s, "exists": %s, "building": %s}\n' \
+        "$(cli_json_str "${arg:-qemu}")" "$(cli_json_str "$o")" "$exists" "$building"
+    else echo "$o"; fi;;
   vm)
-    case "${2:-status}" in
-      start) used; vm_up; watch_idle;;
-      stop) limactl stop "$vm";;
-      status) vm_status;;
-      shell) shift 2; used; vm_up; watch_idle; s=0; limactl shell "$vm" -- "$@" || s=$?; used; exit $s;;
+    case "${arg:-status}" in
+      start) if [ "$DRY_RUN" = 1 ]; then echo "$CLI_TOOL: would start $vm ($(vm_status))" >&2; exit 0; fi
+             used; vm_up; watch_idle;;
+      stop) if [ "$DRY_RUN" = 1 ]; then echo "$CLI_TOOL: would stop $vm ($(vm_status))" >&2; exit 0; fi
+            need_lima; limactl stop "$vm";;
+      status)
+        st="$(vm_status)"
+        if [ "$CLI_JSON" = 1 ]; then
+          printf '{"schema": "opendap.build-vm/v1", "vm": %s, "status": %s}\n' "$(cli_json_str "$vm")" "$(cli_json_str "$st")"
+        else echo "$st"; fi;;
+      shell) used; vm_up; watch_idle; s=0; limactl shell "$vm" -- "$@" || s=$?; used; exit $s;;
       idle-stop) idle_stop;;
-      *) die "usage: odapkit image vm start|stop|status|shell|idle-stop" 2;;
+      *) cli_usage "unknown vm command ${arg} (start, stop, status, shell, idle-stop)";;
     esac;;
-  *) die "usage: odapkit image build [PROFILE] | path [PROFILE] | vm start|stop|status|shell|idle-stop" 2;;
+  "") cli_usage "no command (build, path, vm)";;
+  *) cli_usage "unknown command $cmd (build, path, vm)";;
 esac
