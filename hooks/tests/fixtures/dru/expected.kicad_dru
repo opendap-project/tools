@@ -1,0 +1,26 @@
+(version 1)
+# Composed by `odapkit dru` from hardware/demo.dru.toml. Do not edit by hand:
+# edit the sources and run `odapkit dru compose hardware/demo.dru.toml`.
+
+# Source: hardware/lib/opendap/design-rules/fab-demo/fab-demo.kicad_dru
+# sha256: 188a89e2d718b4d3c95faa961d6f9ca125163d4f8821324b6cce7929850b6e1b
+
+# Test fixture: a two-rule fab set (values are placeholders, not a fab's capabilities).
+
+(rule "Fab: track width"
+	(constraint track_width (min 0.1mm))
+)
+
+(rule "Fab: via hole"
+	(condition "A.Type == 'Via'")
+	(constraint hole_size (min 0.2mm))
+)
+
+# Source: hardware/rules/product.kicad_dru
+# sha256: 3e3108b39ad95bc4669a59faaf5354638cafc2f8466ba4df20ff19ef5765ca29
+
+# Test fixture: one product rule on top of the fab set.
+(rule "Product: audio clearance"
+	(condition "A.NetClass == 'Audio'")
+	(constraint clearance (min 0.5mm))
+)

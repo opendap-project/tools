@@ -1,0 +1,5 @@
+{"schema": "opendap.cli-inventory/v1", "counts": {"total": 1, "plugin": 1},
+ "items": [{"path": "public/toolkit/host/bin/odapkit-cli", "root": "public/toolkit/host", "name": "odapkit-cli",
+   "kind": "plugin", "mode": "100755", "probe": true, "probe_skipped": "",
+   "facts": {"lang": "sh", "help": true, "json": true, "prompt": false, "writes": [], "network": "",
+     "bad_exits": [], "forbidden_verbs": [], "sources": ["bin/odapkit-cli"], "parser": "argparse"}}]}

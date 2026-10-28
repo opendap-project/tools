@@ -1,0 +1,5 @@
+schema = "opendap.check/v1"
+
+[[stage.nightly]]
+name = "x"
+run = ["true"]

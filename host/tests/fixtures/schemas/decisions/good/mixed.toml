@@ -1,0 +1,14 @@
+[[decision]]
+id = "D-TOPOLOGY"
+question = "One repository per root?"
+options = ["monorepo", "polyrepo"]
+recommendation = "monorepo"
+status = "open"
+
+[[decision]]
+id = "D-TOOLS-DOCS"
+question = "Where does the docs engine live?"
+decision = "tools/documentation/"
+status = "decided"
+decided_on = "2026-10-26"
+decided_by = "maintainers"

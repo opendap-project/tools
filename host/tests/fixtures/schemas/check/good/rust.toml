@@ -1,0 +1,11 @@
+schema = "opendap.check/v1"
+
+[[stage.fast]]
+name = "fmt"
+run = ["cargo", "fmt", "--check"]
+
+[[stage.full]]
+name = "test"
+run = ["cargo", "test", "--workspace"]
+emits = "check-result"
+verifies = ["SYS-046"]

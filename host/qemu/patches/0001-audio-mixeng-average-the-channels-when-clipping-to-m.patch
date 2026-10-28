@@ -1,0 +1,53 @@
+From 7917126666012eae626f6fcc2115af2c4f1edf53 Mon Sep 17 00:00:00 2001
+From: The OpenDAP Project <noreply@opendap.cc>
+Date: Mon, 26 Oct 2026 21:39:46 -0600
+Subject: [PATCH 1/3] audio/mixeng: average the channels when clipping to mono
+
+conv_*_to_mono() copies a mono sample into both channels of st_sample,
+and clip_*_from_mono() summed them back, so a mono stream through the
+mixing engine came out at twice its value (+6.02 dB, clipping at full
+scale). Average the two channels instead: a mono round trip is exact,
+and a stereo-to-mono downmix can no longer overflow.
+---
+ audio/mixeng.c          | 4 ++--
+ audio/mixeng_template.h | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/audio/mixeng.c b/audio/mixeng.c
+index a209737a9..31c9cd826 100644
+--- a/audio/mixeng.c
++++ b/audio/mixeng.c
+@@ -352,7 +352,7 @@ static void clip_natural_float_from_mono(void *dst, const struct st_sample *src,
+     float *out = dst;
+ 
+     while (samples--) {
+-        *out++ = CLIP_NATURAL_FLOAT(src->l + src->r);
++        *out++ = CLIP_NATURAL_FLOAT((src->l + src->r) / 2);
+         src++;
+     }
+ }
+@@ -363,7 +363,7 @@ static void clip_swap_float_from_mono(void *dst, const struct st_sample *src,
+     uint32_t *out_f32s = dst;
+ 
+     while (samples--) {
+-        *out_f32s++ = F32_TO_F32S(CLIP_NATURAL_FLOAT(src->l + src->r));
++        *out_f32s++ = F32_TO_F32S(CLIP_NATURAL_FLOAT((src->l + src->r) / 2));
+         src++;
+     }
+ }
+diff --git a/audio/mixeng_template.h b/audio/mixeng_template.h
+index 6db742188..5229cd47d 100644
+--- a/audio/mixeng_template.h
++++ b/audio/mixeng_template.h
+@@ -142,7 +142,7 @@ static void glue (glue (clip_, ET), _from_mono)
+     const struct st_sample *in = src;
+     IN_T *out = (IN_T *) dst;
+     while (samples--) {
+-        *out++ = glue (clip_, ET) (in->l + in->r);
++        *out++ = glue (clip_, ET) ((in->l + in->r) / 2);
+         in += 1;
+     }
+ }
+-- 
+2.56.0
+

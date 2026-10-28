@@ -1,0 +1,1 @@
+{"schema": "opendap.check-result/v1", "tool": {"name": "sim", "version": "0.1.0"}, "subject": {"repo": "public/devices/t1/board", "path": "sim/vsys-bucks", "commit": "0000000", "variant": "full"}, "generated": "2026-10-26T10:00:00Z", "results": [{"id": "vsys-ripple", "verdict": "pass", "value": 8, "limit": 20, "margin": 12, "unit": "mV", "verifies": ["BRD-049"], "level": "Q1"}]}

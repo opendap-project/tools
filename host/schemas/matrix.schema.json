@@ -1,0 +1,433 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/matrix.schema.json",
+  "title": "opendap.matrix/v1: an evaluation matrix (options × criteria → states, verdicts, rank, recommendation)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "id",
+    "question",
+    "options",
+    "criteria",
+    "results",
+    "verdicts"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opendap.matrix/v1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]*$"
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$"
+      }
+    },
+    "level": {
+      "type": "string",
+      "pattern": "^Q[0-9]+$"
+    },
+    "status": {
+      "enum": [
+        "study",
+        "recommendation",
+        "decision-cited"
+      ]
+    },
+    "tool": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,40}$"
+        }
+      }
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "ref"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "citation",
+          "status"
+        ],
+        "properties": {
+          "citation": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "locator": {
+            "type": "string"
+          },
+          "read_on": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "sourced",
+              "UNVERIFIED",
+              "EST"
+            ]
+          }
+        }
+      }
+    },
+    "context": {
+      "type": "object"
+    },
+    "options": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string"
+          },
+          "baseline": {
+            "type": "boolean"
+          },
+          "derived_from": {
+            "type": "string"
+          },
+          "attributes": {
+            "type": "object"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "hard",
+              "soft",
+              "info"
+            ]
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$"
+            }
+          },
+          "thresholds": {
+            "type": "object",
+            "properties": {
+              "ideal": {
+                "type": "number"
+              },
+              "warning": {
+                "type": "number"
+              },
+              "hard": {
+                "type": "number"
+              },
+              "direction": {
+                "enum": [
+                  "max",
+                  "min"
+                ]
+              }
+            }
+          },
+          "known_required": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "option",
+          "criterion",
+          "state",
+          "why"
+        ],
+        "properties": {
+          "option": {
+            "type": "string"
+          },
+          "criterion": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "pass",
+              "warning",
+              "fail",
+              "unverified",
+              "n/a",
+              "info"
+            ]
+          },
+          "value": {
+            "type": [
+              "number",
+              "string",
+              "boolean"
+            ]
+          },
+          "unit": {
+            "type": "string"
+          },
+          "why": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "aggregation": {
+      "enum": [
+        "all-hard-pass",
+        "worst-state",
+        "first-fail",
+        "rule"
+      ]
+    },
+    "verdicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "option",
+          "verdict"
+        ],
+        "properties": {
+          "option": {
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "pass",
+              "fail",
+              "incomplete"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "n_unverified": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "score": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "recommendation": {
+      "type": "object",
+      "required": [
+        "option",
+        "rule",
+        "labelled"
+      ],
+      "properties": {
+        "option": {
+          "type": "string"
+        },
+        "rule": {
+          "type": "string"
+        },
+        "labelled": {
+          "const": true
+        }
+      }
+    },
+    "sensitivity": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "parameter",
+          "top_changes"
+        ],
+        "properties": {
+          "parameter": {
+            "type": "string"
+          },
+          "values": {
+            "type": "array"
+          },
+          "top_changes": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "matrices": {
+      "type": "array",
+      "items": {
+        "$ref": "#"
+      }
+    },
+    "recommend": {
+      "const": false,
+      "description": "present only on a survey: verdicts and ranks, no recommendation"
+    },
+    "decision": {
+      "type": "object",
+      "required": [
+        "summary",
+        "by",
+        "date"
+      ],
+      "additionalProperties": false,
+      "description": "the maintainers' decision the matrix cites (status decision-cited); it replaces the recommendation",
+      "properties": {
+        "summary": {
+          "type": "string"
+        },
+        "by": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "decision-cited"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "decision"
+        ],
+        "not": {
+          "required": [
+            "recommendation"
+          ]
+        }
+      },
+      "else": {
+        "not": {
+          "required": [
+            "decision"
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "recommend"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "recommendation"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+#!/bin/sh
+# The development SSH key that Blackbird OS qemu images accept for root (never device images).
+# Usage: odapkit dev-key [create|path|tree] [--dry-run] [--json]
+#   create  make the key if there is none (the default); prints its path
+#   path    the private key's path
+#   tree    the file tree that puts its public half in an image (an mkosi extra tree)
+# Kept host-wide in $XDG_DATA_HOME/opendap/dev-ssh, so every checkout and tool uses one key.
+# --dry-run: create and tree say what they would make and change nothing. --json prints
+# opendap.dev-key/v1 (key, exists, tree).
+# Examples:
+#   odapkit dev-key path --json
+#   odapkit dev-key create --dry-run
+set -eu
+. "$(dirname "$0")/../lib/odapkit.sh"
+dir="$(odap_data)/dev-ssh"
+key="$dir/id_ed25519"
+
+verb=""
+for a in "$@"; do
+  cli_flag "$a" && continue
+  case "$a" in
+    create|path|tree) [ -z "$verb" ] || cli_usage "one command at a time: $verb, $a"; verb="$a" ;;
+    *) cli_usage "unknown command $a (create, path, tree)" ;;
+  esac
+done
+verb="${verb:-create}"
+
+report() {
+  exists=false; [ -f "$key" ] && exists=true
+  if [ "$CLI_JSON" = 1 ]; then
+    printf '{"schema": "opendap.dev-key/v1", "key": %s, "exists": %s, "tree": %s}\n' \
+      "$(cli_json_str "$key")" "$exists" "$(cli_json_str "$dir/tree")"
+  else
+    echo "$1"
+  fi
+}
+
+create() {
+  if [ "$DRY_RUN" = 1 ]; then
+    [ -f "$key" ] || echo "$CLI_TOOL: would create $key (ed25519, no passphrase)" >&2
+    echo "$CLI_TOOL: would write $dir/tree/root/.ssh/authorized_keys" >&2
+    return 0
+  fi
+  if [ ! -f "$key" ]; then
+    mkdir -p "$dir"
+    # A key made by an earlier layout (blackbird-os build/dev-ssh) is moved here, so images built
+    # with it keep working.
+    old="$(repo_dir blackbird-os 2>/dev/null)/build/dev-ssh/id_ed25519" || true
+    if [ -f "$old" ]; then cp "$old" "$old.pub" "$dir/"; else ssh-keygen -q -t ed25519 -N "" -C "opendap development" -f "$key"; fi
+  fi
+  mkdir -p "$dir/tree/root/.ssh"
+  cp "$key.pub" "$dir/tree/root/.ssh/authorized_keys"
+  chmod 700 "$dir/tree/root/.ssh"; chmod 600 "$dir/tree/root/.ssh/authorized_keys" "$key"
+}
+
+case "$verb" in
+  create) create; report "$key";;
+  path) report "$key";;
+  tree) create; report "$dir/tree";;
+esac

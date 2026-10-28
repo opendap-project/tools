@@ -1,0 +1,6 @@
+{
+ "schema": "opendap.rename-plan/v1", "mode": "plan", "root": "libs", "cut": ["libs"], "view": "sources",
+ "summary": {}, "moves": [], "deletes": [], "done": [], "missing": [], "pending": [], "cross_root": [], "conflicts": [],
+ "identifiers": [{"row": 13, "old": "env:A_B", "new": "env:C_D", "owner": "libs", "status": "maybe", "occurrences": 1}],
+ "edits": []
+}

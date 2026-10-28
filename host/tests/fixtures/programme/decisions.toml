@@ -1,0 +1,8 @@
+# A minimal programme for the command-line conformance probe (odapkit plan get --json).
+[[decision]]
+id = "D-EXAMPLE"
+question = "Is this a fixture?"
+status = "decided"
+decision = "yes"
+decided_on = "2026-10-27"
+decided_by = "maintainers"

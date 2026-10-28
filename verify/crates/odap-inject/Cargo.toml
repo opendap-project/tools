@@ -1,0 +1,11 @@
+[package]
+name = "odap-inject"
+version = "0.0.1"
+description = "Development tool: inject touch contacts into a running Blackbird OS instance through uinput"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2.191"

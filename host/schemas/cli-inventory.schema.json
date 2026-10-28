@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/cli-inventory.schema.json",
+  "title": "opendap.cli-inventory/v1: every command-line surface of the public roots, with its command-standard kind",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "items", "counts"],
+  "properties": {
+    "schema": {"const": "opendap.cli-inventory/v1"},
+    "counts": {
+      "type": "object",
+      "required": ["total"],
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "root", "name", "kind", "mode", "probe", "probe_skipped", "facts"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "root": {"type": "string", "minLength": 1},
+          "name": {"type": "string", "minLength": 1},
+          "kind": {"enum": ["umbrella", "plugin", "device-binary", "host-binary", "script", "hook"]},
+          "mode": {"enum": ["100755", "100644", "cargo"]},
+          "probe": {"type": "boolean"},
+          "probe_skipped": {"type": "string"},
+          "facts": {
+            "type": "object",
+            "required": ["lang", "help", "json", "prompt", "writes", "network", "bad_exits", "forbidden_verbs", "sources"],
+            "properties": {
+              "lang": {"enum": ["sh", "py", "rs"]},
+              "help": {"type": "boolean"},
+              "json": {"type": "boolean"},
+              "prompt": {"type": "boolean"},
+              "writes": {"type": "array", "items": {"type": "string"}},
+              "network": {"type": "string"},
+              "bad_exits": {"type": "array", "items": {"type": "object", "required": ["path", "line", "code"]}},
+              "forbidden_verbs": {"type": "array", "items": {"type": "string"}},
+              "sources": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+            }
+          }
+        }
+      }
+    }
+  }
+}

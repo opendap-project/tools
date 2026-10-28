@@ -1,0 +1,6 @@
+(version 1)
+# Test fixture: one product rule on top of the fab set.
+(rule "Product: audio clearance"
+	(condition "A.NetClass == 'Audio'")
+	(constraint clearance (min 0.5mm))
+)

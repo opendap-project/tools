@@ -1,0 +1,9 @@
+schema = "opendap.tools/v1"
+front = "odw"
+
+[[tool]]
+name = "plan"
+summary = "List, claim and record the programme's tasks"
+entry = "bin/odapkit-plan"
+audience = "everyone"
+stability = "internal"

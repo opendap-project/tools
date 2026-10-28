@@ -1,0 +1,50 @@
+# Local checks for every commit. Install once per clone: pre-commit install
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-added-large-files
+        args: ["--maxkb=5120"]
+  - repo: https://github.com/fsfe/reuse-tool
+    rev: v6.2.0
+    hooks:
+      - id: reuse
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.24.0
+    hooks:
+      - id: markdownlint-cli2
+  - repo: https://github.com/opendap-project/toolkit-hooks
+    rev: v0.4.1
+    hooks:
+      - id: no-stray-files
+  - repo: local
+    hooks:
+      - id: odw-tests
+        name: odw tests (schemas, plan, audit)
+        entry: uv run --quiet pytest -q
+        language: system
+        pass_filenames: false
+        files: ^(src|schemas|tests)/|^pyproject\.toml$
+  # The odw dispatch crate: its unit and fixture-workspace tests, built into this checkout's target/.
+  - repo: local
+    hooks:
+      - id: odw-dispatch-tests
+        name: odw dispatch tests (cargo test)
+        entry: sh -c 'CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-4}" cargo test --quiet --locked --manifest-path crates/odw-dispatch/Cargo.toml --target-dir target'
+        language: system
+        pass_filenames: false
+        files: ^crates/odw-dispatch/|^rust-toolchain\.toml$
+  # The requirements README is rendered from requirements.toml and checked.
+  - repo: local
+    hooks:
+      - id: requirements-current
+        name: requirements README rendered (odapkit req render --check)
+        entry: odapkit req render docs/requirements/requirements.toml --check
+        language: system
+        pass_filenames: false
+        files: ^docs/requirements/

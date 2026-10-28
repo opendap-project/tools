@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/task.schema.json",
+  "title": "Programme task record (one TOML file per task)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "phase",
+    "title",
+    "source",
+    "repos",
+    "files",
+    "depends_on",
+    "blocked_by",
+    "status",
+    "visibility",
+    "tests",
+    "docs",
+    "evidence",
+    "notes"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*-[0-9]{2,}$"
+    },
+    "phase": {
+      "type": "integer",
+      "minimum": -1,
+      "maximum": 6
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repos": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "depends_on": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9]*-[0-9]{2,}$"
+      },
+      "uniqueItems": true
+    },
+    "blocked_by": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^D-[A-Z0-9]+(-[A-Z0-9]+)*$"
+      },
+      "uniqueItems": true
+    },
+    "status": {
+      "enum": [
+        "todo",
+        "doing",
+        "review",
+        "done",
+        "blocked",
+        "decision",
+        "dropped"
+      ]
+    },
+    "visibility": {
+      "enum": [
+        "public",
+        "private"
+      ]
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "docs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{7,40}$"
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "done"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "evidence": {
+            "minProperties": 1
+          },
+          "docs": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "dropped"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "notes": {
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ]
+}

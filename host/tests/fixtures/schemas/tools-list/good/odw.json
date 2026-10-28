@@ -1,0 +1,6 @@
+{"schema": "opendap.tools-list/v1", "items": [
+  {"name": "plan", "summary": "A maintainers' programme as data", "audience": "maintainer", "stability": "preview",
+   "replaces": null, "entry": "/ws/public/toolkit/host/bin/odapkit-plan", "root": "public/toolkit/host"},
+  {"name": "loose", "summary": "", "audience": "unknown", "stability": "unknown",
+   "replaces": null, "entry": "/usr/local/bin/odw-loose", "root": ""}
+]}

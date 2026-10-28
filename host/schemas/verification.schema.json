@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/verification.schema.json",
+  "title": "opendap.verification/v1: a verification matrix, one case per row; observed by hand or collected from opendap.check-result/v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "matrix",
+    "case"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opendap.verification/v1"
+    },
+    "matrix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "status",
+        "level"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "intro": {
+          "type": "string"
+        },
+        "status_note": {
+          "type": "string"
+        },
+        "level_note": {
+          "type": "string"
+        },
+        "status": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "meaning"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "meaning": {
+                "type": "string"
+              }
+            }
+          },
+          "minItems": 1
+        },
+        "level": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "meaning"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "meaning": {
+                "type": "string"
+              }
+            }
+          },
+          "minItems": 1
+        },
+        "done": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "manual": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "level_after": {
+          "type": "string"
+        },
+        "done_label": {
+          "type": "string"
+        }
+      }
+    },
+    "case": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "area",
+          "case",
+          "expected",
+          "status",
+          "levels"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*$"
+          },
+          "area": {
+            "type": "string"
+          },
+          "primitive": {
+            "type": "string"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "case": {
+            "type": "string"
+          },
+          "expected": {
+            "type": "string"
+          },
+          "observed": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "date": {
+            "type": "string"
+          },
+          "verifies": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$"
+            }
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "collected": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": [
+                "state",
+                "results"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "pass",
+                    "fail",
+                    "warn",
+                    "measured",
+                    "missing"
+                  ]
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "path",
+                      "id",
+                      "verdict"
+                    ],
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "commit": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      },
+                      "verdict": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

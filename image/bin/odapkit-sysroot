@@ -1,0 +1,69 @@
+#!/bin/sh
+# The cross-compilation sysroot of Blackbird OS images, installed on the host for odapkit cross.
+# It holds the image's own Debian packages plus their -dev packages (blackbird-os profile `sysroot`).
+# Usage: odapkit sysroot install [--no-build] [--dry-run] | path [--json]
+#   install  build the profile (odapkit image build sysroot) and unpack it; --no-build unpacks the
+#            last build; --dry-run names the build, the archive and the folder and changes nothing
+#   path     where it is: $ODAP_SYSROOT_DIR, default ~/.cache/opendap/sysroot/trixie-arm64;
+#            --json prints opendap.sysroot/v1 (path, installed)
+# Examples:
+#   odapkit sysroot path --json
+#   odapkit sysroot install --dry-run
+# macOS volumes are case-insensitive and Linux headers are not (ipt_ecn.h and ipt_ECN.h), so on
+# macOS the sysroot lives in a case-sensitive APFS sparse image mounted at ~/.cache/opendap/sysroot.
+set -eu
+here="$(cd "$(dirname "$0")" && pwd)"
+. "$here/../lib/odapkit.sh"
+mnt="$(odap_cache)/sysroot"
+dest="${ODAP_SYSROOT_DIR:-$mnt/trixie-arm64}"
+
+# The sparse image mounted, made first when `create` is given. A reboot unmounts it: every use
+# attaches it again, so a sysroot installed once stays usable.
+attach() {
+  [ "$(uname)" = Darwin ] && [ -z "${ODAP_SYSROOT_DIR:-}" ] || return 0
+  img="$(odap_cache)/sysroot.sparseimage"
+  [ -f "$img" ] || [ "${1:-}" = create ] || return 0
+  mkdir -p "$mnt"
+  [ -f "$img" ] || hdiutil create -quiet -size 8g -type SPARSE -fs "Case-sensitive APFS" -volname opendap-sysroot "$img"
+  mount | grep -q " on $mnt " || hdiutil attach -quiet -nobrowse -mountpoint "$mnt" "$img"
+  mdutil -i off "$mnt" >/dev/null 2>&1 || true
+}
+
+verb=""; build=1
+for a in "$@"; do
+  case "$a" in
+    --no-build) build=0 ;;
+    -*) cli_flag "$a" ;;
+    path|install) [ -z "$verb" ] || cli_usage "one command at a time: $verb, $a"; verb="$a" ;;
+    *) cli_usage "unknown command $a (install, path)" ;;
+  esac
+done
+[ -n "$verb" ] || cli_usage "no command (install or path)"
+
+case "$verb" in
+  path)
+    attach
+    if [ "$CLI_JSON" = 1 ]; then
+      installed=false; [ -d "$dest/usr/lib/aarch64-linux-gnu" ] && installed=true
+      printf '{"schema": "opendap.sysroot/v1", "path": %s, "installed": %s}\n' "$(cli_json_str "$dest")" "$installed"
+    else echo "$dest"; fi;;
+  install)
+    tarball="$("$here/odapkit-image" path sysroot)"
+    if [ "$DRY_RUN" = 1 ]; then
+      [ "$build" = 0 ] || echo "$CLI_TOOL: would build the sysroot profile (odapkit image build sysroot)" >&2
+      echo "$CLI_TOOL: would unpack $tarball into $dest" >&2
+      if [ "$build" = 0 ] && [ ! -f "$tarball" ]; then
+        echo "$CLI_TOOL: would fail: no sysroot build at $tarball" >&2; exit 1
+      fi
+      exit 0
+    fi
+    [ "$build" = 0 ] || tarball="$("$here/odapkit-image" build sysroot)"
+    [ -f "$tarball" ] || cli_fail "sysroot.no_build" "no sysroot build at $tarball" \
+      "the sysroot is unpacked from the image build's sysroot profile" "odapkit sysroot install"
+    attach create
+    rm -rf "$dest.new"; mkdir -p "$dest.new"
+    # Device nodes and ownership are not needed to link; unpack as the current user.
+    tar -xf "$tarball" -C "$dest.new" --exclude './dev/*'
+    rm -rf "$dest"; mv "$dest.new" "$dest"
+    echo "$dest";;
+esac

@@ -1,0 +1,28 @@
+#!/bin/sh
+# The maintainers' umbrella command under its earlier name: an alias that runs odw (command standard §1).
+#
+# Usage: odapkit TOOL [ARGS…]     the same as odw TOOL [ARGS…]
+#        odapkit [help] [--json]  the same as odw help [--json] (opendap.tools-list/v1)
+#
+# odw discovers the tools from each workspace root's tools.toml, then PATH (command standard §3). This
+# alias keeps every `odapkit <tool>` call working until the tools cut renames the call sites. It runs
+# the odw this checkout built (target/release/odw, built by setup.sh), else the odw on PATH, and sets
+# ODAP_TOOLKIT_HOST_DIR to this checkout when unset, as before, so the tools find the shared helpers
+# (lib/cli.sh, odw.clikit).
+#
+# Exit status: odw's, which is the tool's; 2 when there is no such tool; 1 when odw is not built.
+set -eu
+
+self="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+host="$(cd "$(dirname "$self")/.." && pwd)"
+export ODAP_TOOLKIT_HOST_DIR="${ODAP_TOOLKIT_HOST_DIR:-$host}"
+
+odw="$host/target/release/odw"
+[ -x "$odw" ] || odw="$(command -v odw 2>/dev/null || true)"
+if [ -z "$odw" ]; then
+  printf '%s\n' "odapkit: error tool.not_found: odw is not built" \
+    "  hint: odapkit runs odw, which setup.sh builds and links next to it" \
+    "  fix: cargo build --release --locked --manifest-path \"$host/crates/odw-dispatch/Cargo.toml\" --target-dir \"$host/target\"" >&2
+  exit 1
+fi
+exec "$odw" "$@"

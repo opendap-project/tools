@@ -1,0 +1,9 @@
+{
+  "schema": "opendap.check-result/v1",
+  "tool": {"name": "cargo-test"},
+  "subject": {"repo": "public/system"},
+  "generated": "2026-10-26T10:00:00Z",
+  "results": [
+    {"id": "layer-check", "verdict": "pass", "message": "L names package layers, not levels", "level": "L2"}
+  ]
+}

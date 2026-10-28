@@ -1,0 +1,11 @@
+schema = "opendap.requirements/v1"
+
+[[block]]
+markdown = "# R\n"
+
+[[block]]
+[[block.requirement]]
+id = "HCS-001"
+text = "The standard shall cover both sides."
+priority = "must"
+status = "confirmed"

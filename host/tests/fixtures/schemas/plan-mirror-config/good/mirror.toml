@@ -1,0 +1,10 @@
+schema = "opendap.plan-mirror-config/v1"
+repository = "o/rfcs"
+workspace = "o/workspace"
+label = "tracking"
+
+[phase_rfc]
+"-1" = "0017"
+
+[task_rfc]
+"HL-01" = "0018"
