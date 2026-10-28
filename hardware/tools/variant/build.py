@@ -108,6 +108,14 @@ def normalize(path):
                     per_net[key] = per_net.get(key, 0) + 1
                 d["unconnected_items"] = [{"net": n, "severity": s, "type": ty, "count": c}
                                           for (n, s, ty), c in sorted(per_net.items(), key=lambda x: str(x[0]))]
+            # A failed assertion names one representative graphic item of the footprint (the silk segment it
+            # met first), and which one changes from run to run; the footprint and the layer do not.
+            for v in d.get("violations", []) if isinstance(d.get("violations"), list) else []:
+                if isinstance(v, dict) and v.get("type") == "assertion_failure":
+                    for it in v.get("items") or []:
+                        if isinstance(it, dict):
+                            it.pop("pos", None)
+                            it.pop("uuid", None)
             # DRC runs in threads: the order of its findings changes from run to run, their content does not.
             for k in ("violations", "schematic_parity"):
                 if isinstance(d.get(k), list):

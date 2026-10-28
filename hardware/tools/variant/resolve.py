@@ -76,7 +76,7 @@ def components(variant, catalog, comps):
             dnp = True
             if kd is not None and kd["dnp"] is not True and owner:
                 dnp_mismatch.setdefault(owner, []).append(c["ref"])
-            if mode == "kicad" and kd is None and owner:
+            if mode == "kicad" and kd is None and owner and not c["dnp"]:   # KiCad omits an entry equal to the base
                 dnp_mismatch.setdefault(owner, []).append(c["ref"])
         elif alt_dnp is not None:
             dnp = alt_dnp

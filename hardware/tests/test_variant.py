@@ -256,6 +256,16 @@ class Resolution(unittest.TestCase):
         self.assertFalse(rows["R1"]["dnp"])       # the variant file wins
         self.assertTrue(rows["R2"]["dnp"])
 
+    def test_kicad_mode_dnp_block_already_dnp_in_the_base(self):
+        # KiCad's netlist leaves out a variant entry equal to the base design: a part already DNP in the
+        # base needs none in a variant that does not fit its block
+        kd = {"variant-b": {"dnp": None, "in_bom": None, "fields": {"Value": "x"}}}
+        rows, found, mode = self.rows([comp("R1", "blk.core", variants=kd),
+                                       comp("R2", "blk.sensor", dnp=True)])
+        self.assertEqual(mode, "kicad")
+        self.assertNotIn("kicad.dnp-mismatch", codes(found, "error"))
+        self.assertTrue(rows["R2"]["dnp"])
+
     def test_alternate_without_data_and_footprint_swap(self):
         _, found, _ = self.rows([comp("R1", "blk.core"), comp("R4", "blk.mem")])
         self.assertIn("alternate.no-data", codes(found, "error"))
@@ -526,7 +536,11 @@ class Normalize(unittest.TestCase):
                 with open(rep, "w") as f:
                     pair = ["Pad 1 [GND] of R1 on F.Cu", "Pad 2 [GND] of C1 on F.Cu"][:: 1 if n else -1]
                     json.dump({"date": date, "source": f"/abs/{n}/x.kicad_pcb",
-                               "violations": [{"type": f"t{i}"} for i in order],
+                               "violations": [{"type": f"t{i}"} for i in order] + [
+                                   {"type": "assertion_failure", "severity": "warning",
+                                    "description": "Assertion failure (rule 'R')",
+                                    "items": [{"description": "Segment of C1 on F.Silkscreen",
+                                               "pos": {"x": 1.0, "y": 2.0 + n}, "uuid": f"u{n}"}]}],
                                "unconnected_items": [{"type": "unconnected_items", "severity": "error",
                                                       "items": [{"description": d} for d in pair]}]}, f)
                 pdf = os.path.join(tmp, f"p{n}.pdf")
