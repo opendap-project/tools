@@ -2,7 +2,7 @@
 
 | Folder | Content |
 | --- | --- |
-| [`hardware/`](hardware/README.md) | Hardware tooling for OpenDAP: fab packages, FreeCAD exports, part data sync, and the [component export contract](docs/specs/component-export.md) every component follows |
+| [`hardware/`](hardware/README.md) | Hardware tooling for OpenDAP: fab packages, FreeCAD exports, part data sync, and the [component export contract](hardware/docs/specs/component-export.md) every component follows |
 | [`hooks/`](hooks/README.md) | Shared [pre-commit](https://pre-commit.com) hooks for every OpenDAP repository |
 | [`host/`](host/README.md) | Developer host setup for OpenDAP: the tools, toolchains and checks every contributor installs |
 | [`image/`](image/README.md) | Tools to build Blackbird OS images and the software that goes into them, for the platform's maintainers |
