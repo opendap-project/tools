@@ -163,6 +163,7 @@ Folder `README.md`, `CLAUDE.md`, `REUSE.toml`, `.gitignore` and `.gitattributes`
 - a remote hook every folder pins identically is kept once, unscoped; one only some folders pin is scoped to them: through `exclude: ^(?!<folder>/)` when it sets no `files`, so the `files` of its manifest still apply (`kicad-erc` keeps `\.kicad_sch$`), else `files: ^<folder>/…`;
 - a remote hook served by one of the root's own sources (`toolkit-hooks` inside `tools`) is dropped, and the providing folder's local copy runs for the whole root;
 - every other local hook is scoped to its folder and runs inside it: `entry: sh -c 'cd <folder> && <entry>'` when it takes no file names, the folder as a prefix for a script; its name starts with the folder, and an id two folders share gets the folder as a suffix (`requirements-current-host`);
+- a pre-push Rust hook (`types: [rust]` with `stages: [pre-push]`, such as clippy and cargo test) gets `types_or: [rust, cargo, cargo-lock]` instead, so a change to `Cargo.toml` or `Cargo.lock` alone (a pin) runs it too; rustfmt, given the file names, stays on Rust files;
 - a `files` or `exclude` pattern keeps its meaning under the folder: an anchored alternative loses its `^` behind the prefix, an unanchored one becomes `.*(?:…)`; values that need it are quoted (a name holding a colon followed by a space).
 
 The result is `opendap.rename-config/v1`; `odapkit sync --apply` then renders the root's `.gitignore` and `.gitattributes` blocks.

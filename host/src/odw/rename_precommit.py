@@ -8,12 +8,15 @@ line), so they are read and written as text, comments kept, with no YAML library
 - a remote hook served by one of the root's own sources is dropped: the folder that provides it runs its local copy
   for the whole root, with its script entry under the folder;
 - every other local hook is scoped to its folder (`files: ^<folder>/…`) and runs inside it (`sh -c 'cd <folder> &&
-  …'`); an id two folders share gets the folder as a suffix.
+  …'`); an id two folders share gets the folder as a suffix;
+- a pre-push Rust hook (`types: [rust]`, `stages: [pre-push]`) also runs when only Cargo.toml or Cargo.lock change
+  (`types_or: [rust, cargo, cargo-lock]`, identify's tags): a pin change touches nothing else (HL-83).
 """
 import dataclasses
 import re
 
 PLAIN_START = set("-?:,[]{}#&*!|>'\"%@`") | {" ", "\t"}
+RUST_TYPES, RUST_PUSH_TYPES = "[rust]", "[rust, cargo, cargo-lock]"
 YAML_WORDS = {"true", "false", "yes", "no", "on", "off", "null", "~", ""}
 
 
@@ -62,6 +65,14 @@ class Hook:
                 item[1], item[3] = scalar(value), []
                 return
         self.items.append([key, scalar(value), "", []])
+
+    def set_raw(self, key, raw, after=None):
+        """Set `key` to the raw YAML `raw` (a flow list), replacing `after`'s item when `key` is new."""
+        for item in self.items:
+            if item[0] in (key, after):
+                item[0], item[1], item[3] = key, raw, []
+                return
+        self.items.append([key, raw, "", []])
 
     def signature(self):
         return tuple((k, raw, tuple(more)) for k, raw, _, more in self.items)
@@ -234,6 +245,8 @@ def _local(h, folder, suffix):
         h.set("entry", _in_folder(entry, folder))
     elif "/" in entry.split(" ")[0] and not entry.startswith("/"):
         h.set("entry", f"{folder}/{entry}")
+    if h.get("types") == RUST_TYPES and "pre-push" in (h.get("stages") or ""):
+        h.set_raw("types_or", RUST_PUSH_TYPES, after="types")
     _scope_hook(h, folder)
     return h
 

@@ -17,6 +17,7 @@ import datetime as dt
 import fnmatch
 import json
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -204,22 +205,34 @@ def check(ws, templates):
             + _hook_drift(ws, repos))
 
 
-HOOK = ".git/hooks/pre-commit"
+HOOK_TYPES = ("pre-commit", "pre-push")
 
 
-def _hook_path(repo_dir):
-    """The repository's pre-commit hook file, also for a linked worktree (whose .git is a file)."""
-    r = subprocess.run(["git", "rev-parse", "--git-path", "hooks/pre-commit"], cwd=repo_dir,
+def _hook_path(repo_dir, kind="pre-commit"):
+    """The repository's `kind` hook file, also for a linked worktree (whose .git is a file)."""
+    r = subprocess.run(["git", "rev-parse", "--git-path", f"hooks/{kind}"], cwd=repo_dir,
                        capture_output=True, text=True, env=audit.git_env())
-    p = pathlib.Path(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip() else pathlib.Path(".git/hooks/pre-commit")
+    p = pathlib.Path(r.stdout.strip()) if r.returncode == 0 and r.stdout.strip() else pathlib.Path(f".git/hooks/{kind}")
     return p if p.is_absolute() else repo_dir / p
 
 
+def _hook_types(config):
+    """The hook types a .pre-commit-config.yaml needs installed: pre-commit always, pre-push when a hook or the
+    default stages name it (`pre-commit install` alone installs only pre-commit, HL-83)."""
+    text = config.read_text(errors="replace")
+    return [t for t in HOOK_TYPES if t == "pre-commit" or re.search(rf"^\s*(default_)?stages:.*\b{t}\b", text, re.M)]
+
+
 def _hook_drift(ws, repos):
-    """A repository with a .pre-commit-config.yaml but no installed hook commits unchecked (a fresh clone
-    carries no hooks)."""
-    return [Drift(r, HOOK, "pre-commit install", "missing") for r in repos
-            if (ws / r / ".pre-commit-config.yaml").is_file() and not _hook_path(ws / r).is_file()]
+    """A repository with a .pre-commit-config.yaml but a hook type it needs not installed runs those checks never
+    (a fresh clone carries no hooks)."""
+    out = []
+    for r in repos:
+        config = ws / r / ".pre-commit-config.yaml"
+        if config.is_file():
+            out += [Drift(r, f".git/hooks/{t}", f"pre-commit install --hook-type {t}", "missing")
+                    for t in _hook_types(config) if not _hook_path(ws / r, t).is_file()]
+    return out
 
 
 def apply(ws, templates):
@@ -236,9 +249,9 @@ def apply(ws, templates):
     for d in check(ws, templates):
         if d.template == "block" or d.template.startswith("generated "):
             continue
-        if d.template == "pre-commit install":
+        if d.template.startswith("pre-commit install"):
             if shutil.which("pre-commit"):
-                subprocess.run(["pre-commit", "install"], cwd=ws / d.repo, capture_output=True)
+                subprocess.run(d.template.split(), cwd=ws / d.repo, capture_output=True)
                 changed.append(d)
             continue
         path = ws / d.repo / d.target

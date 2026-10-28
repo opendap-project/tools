@@ -1,5 +1,7 @@
 """odw sync: shared boilerplate rendered from the workspace templates; drift is reported or repaired."""
 import json
+import shutil
+
 import pytest
 
 from odw import schemas, sync
@@ -216,3 +218,37 @@ def test_check_json_is_a_check_result(ws, capsys):
 def test_missing_templates_is_an_error_with_a_code(ws, tmp_path, capsys):
     assert sync.main(["--workspace", str(ws), "--templates", str(tmp_path / "none"), "--check", "--json"]) == 2
     assert json.loads(capsys.readouterr().out)["error"]["code"] == "templates.not_found"
+
+
+PUSH_CONFIG = """repos:
+  - repo: local
+    hooks:
+      - id: cargo-test
+        name: cargo test (before push)
+        entry: cargo test
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+"""
+
+
+def _hooks(ws):
+    return [(d.repo, d.target, d.template) for d in sync.check(ws, ws / "templates") if "hooks/" in d.target]
+
+
+def test_a_config_with_pre_push_hooks_needs_its_pre_push_hook_installed(bws):
+    """HL-83: `pre-commit install` installs only the pre-commit hook, so a fresh clone ran no pre-push stage."""
+    (bws / "public/r/.pre-commit-config.yaml").write_text(PUSH_CONFIG)
+    (bws / "public/py/.pre-commit-config.yaml").write_text("repos: []\n")
+    found = _hooks(bws)
+    assert ("public/r", ".git/hooks/pre-push", "pre-commit install --hook-type pre-push") in found
+    assert not any(repo == "public/py" and target.endswith("pre-push") for repo, target, _ in found)
+
+
+@pytest.mark.skipif(not shutil.which("pre-commit"), reason="pre-commit is not installed")
+def test_apply_installs_both_hook_types(bws):
+    (bws / "public/r/.pre-commit-config.yaml").write_text(PUSH_CONFIG)
+    changed = [(d.repo, d.target) for d in sync.apply(bws, bws / "templates") if "hooks/" in d.target]
+    assert ("public/r", ".git/hooks/pre-commit") in changed and ("public/r", ".git/hooks/pre-push") in changed
+    assert (bws / "public/r/.git/hooks/pre-push").is_file() and (bws / "public/r/.git/hooks/pre-commit").is_file()
+    assert _hooks(bws) == []

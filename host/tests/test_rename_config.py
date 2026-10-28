@@ -484,3 +484,32 @@ def test_t1_remote_hooks_some_folders_pin_keep_their_manifest_files(tmp_path, ca
     drc = cfg.hook("kicad-drc")
     assert drc.get("files") is None
     assert drc.get("exclude") == "^(?!(?:board|faceplates/touch)/)|^(?:board|faceplates/touch)/hardware/rules/test/"
+
+
+RUST = """repos:
+  - repo: local
+    hooks:
+      - id: rustfmt
+        name: rustfmt --check on changed Rust files
+        entry: rustfmt --check --edition 2024
+        language: system
+        types: [rust]
+      - id: clippy
+        name: cargo clippy -D warnings (before push)
+        entry: cargo clippy --workspace --all-targets -q -- -D warnings
+        language: system
+        pass_filenames: false
+        types: [rust]
+        stages: [pre-push]
+"""
+
+
+def test_rust_pre_push_hooks_also_run_on_cargo_manifests_and_locks():
+    """HL-83: a pin change touches only Cargo.toml and Cargo.lock; the pre-push Rust hooks must run on it.
+    identify tags them `cargo` and `cargo-lock`. rustfmt, which is given the file names, stays on Rust files."""
+    text, _ = rp.merge({"cli": RUST}, set())
+    cfg = rp.parse(text)
+    clippy, fmt = cfg.hook("clippy"), cfg.hook("rustfmt")
+    assert clippy.get("types") is None and clippy.get("types_or") == "[rust, cargo, cargo-lock]"
+    assert clippy.get("files") == "^cli/"
+    assert fmt.get("types") == "[rust]" and fmt.get("types_or") is None

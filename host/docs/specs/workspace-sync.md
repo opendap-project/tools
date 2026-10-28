@@ -19,7 +19,7 @@ The boilerplate every repository shares (agent settings and rules, lint configur
 
 ## Installed hooks
 
-A repository with a `.pre-commit-config.yaml` must have its pre-commit hook installed: a fresh clone carries no hooks, so its commits would skip every check. `--check` reports a missing hook (`.git/hooks/pre-commit`, linked worktrees included); `--apply` runs `pre-commit install` there.
+A repository with a `.pre-commit-config.yaml` must have its pre-commit hook installed: a fresh clone carries no hooks, so its commits would skip every check. `--check` reports a missing hook (`.git/hooks/pre-commit`, linked worktrees included), and a missing `.git/hooks/pre-push` when the configuration has a pre-push stage (`stages:` or `default_stages:` naming `pre-push`), since `pre-commit install` alone installs only the pre-commit hook; `--apply` runs `pre-commit install --hook-type <type>` for each one missing.
 
 ## Managed blocks
 
