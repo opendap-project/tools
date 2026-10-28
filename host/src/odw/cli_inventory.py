@@ -22,7 +22,7 @@ PLUGIN = re.compile(r"^(odapkit|odw|opendap)-[a-z][a-z0-9-]*$")
 SKIP = re.compile(r"(^|/)(tests?|fixtures|vendor|__pycache__)/|(^|/)test_[^/]*$|(^|/)__init__\.py$")
 SCRIPT_SUFFIXES = {"", ".py", ".sh"}
 # Roots whose Cargo binaries run on the device; every other Cargo binary runs on the host.
-DEVICE_ROOTS = re.compile(r"^public/system(/|$)|^public/hats/[^/]+/software(/|$)")
+DEVICE_ROOTS = re.compile(r"^public/(blackbird/)?system(/|$)|^public/hats/[^/]+/software(/|$)")
 
 FACTS = {
     "help": re.compile(r"argparse|\bclap\b|--help|\b-h\)|\b-h\|"),

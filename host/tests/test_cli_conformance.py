@@ -139,6 +139,19 @@ def test_inventory_finds_and_classes_every_executable(ws):
     assert schemas.errors(cli_inventory.document(list(items.values())), "cli-inventory") == []
 
 
+def test_a_merged_blackbird_root_keeps_system_binaries_on_the_device(tmp_path):
+    (tmp_path / "repos.tsv").write_text("path\trepository\npublic/blackbird\to/blackbird\n")
+    repo(tmp_path, "public/blackbird", {
+        "system/crates/odap-led/Cargo.toml": ('[package]\nname = "odap-led"\nversion = "0.1.0"\n'
+                                              '[[bin]]\nname = "odap-led"\npath = "src/main.rs"\n', 0o644),
+        "system/crates/odap-led/src/main.rs": ('fn main() { std::process::exit(4); }\n', 0o644),
+        "emulator/viewer/Cargo.toml": ('[package]\nname = "odap-view"\nversion = "0.1.0"\n', 0o644),
+        "emulator/viewer/src/main.rs": (CLAP, 0o644),
+    })
+    kinds = {k: e["kind"] for k, e in by_name(cli_inventory.inventory(tmp_path)).items()}
+    assert kinds == {"odap-led": "device-binary", "odap-view": "host-binary"}  # the emulator runs on the host
+
+
 def test_only_safe_executables_are_marked_to_run(ws):
     items = by_name(cli_inventory.inventory(ws))
     assert items["odapkit-good"]["probe"] and items["hang.sh"]["probe"]
