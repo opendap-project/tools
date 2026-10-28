@@ -108,14 +108,20 @@ def normalize(path):
                     per_net[key] = per_net.get(key, 0) + 1
                 d["unconnected_items"] = [{"net": n, "severity": s, "type": ty, "count": c}
                                           for (n, s, ty), c in sorted(per_net.items(), key=lambda x: str(x[0]))]
-            # A failed assertion names one representative graphic item of the footprint (the silk segment it
-            # met first), and which one changes from run to run; the footprint and the layer do not.
-            for v in d.get("violations", []) if isinstance(d.get("violations"), list) else []:
-                if isinstance(v, dict) and v.get("type") == "assertion_failure":
-                    for it in v.get("items") or []:
-                        if isinstance(it, dict):
-                            it.pop("pos", None)
-                            it.pop("uuid", None)
+            # Failed assertions: KiCad reports a capped, thread-dependent subset of the items that fail a
+            # custom-rule assertion (which footprints, and which graphic item of each, change from run to
+            # run); the rule and the number reported do not. They are kept per rule, with a count.
+            if isinstance(d.get("violations"), list):
+                per_rule, rest = {}, []
+                for v in d["violations"]:
+                    if isinstance(v, dict) and v.get("type") == "assertion_failure":
+                        key = (v.get("severity"), v.get("description"))
+                        per_rule[key] = per_rule.get(key, 0) + 1
+                    else:
+                        rest.append(v)
+                d["violations"] = rest + [{"type": "assertion_failure", "severity": sv, "description": de,
+                                           "items": [], "count": c}
+                                          for (sv, de), c in sorted(per_rule.items(), key=lambda x: str(x[0]))]
             # DRC runs in threads: the order of its findings changes from run to run, their content does not.
             for k in ("violations", "schematic_parity"):
                 if isinstance(d.get(k), list):
@@ -133,8 +139,9 @@ def _violations(report):
     out = []
     for sheet in report.get("sheets", [{"violations": report.get("violations", [])}]):
         for v in sheet.get("violations", []):
-            out.append((v.get("severity"), v.get("type"), v.get("description"),
-                        tuple(sorted(i.get("description", "") for i in v.get("items", [])))))
+            row = (v.get("severity"), v.get("type"), v.get("description"),
+                   tuple(sorted(i.get("description", "") for i in v.get("items", []))))
+            out += [row] * v.get("count", 1)        # failed assertions: per rule, with a count (normalize())
     for v in report.get("unconnected_items", []):
         if "net" in v:       # as normalize() keeps them: per net, with a count
             out += [(v.get("severity"), v.get("type"), "unconnected", (f"net {v['net']}",))] * v.get("count", 1)

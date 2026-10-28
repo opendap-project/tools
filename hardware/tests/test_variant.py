@@ -539,8 +539,9 @@ class Normalize(unittest.TestCase):
                                "violations": [{"type": f"t{i}"} for i in order] + [
                                    {"type": "assertion_failure", "severity": "warning",
                                     "description": "Assertion failure (rule 'R')",
-                                    "items": [{"description": "Segment of C1 on F.Silkscreen",
-                                               "pos": {"x": 1.0, "y": 2.0 + n}, "uuid": f"u{n}"}]}],
+                                    "items": [{"description": f"Segment of C{n + k} on F.Silkscreen",
+                                               "pos": {"x": 1.0, "y": 2.0 + n}, "uuid": f"u{n}{k}"}]}
+                                   for k in range(2)],
                                "unconnected_items": [{"type": "unconnected_items", "severity": "error",
                                                       "items": [{"description": d} for d in pair]}]}, f)
                 pdf = os.path.join(tmp, f"p{n}.pdf")
@@ -557,6 +558,9 @@ class Normalize(unittest.TestCase):
             self.assertEqual(rep["unconnected_items"], [{"net": "GND", "severity": "error", "type": "unconnected_items",
                                                          "count": 1}])
             self.assertEqual(build._violations(rep)[-1], ("error", "unconnected_items", "unconnected", ("net GND",)))
+            self.assertEqual([v for v in rep["violations"] if v["type"] == "assertion_failure"],
+                             [{"type": "assertion_failure", "severity": "warning", "items": [], "count": 2,
+                               "description": "Assertion failure (rule 'R')"}])
             self.assertEqual(os.path.getsize(os.path.join(tmp, "p0.pdf")), len(b"%PDF-1.5\n/CreationDate (D:2026:10:27:07:17:42)\n"))
 
 
