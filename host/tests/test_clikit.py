@@ -123,3 +123,13 @@ def test_clikit_imports_on_python_3_9_syntax_and_stdlib():
     tree = ast.parse(src, feature_version=(3, 9))
     top = [n for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom))]
     assert not any(a.name == "tomllib" for n in top for a in n.names)
+
+
+def test_load_toml_fix_quotes_the_path(tmp_path):
+    """The fix is a command an agent runs: a path with shell syntax in it is quoted, never executed (HL-99)."""
+    import shlex
+    f = tmp_path / "a $(touch pwned); b.toml"
+    f.write_text('x = "\n')
+    with pytest.raises(clikit.CliError) as e:
+        clikit.load_toml(f, "x.invalid")
+    assert e.value.fix == f"$EDITOR {shlex.quote(str(f))}" and e.value.details["line"] == 1

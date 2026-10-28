@@ -47,6 +47,7 @@ def load_toml(path, code, shown=None, fix=None, status=1):
     """The parsed TOML file at `path`. A file that does not parse is `CliError(code)` naming `shown` (the path as
     the user knows it), its line and column, with a hint on quoting and a fix (`fix`, else open the file)."""
     import re
+    import shlex
     import tomllib
     path = pathlib.Path(path)
     shown = shown or str(path)
@@ -59,7 +60,7 @@ def load_toml(path, code, shown=None, fix=None, status=1):
         where = f"{shown}:{line}:{col}" if line else shown
         raise CliError(code, f"{where}: not valid TOML: {what}",
                        "a basic string escapes its quotes and backslashes (\\\", \\\\) or is a literal string ('...')",
-                       fix or f"$EDITOR {path}", status, details={"file": shown, "line": line, "column": col}) from None
+                       fix or f"$EDITOR {shlex.quote(str(path))}", status, details={"file": shown, "line": line, "column": col}) from None
 
 
 def report(tool, e, as_json=False):
