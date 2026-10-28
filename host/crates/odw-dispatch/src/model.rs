@@ -26,6 +26,18 @@ pub struct ExportRoot {
 }
 
 impl Front {
+    /// The variables that name this front's tool folders, read as roots outside a workspace: the merged
+    /// root's (`ODAP_TOOLS_DIR`) first, then each export root's (`ODAP_TOOLKIT_HOST_DIR`, ...).
+    pub fn root_vars(&self) -> Vec<String> {
+        let mut v = vec![crate::workspace::root_env_var("tools")];
+        v.extend(
+            self.export_roots
+                .iter()
+                .map(|e| crate::workspace::root_env_var(e.name)),
+        );
+        v
+    }
+
     /// The maintainers' umbrella. Plugins are still named `odapkit-<tool>` until the tools cut, so `PATH`
     /// discovery accepts that prefix after `odw-`; plugins find the shared helpers through toolkit-host
     /// and each other through the toolkit folders, in either layout.

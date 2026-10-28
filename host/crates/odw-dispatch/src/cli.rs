@@ -165,7 +165,7 @@ fn exec(front: &Front, host: &dyn Host, search: &Search, name: &str, args: Vec<S
 /// shared helpers (toolkit-host) the way the umbrella found it: a root of that name, else that folder
 /// of a root whose tool folders hold `tools.toml`. Such a root is exported too (`ODAP_TOOLS_DIR`).
 fn exported_roots(front: &Front, host: &dyn Host, search: &Search) -> Vec<(String, String)> {
-    let all: Vec<ResolvedRoot> = roots(host, search.workspace.as_deref());
+    let all: Vec<ResolvedRoot> = roots(host, search.workspace.as_deref(), &front.root_vars());
     let folders: Vec<(&ResolvedRoot, Vec<String>)> = all
         .iter()
         .map(|r| (r, tool_folders(host, r)))

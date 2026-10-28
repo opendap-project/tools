@@ -52,6 +52,7 @@ stability = "stable"          # internal | preview | stable | deprecated
 Resolution order, first match wins:
 
 1. **Workspace roots.** The workspace manifest (`repos.tsv`) lists the roots; every root's `tools.toml` with this `front` is read, then the `tools.toml` of each folder directly below the root (sorted; hidden folders skipped). `ODAP_<ROOT>_DIR` overrides a root's path.
+   Outside a workspace (no manifest), the front's tool-folder variables that are set are the roots instead, read the same way: for `odw`, `ODAP_TOOLS_DIR`, then `ODAP_TOOLKIT_<NAME>_DIR` (`HOST`, `HARDWARE`, `HOOKS`, `IMAGE`, `VERIFY`). A folder already read, or directly below one, is read once. Explicit configuration beats discovery: an `odw` installed outside a workspace, run through the `odapkit` alias (which sets `ODAP_TOOLKIT_HOST_DIR`), lists its host's tools.
 2. **`PATH`.** An executable `<front>-<tool>` on `PATH`. A tool found only here has `audience` and `stability` unknown and is listed as such.
 
 Rules:

@@ -68,14 +68,14 @@ pub struct ResolvedRoot {
     pub dir: PathBuf,
 }
 
-/// The roots of the workspace manifest, in manifest order; empty outside a workspace.
-pub fn roots(host: &dyn Host, workspace: Option<&Path>) -> Vec<ResolvedRoot> {
-    let Some(ws) = workspace else {
-        return Vec::new();
+/// The roots of the workspace manifest, in manifest order. Outside a workspace, the tool folders whose
+/// `fallback` variables are set (`ODAP_TOOLS_DIR`, `ODAP_TOOLKIT_HOST_DIR`, which the `odapkit` alias
+/// sets), in that order; a folder already listed, or directly below one listed, is read once.
+pub fn roots(host: &dyn Host, workspace: Option<&Path>, fallback: &[String]) -> Vec<ResolvedRoot> {
+    let Some(text) = workspace.and_then(|ws| host.read_to_string(&ws.join("repos.tsv"))) else {
+        return variable_roots(host, fallback);
     };
-    let Some(text) = host.read_to_string(&ws.join("repos.tsv")) else {
-        return Vec::new();
-    };
+    let ws = workspace.unwrap_or(Path::new(""));
     parse_repos(&text)
         .into_iter()
         .map(|root| {
@@ -86,6 +86,32 @@ pub fn roots(host: &dyn Host, workspace: Option<&Path>) -> Vec<ResolvedRoot> {
             ResolvedRoot { root, dir }
         })
         .collect()
+}
+
+fn variable_roots(host: &dyn Host, vars: &[String]) -> Vec<ResolvedRoot> {
+    let mut out: Vec<ResolvedRoot> = Vec::new();
+    for var in vars {
+        let Some(v) = host.var(var).filter(|v| !v.is_empty()) else {
+            continue;
+        };
+        let dir = PathBuf::from(&v);
+        if out
+            .iter()
+            .any(|r| r.dir == dir || dir.parent() == Some(r.dir.as_path()))
+        {
+            continue;
+        }
+        let name = var
+            .trim_start_matches("ODAP_")
+            .trim_end_matches("_DIR")
+            .to_lowercase()
+            .replace('_', "-");
+        out.push(ResolvedRoot {
+            root: Root { path: v, name },
+            dir,
+        });
+    }
+    out
 }
 
 /// The nearest folder at or above `start` that holds `repos.tsv`.

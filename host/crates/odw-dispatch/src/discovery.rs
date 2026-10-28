@@ -32,7 +32,7 @@ pub struct Search {
 /// Every tool of the front, first match first.
 pub fn discover(host: &dyn Host, front: &Front, search: &Search) -> Catalog {
     let mut catalog = Catalog::default();
-    for r in roots(host, search.workspace.as_deref()) {
+    for r in roots(host, search.workspace.as_deref(), &front.root_vars()) {
         read_root(host, front, &r, &mut catalog);
     }
     let mut seen: HashSet<String> = catalog.tools.iter().map(|t| t.name.clone()).collect();

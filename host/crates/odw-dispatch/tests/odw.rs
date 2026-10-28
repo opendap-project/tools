@@ -494,3 +494,64 @@ fn both_toolkit_layouts_discover_the_same_tools_and_export_the_tool_folders() {
         stdout(&o)
     );
 }
+
+/// Outside a workspace, a tool folder named by its variable (the alias sets ODAP_TOOLKIT_HOST_DIR) is a
+/// discovery root, read like a workspace root: its own tools.toml, then one level down.
+#[test]
+fn outside_a_workspace_the_set_tool_folder_variables_are_roots() {
+    let f = Fixture::new();
+    f.write(
+        "checkout/host/tools.toml",
+        &tools_toml(&[("plan", "preview")]),
+        false,
+    );
+    f.plugin("checkout/host/bin/odapkit-plan", "plan");
+    let nows = f.dir.join("nows");
+    let host = f.dir.join("checkout/host");
+    let env = [
+        ("ODAP_WORKSPACE_DIR", nows.to_str().unwrap()),
+        ("ODAP_TOOLKIT_HOST_DIR", host.to_str().unwrap()),
+    ];
+    let o = f.odw(&["help", "--json"], &env);
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    let doc: Value = serde_json::from_str(&stdout(&o)).unwrap();
+    let items = doc["items"].as_array().unwrap();
+    assert_eq!(items.len(), 1, "{doc}");
+    assert_eq!(items[0]["name"], "plan");
+    assert_eq!(
+        items[0]["entry"],
+        host.join("bin/odapkit-plan").display().to_string()
+    );
+    let o = f.odw(&["plan", "x"], &env);
+    assert_eq!(stdout(&o).lines().next(), Some("plan x"));
+
+    // The merged root by its variable: each folder's tools.toml, and a folder variable that points
+    // inside it adds nothing twice.
+    let m = Fixture::new();
+    m.write("tools/host/tools.toml", &tools_toml(&[("plan", "preview")]), false);
+    m.plugin("tools/host/bin/odapkit-plan", "plan");
+    m.write("tools/hardware/tools.toml", &tools_toml(&[("sim", "stable")]), false);
+    m.plugin("tools/hardware/bin/odapkit-sim", "sim");
+    let nows = m.dir.join("nows");
+    let tools = m.dir.join("tools");
+    let host = tools.join("host");
+    let o = m.odw(
+        &["help", "--json"],
+        &[
+            ("ODAP_WORKSPACE_DIR", nows.to_str().unwrap()),
+            ("ODAP_TOOLS_DIR", tools.to_str().unwrap()),
+            ("ODAP_TOOLKIT_HOST_DIR", host.to_str().unwrap()),
+        ],
+    );
+    assert_eq!(o.status.code(), Some(0), "{}", stderr(&o));
+    assert_eq!(stderr(&o), "");
+    let doc: Value = serde_json::from_str(&stdout(&o)).unwrap();
+    let mut names: Vec<&str> = doc["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|t| t["name"].as_str().unwrap())
+        .collect();
+    names.sort();
+    assert_eq!(names, ["plan", "sim"]);
+}
