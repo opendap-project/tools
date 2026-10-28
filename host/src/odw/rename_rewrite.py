@@ -121,6 +121,10 @@ def urls(text, sources, root, paths_of, path=""):
     (its `rev` is a tag of the old repository), and so does a Cargo git pin (`git =`, `source = "git+`); package
     metadata (`repository = `) gets the root's own URL, and an issue tracker (`<repo>/issues`) the root's tracker."""
     edits = []
+    landed = {}  # a root that reuses a source's name (t1): its URLs under a landing folder are already new
+    for s in sources.values():
+        if s.landing:
+            landed.setdefault(s.root, set()).add(s.landing)
     base_name = posixpath.basename(path)
     pin_line = PIN_LINE if base_name == ".pre-commit-config.yaml" else (
         CARGO_PIN if base_name in ("Cargo.toml", "Cargo.lock") else None)
@@ -129,6 +133,8 @@ def urls(text, sources, root, paths_of, path=""):
         name, kind, ref, path = m.group(1), m.group(2), m.group(3), (m.group(4) or "").lstrip("/")
         s = sources.get(name.removesuffix(".git"))
         if s is None or s.landing is None or (kind and ref not in MOVABLE_REFS):
+            return m.group(0)
+        if s.name == s.root and any(path == d or path.startswith(d + "/") for d in landed.get(s.root, ())):
             return m.group(0)
         base = f"{s.landing}/{path}".strip("/") if s.landing else path
         new_path = paths_of(s.root).map(base) if base else base

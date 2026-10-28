@@ -202,3 +202,18 @@ def test_urls_into_an_earlier_root_follow_the_landing_its_merge_recorded(cut, ca
     assert run(capsys, "apply", ws, top, "--structure-only")[0] == 0
     readme = (top / "host/README.md").read_text()
     assert f"{ORG}/libs/blob/main/lib/symbols/Murata.kicad_sym" in readme  # not the map's kicad/
+
+
+def test_urls_of_a_root_that_reuses_a_source_name_are_rewritten_once():
+    """The t1 cut (HL-92): the root `t1` reuses the name of its source `t1` (landing product/). A board URL
+    rewritten to t1/blob/main/board/… is already new; `rename check` reruns the rewriter and must not move it
+    again to product/board/…."""
+    from odw import rename_map, rename_rewrite as rw
+    sources = {"t1": rename_map.Source("public/devices/t1/t1", "t1", "t1", "product"),
+               "board": rename_map.Source("public/devices/t1/board", "board", "t1", "board")}
+    paths = rw.Paths({})
+    text = f"{ORG}/board/blob/main/hardware/shields.toml and {ORG}/t1/blob/main/docs/x.md\n"
+    once, edits = rw.urls(text, sources, "t1", lambda root: paths)
+    assert once == f"{ORG}/t1/blob/main/board/hardware/shields.toml and {ORG}/t1/blob/main/product/docs/x.md\n"
+    assert len(edits) == 2
+    assert rw.urls(once, sources, "t1", lambda root: paths) == (once, [])
