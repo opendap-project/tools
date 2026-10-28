@@ -34,6 +34,8 @@ done
 
 # The toolkit-host lookup of lib/odapkit.sh and security-check, in both toolkit layouts.
 (cd "$root" && python3 -m unittest -q tests.test_host_lookup 2>"$tmp/err") || fail "host lookup: $(cat "$tmp/err")"
+# Other repositories' checkouts, merged into the blackbird root or not (HL-84).
+(cd "$root" && python3 -m unittest -q tests.test_repo_lookup 2>"$tmp/err") || fail "repo lookup: $(cat "$tmp/err")"
 
 run "$root/bin/odapkit-dev-key" create --dry-run
 [ "$rc" = 0 ] && [ ! -e "$tmp/data/opendap" ] || fail "dev-key create --dry-run: exit $rc or wrote $tmp/data"

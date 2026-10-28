@@ -93,6 +93,17 @@ esac
 odap_data() { echo "${XDG_DATA_HOME:-$HOME/.local/share}/opendap"; }
 odap_cache() { echo "${XDG_CACHE_HOME:-$HOME/.cache}/opendap"; }
 
+# A repository merged into a root (RFC 0017 §7): prints "<root> <folder>", or nothing.
+_merged() {
+  case "$1" in
+    blackbird-os) echo "blackbird os" ;; blackbird-ui) echo "blackbird ui" ;;
+    system) echo "blackbird system" ;; virtual-devices) echo "blackbird emulator" ;;
+  esac
+}
+
+# The workspace path repos.tsv lists for repository $2 in workspace $1, or nothing.
+_row() { awk -F'\t' -v n="$2" 'NR > 1 { split($2, a, "/"); if (a[2] == n) print $1 }' "$1/repos.tsv"; }
+
 repo_dir() {
   var="ODAP_$(echo "$1" | tr 'a-z-' 'A-Z_')_DIR"
   eval "v=\${$var:-}"
@@ -101,9 +112,16 @@ repo_dir() {
       "unset $var" 2
     echo "$v"; return 0
   fi
+  # Merged into a root: its folder, under ODAP_<ROOT>_DIR or the root's row.
+  m="$(_merged "$1")"; mroot="${m% *}"; mfolder="${m#* }"
+  if [ -n "$m" ]; then
+    eval "v=\${ODAP_$(echo "$mroot" | tr 'a-z-' 'A-Z_')_DIR:-}"
+    [ -n "$v" ] && [ -d "$v/$mfolder" ] && { echo "$v/$mfolder"; return 0; }
+  fi
   ws="$(workspace_root)" || cli_fail "workspace.not_found" "no workspace (repos.tsv) above this checkout" \
     "run it from a workspace checkout, or point $var at a checkout of $1" "export $var=DIR" 2
-  path="$(awk -F'\t' -v n="$1" 'NR > 1 { split($2, a, "/"); if (a[2] == n) print $1 }' "$ws/repos.tsv")"
+  path="$(_row "$ws" "$1")"
+  [ -z "$path" ] && [ -n "$m" ] && path="$(_row "$ws" "$mroot")" && [ -n "$path" ] && path="$path/$mfolder"
   [ -n "$path" ] && [ -d "$ws/$path" ] || cli_fail "repo.not_found" "no $1 checkout in $ws" \
     "the workspace bootstrap clones every repository you can reach" "$ws/scripts/bootstrap.sh" 2
   echo "$ws/$path"

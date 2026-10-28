@@ -34,18 +34,37 @@ def find_workspace():
     return None
 
 
+# Repositories merged into a root (RFC 0017 §7): name → (root, folder).
+MERGED = {"blackbird-os": ("blackbird", "os"), "blackbird-ui": ("blackbird", "ui"),
+          "system": ("blackbird", "system"), "virtual-devices": ("blackbird", "emulator")}
+
+
+def _row(ws, name):
+    for line in open(os.path.join(ws, "repos.tsv")).read().splitlines()[1:]:
+        path, _, slug = line.partition("\t")
+        full = os.path.realpath(os.path.join(ws, path))  # only a folder inside the workspace
+        if slug.split("/")[-1] == name and full.startswith(os.path.realpath(ws) + os.sep) and os.path.isdir(full):
+            return full
+    return None
+
+
 def repo_dir(name):
+    """A repository's checkout: ODAP_<NAME>_DIR, else its repos.tsv row; one merged into a root is its folder
+    under ODAP_<ROOT>_DIR or the root's row."""
     var = "ODAP_" + name.upper().replace("-", "_") + "_DIR"
     if os.environ.get(var):
         return os.environ[var]
+    root, folder = MERGED.get(name, (None, None))
+    base = os.environ.get("ODAP_" + root.upper() + "_DIR") if root else None
+    if base and os.path.isdir(os.path.join(base, folder)):
+        return os.path.join(base, folder)
     ws = find_workspace()
-    if ws:
-        for line in open(os.path.join(ws, "repos.tsv")).read().splitlines()[1:]:
-            path, _, slug = line.partition("\t")
-            full = os.path.realpath(os.path.join(ws, path))  # only a folder inside the workspace
-            if slug.split("/")[-1] == name and full.startswith(os.path.realpath(ws) + os.sep) and os.path.isdir(full):
-                return full
-    return None
+    if not ws:
+        return None
+    found = _row(ws, name)
+    if found is None and root and _row(ws, root) and os.path.isdir(os.path.join(_row(ws, root), folder)):
+        found = os.path.join(_row(ws, root), folder)
+    return found
 
 
 def sibling_host(start):
