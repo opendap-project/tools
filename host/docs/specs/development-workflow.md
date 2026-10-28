@@ -21,7 +21,7 @@
 |---|---|---|
 | **Host** (macOS, or Linux) | Edit, `cargo check`, `cargo test`, `cargo clippy`; run the product UI natively; cross-build for aarch64 (`odapkit cross`); deploy (`odapkit deploy`); run and drive virtual devices (`odap-vdev`); every repository check (pre-commit, REUSE) | Hold anything another machine needs in order to build |
 | **Build VM** (Lima, toolkit-image `vm/build-vm.yaml`, the workspace and `~/.local/share/opendap` mounted) | `mkosi` builds: images (`qemu`, `oci`, later device profiles) and the `sysroot` profile | Compile OpenDAP software; hold a Rust toolchain; keep state that is not in the image definition |
-| **Virtual devices** (QEMU, [virtual-devices](https://github.com/opendap-project/virtual-devices) `odap-vdev`) | Run Blackbird OS on a virtual model: display, touch, buttons, audio, battery, USB, microSD, LAN (VD-001) | Build anything |
+| **Virtual devices** (QEMU, [virtual-devices](https://github.com/opendap-project/blackbird/tree/main/emulator) `odap-vdev`) | Run Blackbird OS on a virtual model: display, touch, buttons, audio, battery, USB, microSD, LAN (VD-001) | Build anything |
 | **T1** | Run Blackbird OS on the hardware | Build anything |
 
 On a Linux host the build VM is optional: mkosi can run on the host itself. Only macOS is tested (TK-011).
