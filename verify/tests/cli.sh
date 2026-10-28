@@ -3,6 +3,9 @@
 # recording: --help, an unknown flag, error codes and --dry-run.
 # Usage: tests/cli.sh   (exit 0 when every case passes; each failure is printed)
 set -u
+# Tests never inherit a hook's GIT_* variables (HL-64): under pre-commit, git exports GIT_DIR, GIT_INDEX_FILE and
+# others, and a tool's git would act on the repository being committed.
+for v in $(env | sed -n 's/^\(GIT_[A-Za-z0-9_]*\)=.*/\1/p'); do unset "$v"; done
 root="$(cd "$(dirname "$0")/.." && pwd)"
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 fails=0

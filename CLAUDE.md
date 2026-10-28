@@ -11,4 +11,5 @@ Contributor rules (English, confirmed information only, REUSE licensing, the `do
 ## Working here
 
 - Each folder has its own `CLAUDE.md` with its rules; read the one for the folder you change.
+- Tests never inherit a hook's `GIT_*` variables: each language's protection is in the README's [rule](README.md#tests-never-inherit-a-hooks-git-variables), and `odapkit audit` flags a test file that runs git without it.
 - Requirements are edited in each folder's `docs/requirements/requirements.toml`; its README is rendered with `odapkit req render` and never edited by hand.

@@ -10,6 +10,14 @@ use serde_json::Value;
 
 const ODW: &str = env!("CARGO_BIN_EXE_odw");
 
+/// Every child process starts from an empty environment: tests never inherit a hook's GIT_* variables
+/// (HL-64), or the plugins' git would act on the repository being committed.
+fn command(program: impl AsRef<std::ffi::OsStr>) -> Command {
+    let mut c = Command::new(program);
+    c.env_clear();
+    c
+}
+
 /// A throwaway folder under the target directory.
 struct Fixture {
     dir: PathBuf,
@@ -49,9 +57,8 @@ impl Fixture {
     }
 
     fn odw(&self, args: &[&str], env: &[(&str, &str)]) -> Output {
-        let mut c = Command::new(ODW);
+        let mut c = command(ODW);
         c.args(args)
-            .env_clear()
             .env("ODAP_WORKSPACE_DIR", self.dir.join("ws"))
             .env(
                 "PATH",
@@ -386,10 +393,9 @@ fn the_current_folder_never_chooses_the_workspace() {
         false,
     );
     f.plugin("cwd/r/bin/odapkit-evil", "evil");
-    let o = Command::new(&copy)
+    let o = command(&copy)
         .arg("evil")
         .current_dir(f.dir.join("cwd"))
-        .env_clear()
         .env("PATH", "/usr/bin:/bin")
         .stdin(Stdio::null())
         .output()

@@ -12,6 +12,11 @@ import tempfile
 import unittest
 import zipfile
 
+# Tests never inherit a hook's GIT_* variables (HL-64): under pre-commit, git exports GIT_DIR, GIT_INDEX_FILE and
+# others, and a fixture's git would act on the repository being committed.
+for _k in [k for k in os.environ if k.startswith("GIT_")]:
+    del os.environ[_k]
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 TOOL = os.path.join(HERE, "..", "tools", "sim", "__main__.py")
 FIXTURE = os.path.join(HERE, "fixtures", "sim")

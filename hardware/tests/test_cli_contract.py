@@ -11,6 +11,11 @@ import sys
 import tempfile
 import unittest
 
+# Tests never inherit a hook's GIT_* variables (HL-64): under pre-commit, git exports GIT_DIR, GIT_INDEX_FILE and
+# others, and a fixture's git would act on the repository being committed.
+for _k in [k for k in os.environ if k.startswith("GIT_")]:
+    del os.environ[_k]
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = dict(re.findall(r'name = "([^"]+)"\nsummary = "([^"]+)"', open(os.path.join(ROOT, "tools.toml")).read()))
 # Under a pre-commit hook git exports GIT_DIR and others; the tools must not see them.

@@ -32,6 +32,15 @@ RDNS_ORG = re.compile(r"\borg\.opendap\.[A-Za-z]")
 OPENDAP_ENV = re.compile(r"\bOPENDAP_[A-Z][A-Z0-9_]*")
 BUDGETS = {".rs": ("rust_files_over_600_lines", 600), ".slint": ("slint_files_over_500_lines", 500),
            ".py": ("python_files_over_500_lines", 500)}
+# HL-64: a test that runs git under a pre-commit hook inherits GIT_DIR, GIT_INDEX_FILE and others and acts on the
+# repository being committed. Running git: subprocess (Python), Command::new (Rust), a `git` command (shell).
+# Protected: the file, or for Python a conftest.py above it, removes every GIT_* variable from the environment
+# (Rust: env_remove of each GIT_* variable, or env_clear).
+RUNS_GIT = {".py": re.compile(r"\bsubprocess\b"), ".rs": re.compile(r"\bCommand::new\("),
+            ".sh": re.compile(r"^[^#\n]*(?:^|[\s;&|(])git\s", re.M)}
+STRIPS_GIT = {".py": re.compile(r"startswith\([\"']GIT_[\"']\).{0,40}?(?:del os\.environ|os\.environ\.pop|delenv)", re.S),
+              ".rs": re.compile(r"\benv_clear\(\)|\"GIT_\".{0,80}?env_remove", re.S),
+              ".sh": re.compile(r"GIT_.{0,60}?\bunset\b|\bunset\b.{0,60}?GIT_", re.S)}
 TEXT = {".rs", ".py", ".sh", ".toml", ".md", ".slint", ".yaml", ".yml", ".json", ".conf", ".service", ".rules", ""}
 
 
@@ -70,11 +79,40 @@ def _covered(path, patterns, exact):
     return any(fnmatch.fnmatch(path, p) for p in patterns)
 
 
+def _test_code(f, text):
+    """The part of a tracked file that is test code: a file under tests/ or named test_*, or a #[cfg(test)] module."""
+    parts = f.split("/")
+    if "tests" in parts[:-1] or parts[-1].startswith("test_") or parts[-1] == "conftest.py":
+        return text
+    if f.endswith(".rs") and "#[cfg(test)]" in text:
+        return text[text.index("#[cfg(test)]"):]
+    return None
+
+
+def unprotected_git_tests(repo, files):
+    """The test files that run git without removing the GIT_* variables a hook exports (HL-64)."""
+    conftests = {os.path.dirname(f) for f in files if f.endswith("/conftest.py") or f == "conftest.py"
+                 if STRIPS_GIT[".py"].search(_read(repo / f))}
+    out = []
+    for f in files:
+        suffix = pathlib.PurePath(f).suffix
+        if suffix not in RUNS_GIT:
+            continue
+        code = _test_code(f, _read(repo / f))
+        if code is None or not RUNS_GIT[suffix].search(code) or STRIPS_GIT[suffix].search(code):
+            continue
+        dirs = ["/".join(f.split("/")[:i]) for i in range(len(f.split("/")))]
+        if suffix == ".py" and any(d in conftests for d in dirs):
+            continue
+        out.append(f)
+    return sorted(out)
+
+
 def audit(ws, rename_map=None):
     ws = pathlib.Path(ws)
     paths = repositories(ws)
     present = [p for p in paths if (ws / p / ".git").exists()]
-    r = {"repositories": {}, "software": {k: 0 for k, _ in BUDGETS.values()},
+    r = {"repositories": {}, "software": {**{k: 0 for k, _ in BUDGETS.values()}, "test_files_running_git_unprotected": 0},
          "docs": {"docs_markdown_files": 0, "specs_with_inline_history": 0, "docs_with_working_notes": 0},
          "identifiers": {"rdns_org_opendap_uses": 0, "opendap_env_uses": 0}, "conformance": {}}
     pins, variants, no_pc, lower, rules = set(), set(), [], 0, 0
@@ -117,8 +155,11 @@ def audit(ws, rename_map=None):
                 text = _read(path)
                 r["identifiers"]["rdns_org_opendap_uses"] += len(RDNS_ORG.findall(text))
                 r["identifiers"]["opendap_env_uses"] += len(OPENDAP_ENV.findall(text))
+        leaky = unprotected_git_tests(repo, files)
+        r["software"]["test_files_running_git_unprotected"] += len(leaky)
         r["conformance"][p] = {"pre_commit": pc.is_file(), "hooks_pin": pin or "", "claude_md_lowercase_open_source": low,
-                               "claude_rules": n_rules, "tracked_files": len(files)}
+                               "claude_rules": n_rules, "tracked_files": len(files),
+                               "tests_running_git_unprotected": leaky}
     r["repositories"] = {"total": len(present), "missing": [p for p in paths if p not in present],
                          "pre_commit_variants": len(variants), "hooks_pins": sorted(pins),
                          "claude_rules_copies": rules, "claude_md_lowercase_open_source": lower,

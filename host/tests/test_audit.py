@@ -153,3 +153,62 @@ def test_no_workspace_is_an_error_with_a_code(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     assert audit.main([]) == 2
     assert "error workspace.not_found:" in capsys.readouterr().err
+
+
+PY_STANZA = """\
+import os
+import subprocess
+for _k in [k for k in os.environ if k.startswith("GIT_")]:
+    del os.environ[_k]
+subprocess.run(["git", "init"])
+"""
+CONFTEST = """\
+import os
+import pytest
+@pytest.fixture(autouse=True)
+def no_inherited_git_environment(monkeypatch):
+    for k in [k for k in os.environ if k.startswith("GIT_")]:
+        monkeypatch.delenv(k)
+"""
+RS_HELPER = """\
+use std::process::Command;
+fn command(p: &str) -> Command {
+    let mut c = Command::new(p);
+    for (k, _) in std::env::vars().filter(|(k, _)| k.starts_with("GIT_")) {
+        c.env_remove(k);
+    }
+    c
+}
+"""
+SH_STANZA = """\
+#!/bin/sh
+for v in $(env | sed -n 's/^\\(GIT_[A-Za-z0-9_]*\\)=.*/\\1/p'); do unset "$v"; done
+git init -q "$tmp"
+"""
+
+
+def test_test_files_running_git_without_the_protection(tmp_path):
+    """HL-64: a test file that runs git (subprocess, Command::new, `git ` in shell) needs the GIT_* protection."""
+    (tmp_path / "repos.tsv").write_text("path\trepository\npublic/a\to/a\n")
+    repo(tmp_path, "public/a", {
+        "py/tests/test_leaky.py": 'import subprocess\nsubprocess.run(["git", "init"])\n',
+        "py/tests/test_per_call.py": 'import os, subprocess\nENV = {k: v for k, v in os.environ.items() '
+                                     'if not k.startswith("GIT_")}\nsubprocess.run(["git", "init"], env=ENV)\n',
+        "py/tests/test_stanza.py": PY_STANZA,
+        "py/tests/test_pure.py": "def test_x():\n    assert True\n",
+        "pt/tests/conftest.py": CONFTEST,
+        "pt/tests/deep/test_under_conftest.py": 'import subprocess\nsubprocess.run(["git", "init"])\n',
+        "rs/tests/leaky.rs": 'use std::process::Command;\nfn t() { Command::new("git"); }\n',
+        "rs/tests/helper.rs": RS_HELPER + 'fn t() { command("git"); }\n',
+        "rs/tests/cleared.rs": 'fn t() { std::process::Command::new("odw").env_clear(); }\n',
+        "rs/src/lib.rs": 'fn x() {}\n#[cfg(test)]\nmod tests {\n    fn t() { std::process::Command::new("git"); }\n}\n',
+        "rs/src/main.rs": 'fn main() { std::process::Command::new("git"); }\n',
+        "sh/tests/leaky.sh": '#!/bin/sh\n# git is needed\ncd "$tmp" && git init -q\n',
+        "sh/tests/stanza.sh": SH_STANZA,
+        "sh/tests/no_git.sh": '#!/bin/sh\n# runs no git\necho digit\n',
+    })
+    r = audit.audit(tmp_path)
+    assert r["conformance"]["public/a"]["tests_running_git_unprotected"] == [
+        "py/tests/test_leaky.py", "py/tests/test_per_call.py", "rs/src/lib.rs", "rs/tests/leaky.rs",
+        "sh/tests/leaky.sh"]
+    assert r["software"]["test_files_running_git_unprotected"] == 5

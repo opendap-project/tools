@@ -14,6 +14,11 @@ import shutil
 import subprocess
 import unittest
 
+# Tests never inherit a hook's GIT_* variables (HL-64): under pre-commit, git exports GIT_DIR, GIT_INDEX_FILE and
+# others, and a fixture's git would act on the repository being committed.
+for _k in [k for k in os.environ if k.startswith("GIT_")]:
+    del os.environ[_k]
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 TOOL = os.path.join(HERE, "..", "bin", "odapkit-craft")
 FIX = os.path.join(HERE, "fixtures", "craft-sch")

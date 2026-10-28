@@ -35,6 +35,11 @@ SPEC_SHA256 = "9386df44dc23d2ba00330d19c2591f2c867f0b611adc4c5fa72dae45ccb92349"
 sys.path.insert(0, os.path.join(TOOLS, "craft"))
 import craftrules  # noqa: E402
 
+# Tests never inherit a hook's GIT_* variables (HL-64): under pre-commit, git exports GIT_DIR, GIT_INDEX_FILE and
+# others, and a fixture's git would act on the repository being committed.
+for _k in [k for k in os.environ if k.startswith("GIT_")]:
+    del os.environ[_k]
+
 
 def load_script(name):
     """A check script as a module. The board check imports pcbnew at load, which only KiCad's Python

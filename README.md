@@ -10,6 +10,19 @@
 
 Each folder keeps its own `README.md`, `CLAUDE.md` and `REUSE.toml`; the licence texts are in `LICENSES/`. The folders came from the former `toolkit-hardware`, `toolkit-hooks`, `toolkit-host`, `toolkit-image` and `toolkit-verify` repositories with their history ([RFC 0017](https://github.com/opendap-project/rfcs/blob/main/text/0017-naming-and-topology.md)).
 
+## Tests never inherit a hook's git variables
+
+Under a pre-commit hook, git exports `GIT_DIR`, `GIT_INDEX_FILE` and others. A test that runs git (a fixture repository, `git init`, a tool that calls git) with them acts on the repository being committed: it has set `core.bare` and written a placeholder identity there. Every test file that starts a process removes every `GIT_*` variable first, one way per language:
+
+| Tests | Protection |
+| --- | --- |
+| Python under pytest (`host/`) | the autouse fixture in `host/tests/conftest.py` |
+| Python under unittest (`hardware/`, `hooks/`, `image/`, `verify/`) | at the top of each test module, after its imports: `for _k in [k for k in os.environ if k.startswith("GIT_")]: del os.environ[_k]` (in the module, because `python3 -m unittest discover tests` never imports `tests/__init__.py`) |
+| Rust (`host/crates/odw-dispatch/tests/odw.rs`) | the `command()` helper, which starts every child from `env_clear()`; a helper that only drops git's variables calls `env_remove` for each `GIT_*` one |
+| Shell (`image/tests/cli.sh`, `verify/tests/cli.sh`) | after `set -u`: `for v in $(env \| sed -n 's/^\(GIT_[A-Za-z0-9_]*\)=.*/\1/p'); do unset "$v"; done` |
+
+`odapkit audit` lists, per repository, the test files that run git without one of these (`tests_running_git_unprotected`). `host/tests/git-leak.sh DIR COMMAND…` runs a suite with `GIT_DIR` and `GIT_INDEX_FILE` pointing at a scratch repository and fails if the suite changed it.
+
 ## License
 
 This repository follows the [REUSE](https://reuse.software) layout: licence texts in `LICENSES/`, and each folder's `REUSE.toml` maps its paths. Copyright © 2026 The OpenDAP Project.
