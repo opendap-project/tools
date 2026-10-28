@@ -102,6 +102,23 @@ class KicadDru(unittest.TestCase):
         self.assertEqual(r.returncode, 1)
         self.assertIn("unbalanced", r.stderr)
 
+    def test_merged_root_reads_sources_from_the_component_folder(self):
+        # A component merged into a root keeps its manifest: sources stay relative to its folder (RFC 0017 t1 cut).
+        merged = os.path.join(self.tmp, "merged")
+        shutil.copytree(FIXTURE, os.path.join(merged, "board"), ignore=shutil.ignore_patterns("expected.kicad_dru"))
+        subprocess.run(["git", "init", "-q", merged], check=True)
+        run = lambda *a: subprocess.run([sys.executable, TOOL, *a], cwd=merged, capture_output=True, text=True)
+        r = run("compose", "board/" + MANIFEST)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        want = read(os.path.join(FIXTURE, "expected.kicad_dru"))
+        self.assertEqual(read(os.path.join(merged, "board", TARGET)), want)
+        r = run("check")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        os.remove(os.path.join(merged, "board/hardware/lib/opendap/design-rules/fab-demo/fab-demo.kicad_dru"))
+        r = run("check")
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("submodule", r.stderr)
+
     def outside_file(self, name, text=""):
         path = os.path.join(self.tmp, name)
         with open(path, "w") as f:

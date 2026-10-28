@@ -40,7 +40,7 @@ sources = [
 ]
 ```
 
-Paths are relative to the repository root. The composed file has `(version 1)` once, then each source's rules, each block preceded by a comment with the source path and its sha256; two rules with the same name are an error. `hooks/kicad-dru.py compose MANIFEST` writes it (`--dry-run` composes and names the file, writing nothing) and `hooks/kicad-dru.py check [--json] [MANIFEST…]` verifies it; with no manifest, `check` covers every `*.dru.toml` in the repository. Python 3.11 or later, standard library only.
+Paths are relative to the component's folder: the repository root, or, in a root that merged several components (the `t1` root's `board/`), the nearest folder above the manifest from which every source resolves. The composed file has `(version 1)` once, then each source's rules, each block preceded by a comment with the source path and its sha256; two rules with the same name are an error. `hooks/kicad-dru.py compose MANIFEST` writes it (`--dry-run` composes and names the file, writing nothing) and `hooks/kicad-dru.py check [--json] [MANIFEST…]` verifies it; with no manifest, `check` covers every `*.dru.toml` in the repository. Python 3.11 or later, standard library only.
 
 The same engine is the maintainers' `odapkit dru compose|check` (`bin/odapkit-dru`, declared in `tools.toml`), so the tool and the `kicad-dru-composed` hook never disagree; one test suite covers both.
 

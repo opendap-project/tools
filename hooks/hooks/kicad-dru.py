@@ -11,7 +11,9 @@ in a manifest next to it, <project>.dru.toml:
       "hardware/rules/product.kicad_dru",
     ]
 
-Paths are relative to the repository root, in composition order. The output, <project>.kicad_dru
+Paths are relative to the component's folder, in composition order: the repository root, or in a
+root that merged several components (the t1 root's board/) the nearest folder above the manifest
+from which every source resolves. The output, <project>.kicad_dru
 next to the manifest, is "(version 1)" once, then each source's rules, every block preceded by a
 comment naming the source and its sha256. Two rules with the same name fail the composition.
 
@@ -208,13 +210,27 @@ def checked_target(manifest, root):
     return os.path.realpath(target)
 
 
+def anchor(manifest, root, sources):
+    """The folder the sources are relative to: the nearest folder from the manifest's up to the repository root
+    from which every source is a file; the repository root when none is (its errors name the missing source)."""
+    d = os.path.dirname(os.path.realpath(manifest))
+    while inside(d, root):
+        if all(os.path.isfile(os.path.join(d, s)) for s in sources):
+            return d
+        if d == root:
+            break
+        d = os.path.dirname(d)
+    return root
+
+
 def compose(manifest):
     """The composed .kicad_dru text for a manifest. Every path it reads or names for writing
     resolves inside the repository (the kicad-lib submodule is inside it)."""
     root = os.path.realpath(repo_root(manifest))
     target = checked_target(manifest, root)
     sources = load_manifest(manifest)
-    rel_manifest = os.path.relpath(os.path.abspath(manifest), root)
+    base = anchor(manifest, root, [s for s in sources if not os.path.isabs(s)])
+    rel_manifest = os.path.relpath(os.path.realpath(manifest), base)
     out = [
         "(version 1)\n",
         f"# Composed by `{TOOL}` from {rel_manifest}. Do not edit by hand:\n",
@@ -226,7 +242,7 @@ def compose(manifest):
             raise DruError(f"{manifest}: source {src} must be a path inside the repository, relative to its root")
         if not src.endswith(".kicad_dru"):
             raise DruError(f"{manifest}: source {src} is not a .kicad_dru file")
-        path = os.path.join(root, src)
+        path = os.path.join(base, src)
         if os.path.realpath(path) == target:
             raise DruError(f"{manifest}: the composed file {src} cannot be one of its own sources")
         if os.path.lexists(path) and not inside(path, root):
