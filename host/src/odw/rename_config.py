@@ -25,7 +25,8 @@ from odw import audit, clikit, rename_map, rename_precommit as rp, rename_rewrit
 TOOL = "odapkit rename config"
 SCHEMA = "opendap.rename-config/v1"
 HOISTED = ("LICENSES/", ".claude/", ".github/", ".markdownlint-cli2.jsonc")
-PRECOMMIT, MANIFEST = ".pre-commit-config.yaml", ".pre-commit-hooks.yaml"
+PRECOMMIT, MANIFEST, MODULES = ".pre-commit-config.yaml", ".pre-commit-hooks.yaml", ".gitmodules"
+ROOT_LICENCES = ("CC-BY-SA-4.0.txt", "MIT.txt")  # the licences of the REUSE.toml the step writes
 BLOCK = re.compile(r"\n?<!-- >>> odapkit sync:.*?<!-- <<< odapkit sync -->\n", re.S)
 RFC = "https://github.com/opendap-project/rfcs/blob/main/text/0017-naming-and-topology.md"
 
@@ -52,7 +53,7 @@ def _summary(readme):
     if not readme.is_file():
         return ""
     paras = [p.strip() for p in readme.read_text().split("\n\n")]
-    para = next((p for p in paras if p and not p.startswith(("#", "|", "<", "```", "-"))), "")
+    para = next((p for p in paras if p and not p.startswith(("#", "|", "<", "```", "-", "!"))), "")
     first = re.split(r"(?<=[.!?])\s", " ".join(para.split()), maxsplit=1)[0]
     return first.rstrip(".").replace("|", "\\|")
 
@@ -89,9 +90,16 @@ def claude(root, folders, block, requirements):
     return "\n".join(lines) + "\n"
 
 
-def reuse(manifest):
+def gitmodules(text, folder):
+    """A folder's `.gitmodules` as the root's: each submodule's name and path under the folder."""
+    text = re.sub(r'^\[submodule "([^"]+)"\]', lambda m: f'[submodule "{folder}/{m.group(1)}"]', text, flags=re.M)
+    return re.sub(r"^(\s*path\s*=\s*)(\S.*)$", lambda m: f"{m.group(1)}{folder}/{m.group(2)}", text, flags=re.M)
+
+
+def reuse(manifest, modules=False):
     year = dt.date.today().year
-    config = [PRECOMMIT, *([MANIFEST] if manifest else []), ".gitignore", ".gitattributes",
+    config = [PRECOMMIT, *([MANIFEST] if manifest else []), *([MODULES] if modules else []), ".gitignore",
+              ".gitattributes",
               ".markdownlint-cli2.jsonc", "REUSE.toml"]
     head = f'SPDX-FileCopyrightText = "{year} The OpenDAP Project"'
     return ('version = 1\n\n[[annotations]]\npath = ["README.md", "CLAUDE.md", ".claude/**", ".github/**"]\n'
@@ -99,8 +107,9 @@ def reuse(manifest):
             f'{json.dumps(config)}\n{head}\nSPDX-License-Identifier = "MIT"\n')
 
 
-def plan(m, root, top):
-    """What the step does, and the new texts: (document, {path: text}, [(from, to)] moves, [paths] removed)."""
+def plan(m, root, top, licence_dir=None):
+    """What the step does, and the new texts: (document, {path: text}, [(from, to)] moves, [paths] removed).
+    `licence_dir` is the workspace's LICENSES/ folder: the source of a licence the root names and no folder brought."""
     srcs = sorted((s for s in m.sources_of(root) if s.landing and (top / s.landing).is_dir()), key=lambda s: s.landing)
     folders, names = [s.landing for s in srcs], [s.name for s in srcs]
     files = set(audit.tracked(top))
@@ -141,6 +150,14 @@ def plan(m, root, top):
         texts[MANIFEST] = rp.render_manifest([rp.manifest((top / f / MANIFEST).read_text(), f) for f in providers])
         moves.append((f"{providers[0]}/{MANIFEST}", MANIFEST))
         removed += [f"{f}/{MANIFEST}" for f in providers[1:]]
+    modules = [f for f in folders if f"{f}/{MODULES}" in files]
+    if modules:
+        if MODULES in files:
+            raise Refused("config.exists", f"the root has a {MODULES} and {len(modules)} folders have their own",
+                          "join them by hand, or remove the root's before the step", f"git -C {top} rm {MODULES}")
+        texts[MODULES] = "".join(gitmodules((top / f / MODULES).read_text(), f) for f in modules)
+        moves.append((f"{modules[0]}/{MODULES}", MODULES))
+        removed += [f"{f}/{MODULES}" for f in modules[1:]]
     block, stripped = "", []
     for f in folders:
         path = f"{f}/CLAUDE.md"
@@ -149,20 +166,24 @@ def plan(m, root, top):
             found = BLOCK.search(text)
             if found:
                 block = block or found.group(0)
-                texts[path] = BLOCK.sub("\n", text, count=1).replace("\n\n\n", "\n\n")
+                texts[path] = BLOCK.sub("\n", text, count=1).replace("\n\n\n", "\n\n").rstrip("\n") + "\n"
                 stripped.append(path)
     kept, licences = [], {t[len("LICENSES/"):] for t in targets if t.startswith("LICENSES/")}
     licences |= {p[len("LICENSES/"):] for p in files if p.startswith("LICENSES/")}
     requirements = any(f"{f}/docs/requirements/requirements.toml" in files for f in folders)
     for path, text in (("README.md", lambda: readme(root, top, folders, names)),
                        ("CLAUDE.md", lambda: claude(root, folders, block, requirements)),
-                       ("REUSE.toml", lambda: reuse(bool(providers) or MANIFEST in files))):
+                       ("REUSE.toml", lambda: reuse(bool(providers) or MANIFEST in files,
+                                                    bool(modules) or MODULES in files))):
         if path in files:
             kept.append(path)
         else:
             texts[path] = text()
-    for lic in ("CC-BY-SA-4.0.txt", "MIT.txt"):
-        if "REUSE.toml" not in kept and lic not in licences:
+    for lic in ROOT_LICENCES:
+        source = pathlib.Path(licence_dir) / lic if licence_dir else None
+        if "REUSE.toml" not in kept and lic not in licences and source and source.is_file():
+            texts[f"LICENSES/{lic}"] = source.read_text()
+        elif "REUSE.toml" not in kept and lic not in licences:
             warnings.append({"code": "config.licence-missing", "message": f"the root REUSE.toml names "
                              f"{lic[:-4]}, but no folder brought LICENSES/{lic}"})
     doc = {"schema": SCHEMA, "root": root, "folders": folders,
@@ -172,7 +193,7 @@ def plan(m, root, top):
     return doc, texts, moves, removed
 
 
-def apply(m, root, top, dry_run=False):
+def apply(m, root, top, dry_run=False, licence_dir=None):
     if not (top / ".git").exists():
         raise Refused("config.no-root", f"no root checkout at {top}", "the step runs in the merged root, after "
                       "`odapkit rename merge` and `apply`", f"odapkit rename merge {root} --into {top}")
@@ -181,7 +202,7 @@ def apply(m, root, top, dry_run=False):
         raise Refused("config.dirty", f"{len(dirty)} uncommitted or untracked files: "
                       + ", ".join(line[3:] for line in dirty[:5]), "the step never runs over uncommitted work",
                       f"git -C {top} status")
-    doc, texts, moves, removed = plan(m, root, top)
+    doc, texts, moves, removed = plan(m, root, top, licence_dir)
     base = _git(top, "rev-parse", "HEAD").strip()
     doc.update(mode="plan" if dry_run else "apply", base=base, commits=[])
     if dry_run or not (texts or moves or removed):
@@ -255,7 +276,7 @@ def _main(argv):
             raise Refused("config.unknown-root", f"the map names no root {a.root!r}", f"roots: {', '.join(m.roots)}",
                           f"odapkit rename config {m.roots[0]} --dry-run", 2)
         top = pathlib.Path(a.root_dir) if a.root_dir else ws / "public" / a.root
-        doc = apply(m, a.root, top, a.dry_run)
+        doc = apply(m, a.root, top, a.dry_run, ws / "LICENSES")
     except Refused as e:
         return clikit.report(TOOL, e, as_json)
     except ValueError as e:

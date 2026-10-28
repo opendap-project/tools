@@ -265,7 +265,7 @@ def test_tools_hooks_are_one_config_scoped_by_folder(tmp_path, capsys):
     assert hook.get("entry") == "hooks/hooks/no-stray-files.sh" and hook.get("files") == r"\.(pdf|html?)$"
     # A hook only one folder had is scoped to it; local hooks run inside their folder, ids stay unique.
     shell = rp.parse(cfg).hook("shellcheck")
-    assert shell.get("files") == "^image/" and shell.get("args") == '["-x", "--source-path=SCRIPTDIR"]'
+    assert shell.get("exclude") == "^(?!image/)" and shell.get("args") == '["-x", "--source-path=SCRIPTDIR"]'
     odw = rp.parse(cfg).hook("odw-tests")
     assert odw.get("entry") == "sh -c 'cd host && uv run --quiet pytest -q'"
     assert odw.get("files") == r"^host/(?:(src|schemas|tests)/|pyproject\.toml$)"
@@ -286,8 +286,9 @@ def test_libs_and_hats_hooks_match_the_hand_cuts(tmp_path, capsys):
     ws, top = make_root(tmp_path / "l", "libs")
     assert run(capsys, "libs", ws, top)[0] == 0
     cfg = rp.parse((top / ".pre-commit-config.yaml").read_text())
-    assert cfg.hook("kicad-erc").get("exclude") == "^kicad/design-rules/(vendor/|[^/]+/test/)"
-    assert cfg.hook("kicad-erc").get("files") == "^kicad/"
+    # A remote hook keeps its manifest's `files` (\.kicad_sch$): it is scoped to its folders through `exclude`.
+    assert cfg.hook("kicad-erc").get("exclude") == "^(?!kicad/)|^kicad/design-rules/(vendor/|[^/]+/test/)"
+    assert cfg.hook("kicad-erc").get("files") is None
     assert cfg.hook("no-stray-files").get("files") is None  # every folder pins it: shared, unscoped
     assert cfg.hook("colour-theme").get("entry") == "sh -c 'cd kicad && python3 colour-themes/check_theme.py'"
     assert cfg.hook("colour-theme").get("files") == "^kicad/colour-themes/"
@@ -406,3 +407,80 @@ def test_the_root_readme_rebases_relative_links_onto_each_folder(tmp_path):
     text = rename_config.readme("blackbird", tmp_path, ["ui"], ["blackbird-ui"])
     assert "([spec](ui/docs/specs/ds.md))" in text
     assert "[site](https://opendap.cc)" in text and "[top](#license)" in text
+
+
+T1_KICAD = SHARED + """  - repo: https://github.com/opendap-project/tools
+    rev: v0.1.0
+    hooks:
+      - id: no-stray-files
+      - id: kicad-erc
+      - id: kicad-drc
+        exclude: ^hardware/rules/test/  # the rule test board fails by design
+"""
+GITMODULES = '[submodule "hardware/lib/opendap"]\n\tpath = hardware/lib/opendap\n\turl = https://github.com/opendap-project/libs.git\n'
+
+
+T1_LANDING = ("--landing", "t1=product")
+
+
+def make_t1(tmp_path):
+    """A root shaped like the t1 cut: a nested landing, a submodule, no folder bringing MIT, a README opening on an
+    image and a CLAUDE.md that ends with the managed block."""
+    landings = {"board": "board", "faceplate-touch": "faceplates/touch", "t1": "product"}
+    product = folder("# OpenDAP T1\n\n![Concept art of the T1](docs/art.png)\n\nThe OpenDAP T1 is a DAP.\n",
+                     SHARED + CONSUMER, ["CC-BY-SA-4.0"])
+    product["CLAUDE.md"] = f"# T1\n\nThe product.\n\n{BLOCK}"
+    CUTS["t1"] = (landings, {
+        "board": folder("# Board\n\nMain board.\n", T1_KICAD, ["CC-BY-SA-4.0", "GPL-3.0-or-later"],
+                        extra={".gitmodules": GITMODULES}),
+        "faceplates/touch": folder("# Touch\n\nTouch faceplate.\n", T1_KICAD, ["CC-BY-SA-4.0"]),
+        "product": product,
+    })
+    try:
+        ws, top = make_root(tmp_path, "t1")
+    finally:
+        del CUTS["t1"]
+    (ws / "LICENSES").mkdir()
+    (ws / "LICENSES/MIT.txt").write_text("MIT licence text (workspace)\n")
+    return ws, top
+
+
+def test_t1_submodules_move_to_the_root_gitmodules(tmp_path, capsys):
+    ws, top = make_t1(tmp_path)
+    code, out, err = run(capsys, "t1", ws, top, *T1_LANDING, "--json")
+    assert code == 0, err
+    files = tracked(top)
+    assert "board/.gitmodules" not in files and ".gitmodules" in files
+    assert (top / ".gitmodules").read_text() == ('[submodule "board/hardware/lib/opendap"]\n'
+                                                 "\tpath = board/hardware/lib/opendap\n"
+                                                 "\turl = https://github.com/opendap-project/libs.git\n")
+    assert '".gitmodules"' in (top / "REUSE.toml").read_text()
+    assert ".gitmodules" in json.loads(out)["written"]
+
+
+def test_t1_a_licence_no_folder_brought_comes_from_the_workspace(tmp_path, capsys):
+    ws, top = make_t1(tmp_path)
+    code, out, err = run(capsys, "t1", ws, top, *T1_LANDING, "--json")
+    doc = json.loads(out)
+    assert code == 0, err
+    assert (top / "LICENSES/MIT.txt").read_text() == "MIT licence text (workspace)\n"
+    assert not [w for w in doc["warnings"] if w["code"] == "config.licence-missing"]
+    assert "LICENSES/MIT.txt" in doc["written"]
+
+
+def test_t1_readme_skips_images_and_claude_ends_cleanly(tmp_path, capsys):
+    ws, top = make_t1(tmp_path)
+    assert run(capsys, "t1", ws, top, *T1_LANDING)[0] == 0
+    assert "| [`product/`](product/README.md) | The OpenDAP T1 is a DAP |" in (top / "README.md").read_text()
+    assert (top / "product/CLAUDE.md").read_text() == "# T1\n\nThe product.\n"
+
+
+def test_t1_remote_hooks_some_folders_pin_keep_their_manifest_files(tmp_path, capsys):
+    ws, top = make_t1(tmp_path)
+    assert run(capsys, "t1", ws, top, *T1_LANDING)[0] == 0
+    cfg = rp.parse((top / ".pre-commit-config.yaml").read_text())
+    erc = cfg.hook("kicad-erc")
+    assert erc.get("files") is None and erc.get("exclude") == "^(?!(?:board|faceplates/touch)/)"
+    drc = cfg.hook("kicad-drc")
+    assert drc.get("files") is None
+    assert drc.get("exclude") == "^(?!(?:board|faceplates/touch)/)|^(?:board|faceplates/touch)/hardware/rules/test/"

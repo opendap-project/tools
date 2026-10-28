@@ -153,13 +153,14 @@ Otherwise it moves every file with `git mv` in two steps through a temporary fol
 | --- | --- |
 | `LICENSES/`, `.claude/` (settings and rules), `.github/`, `.markdownlint-cli2.jsonc` | Hoisted to the root when every copy is the same: the first copy moves with `git mv` (history follows), the others are removed. `LICENSES/` becomes the union |
 | `.pre-commit-config.yaml` | One configuration (below); the folder copies are removed |
+| `.gitmodules` | Moved to the root, each submodule's name and `path` under its folder (`hardware/lib/opendap` → `board/hardware/lib/opendap`); the gitlinks are already there after `merge` |
 | `.pre-commit-hooks.yaml` | Moved to the root; a `language: script` entry gets the folder as a prefix (`hooks/no-stray-files.sh` → `hooks/hooks/no-stray-files.sh`), since script entries are relative to the repository root |
-| Folder `CLAUDE.md` | The managed block is removed; the root's `CLAUDE.md` carries the only one |
-| Root `README.md`, `CLAUDE.md`, `REUSE.toml` | Written when absent, kept when present: the README's folder table (each folder's first README sentence, its relative links rebased onto the folder) and the former repositories; the CLAUDE.md title, folders, managed block and working rules; REUSE annotations for the root files, `.gitattributes` included |
+| Folder `CLAUDE.md` | The managed block is removed, and the file ends with one newline; the root's `CLAUDE.md` carries the only one |
+| Root `README.md`, `CLAUDE.md`, `REUSE.toml` | Written when absent, kept when present: the README's folder table (each folder's first README sentence, an image paragraph skipped, its relative links rebased onto the folder) and the former repositories; the CLAUDE.md title, folders, managed block and working rules; REUSE annotations for the root files, `.gitattributes` (and `.gitmodules` when there is one) included. A licence that REUSE.toml names and no folder brought (`CC-BY-SA-4.0`, `MIT`) is copied from the workspace's `LICENSES/` |
 
 Folder `README.md`, `CLAUDE.md`, `REUSE.toml`, `.gitignore` and `.gitattributes` stay. The pre-commit configuration is joined as text, comments kept:
 
-- a remote hook every folder pins identically is kept once, unscoped; one only some folders pin gets `files: ^<folder>/…`;
+- a remote hook every folder pins identically is kept once, unscoped; one only some folders pin is scoped to them: through `exclude: ^(?!<folder>/)` when it sets no `files`, so the `files` of its manifest still apply (`kicad-erc` keeps `\.kicad_sch$`), else `files: ^<folder>/…`;
 - a remote hook served by one of the root's own sources (`toolkit-hooks` inside `tools`) is dropped, and the providing folder's local copy runs for the whole root;
 - every other local hook is scoped to its folder and runs inside it: `entry: sh -c 'cd <folder> && <entry>'` when it takes no file names, the folder as a prefix for a script; its name starts with the folder, and an id two folders share gets the folder as a suffix (`requirements-current-host`);
 - a `files` or `exclude` pattern keeps its meaning under the folder: an anchored alternative loses its `^` behind the prefix, an unanchored one becomes `.*(?:…)`; values that need it are quoted (a name holding a colon followed by a space).

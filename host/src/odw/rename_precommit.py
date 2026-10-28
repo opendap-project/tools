@@ -3,7 +3,8 @@
 The configurations follow the workspace's layout (`repos:`, `- repo:` blocks, `- id:` hooks, one `key: value` per
 line), so they are read and written as text, comments kept, with no YAML library. Rules (docs/specs/rename.md):
 
-- a remote hook every folder pins identically is kept once, unscoped; one only some folders pin is scoped to them;
+- a remote hook every folder pins identically is kept once, unscoped; one only some folders pin is scoped to them
+  (through `exclude` when it sets no `files`, so the `files` of its manifest still apply);
 - a remote hook served by one of the root's own sources is dropped: the folder that provides it runs its local copy
   for the whole root, with its script entry under the folder;
 - every other local hook is scoped to its folder (`files: ^<folder>/…`) and runs inside it (`sh -c 'cd <folder> &&
@@ -211,6 +212,15 @@ def _scope_hook(h, folders):
         h.set("exclude", scope(h.get("exclude"), folders))
 
 
+def _scope_remote(h, folders):
+    """A remote hook scoped to `folders`. One that sets no `files` keeps its manifest's (kicad-erc's `\\.kicad_sch$`):
+    it is scoped through `exclude`, everything outside the folders excluded."""
+    if h.get("files") is not None:
+        return _scope_hook(h, folders)
+    outside = f"^(?!{_folder_rx(folders)}/)"
+    h.set("exclude", outside if h.get("exclude") is None else f"{outside}|{scope(h.get('exclude'), folders)}")
+
+
 def _local(h, folder, suffix):
     """A folder's own local hook, scoped to it and run inside it."""
     h = Hook(list(h.comments), [list(i[:3]) + [list(i[3])] for i in h.items])
@@ -272,7 +282,7 @@ def merge(configs, own):
         for h, fs in group["hooks"].values():
             if len(fs) < len(parsed):
                 h = Hook(list(h.comments), [list(i[:3]) + [list(i[3])] for i in h.items])
-                _scope_hook(h, fs)
+                _scope_remote(h, fs)
                 report["scoped"] += 1
             else:
                 report["shared"] += 1
