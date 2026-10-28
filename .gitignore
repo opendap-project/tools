@@ -1,0 +1,25 @@
+# >>> odapkit sync: managed block from the workspace templates; edit them, not this block
+.DS_Store
+.claude/settings.local.json
+# Generated trees kept out of indexers (odapkit noindex): the renamed trees and their symlinks
+*.noindex
+
+# Rust
+target
+
+# Python
+__pycache__/
+.venv
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# KiCad
+*-backups/
+*.kicad_prl
+fp-info-cache
+_autosave-*
+*.lck
+~*.lck
+fab/
+# <<< odapkit sync
