@@ -8,6 +8,9 @@ OUT/
   sch/        <project>.pdf and svg/ (schematic plots with --variant, title block ${VARIANT})
   pcb/        fab-front.pdf/.svg, fab-back.pdf/.svg (Fab layers, DNP crossed out), pos.csv (placement, DNP excluded)
   bom.json    opendap.variant-bom/v1; bom.csv; bom-kicad.csv (kicad-cli's per-reference BOM, the parity reference)
+  absent-state.json  opendap.variant-absent-state/v1: the absent-state check of the variant (absent.py)
+  software/   capabilities.json (opendap.variant-capabilities/v1), devicetree.json (opendap.variant-devicetree/v1)
+              and variant.dtso, the devicetree overlay fragment (software.py)
   manifest.json  opendap.variant-build/v1: inputs' and outputs' sha256, KiCad version, tool hash, checks, findings
 
 Dates written by KiCad (PDF CreationDate, SVG title, report date) are zeroed and absolute paths in reports are made
@@ -22,8 +25,10 @@ import os
 import re
 import shutil
 
+import absent
 import kicad
 import resolve
+import software
 
 DESIGN_EXT = (".kicad_sch", ".kicad_pcb", ".kicad_pro", ".kicad_dru")
 DESIGN_FILES = ("sym-lib-table", "fp-lib-table")
@@ -219,10 +224,26 @@ def apply(variant, catalog, pro, out, kcli, checks=True, log=lambda s: None, sou
     out = prepare(out)
     findings = []
     log("netlist")
-    comps = kicad.netlist(kcli, sch, os.path.join(out, "netlist.xml"))
+    comps, nets = kicad.netlist(kcli, sch, os.path.join(out, "netlist.xml"), with_nets=True)
     os.remove(os.path.join(out, "netlist.xml"))
     rows, f, mode = resolve.components(variant, catalog, comps)
     findings += f
+    log("absent state, software")
+    absent_rep, f = absent.check(variant, catalog, rows, comps, nets, *sheet_data(src))
+    findings += f
+    write_json(os.path.join(out, "absent-state.json"), absent_rep)
+    root = anchor(variant.path)
+    caps = software.capabilities(variant, catalog)
+    dt, dtso = software.devicetree(variant, catalog, os.path.relpath(variant.path, root))
+    os.makedirs(os.path.join(out, "software"))
+    write_json(os.path.join(out, "software", "capabilities.json"), caps)
+    write_json(os.path.join(out, "software", "devicetree.json"), dt)
+    with open(os.path.join(out, "software", "variant.dtso"), "w", encoding="utf-8") as fh:
+        fh.write(dtso)
+    if dt["conflicts"]:
+        findings.append({"level": "warning", "code": "software.node-conflict", "where": variant.path,
+                         "message": f"devicetree nodes named by blocks the variant both fits and leaves off: "
+                                    f"{', '.join(dt['conflicts'])} (written okay)"})
     plan = {}
     for r in rows:
         dnp = r["dnp"] if r["dnp"] != r["base_dnp"] else None
@@ -292,7 +313,6 @@ def apply(variant, catalog, pro, out, kcli, checks=True, log=lambda s: None, sou
     for p in sorted(glob.glob(os.path.join(out, "**", "*"), recursive=True)):
         if os.path.isfile(p) and p.endswith((".pdf", ".svg")):
             normalize(p)
-    root = anchor(variant.path)
     inputs = [variant.path] + ([os.path.join(catalog.path, f) for f in sorted(os.listdir(catalog.path))]
                                if os.path.isdir(catalog.path) else [catalog.path])
     inputs += [os.path.join(project_dir, fn) for fn in files]
@@ -306,7 +326,10 @@ def apply(variant, catalog, pro, out, kcli, checks=True, log=lambda s: None, sou
         "bom": {"lines": sum(1 for ln in lines if not ln["dnp"]), "parts": sum(ln["quantity"] for ln in lines
                                                                                  if not ln["dnp"]),
                 "dnp": sum(ln["quantity"] for ln in lines if ln["dnp"]), "parity": not parity},
-        "checks": result_checks, "findings": findings,
+        "checks": result_checks,
+        "absent_state": {"dnp_blocks": absent_rep["dnp_blocks"], "counts": absent_rep["counts"]},
+        "software": {"present": len(caps["present"]), "absent": len(caps["absent"]), "devicetree": dt["counts"]},
+        "findings": findings,
     }
     manifest["outputs"] = [{"path": os.path.relpath(p, out), "sha256": sha256(p)}
                            for p in sorted(glob.glob(os.path.join(out, "**", "*"), recursive=True))
@@ -315,6 +338,26 @@ def apply(variant, catalog, pro, out, kcli, checks=True, log=lambda s: None, sou
         json.dump(manifest, fh, indent=2, ensure_ascii=False)
         fh.write("\n")
     return manifest
+
+
+def write_json(path, doc):
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+
+
+def sheet_data(folder):
+    """({sheet file: interface table rows}, {power net names}) over every schematic sheet in folder: the absent-state
+    check's declarations and the rails its power symbols create."""
+    tables, power = {}, set()
+    for fn in sorted(os.listdir(folder)):
+        if fn.endswith(".kicad_sch") and not fn.startswith(("_autosave", "~")):
+            text = read(os.path.join(folder, fn))
+            rows = kicad.interface_tables(text)
+            if rows:
+                tables[fn] = rows
+            power |= kicad.power_nets(text)
+    return tables, power
 
 
 def _out(kcli, args):

@@ -1,8 +1,8 @@
 # Variant tool
 
-- **Status:** Draft v0 (2026-10-27). Implements the toolkit-hardware row of [RFC 0011](https://github.com/opendap-project/rfcs/blob/main/text/0011-feature-blocks-and-variants.md) §6 for the schematic-to-PCB part of rule 7 (variants are data) and the `opendap.board-variant/v1` record of [RFC 0018](https://github.com/opendap-project/rfcs/blob/main/text/0018-digital-thread.md) §3. Devicetree overlays, the device description, the verification plan and the absent-state check (RFC 0011 rule 2) are not generated yet.
-- **Tool:** `odapkit variant` ([`bin/odapkit-variant`](../../bin/odapkit-variant), an entry point to [`tools/variant/`](../../tools/variant/): `cli.py` the command line, `catalog.py`, `variantfile.py`, `resolve.py`, `kicad.py`, `build.py`); Python 3.11 standard library and KiCad 10's `kicad-cli`.
-- **Schemas:** [`schemas/board-variant.schema.json`](../../schemas/board-variant.schema.json), [`schemas/block.schema.json`](../../schemas/block.schema.json).
+- **Status:** Draft v0 (2026-10-27). Implements the toolkit-hardware row of [RFC 0011](https://github.com/opendap-project/rfcs/blob/main/text/0011-feature-blocks-and-variants.md) §6 for the schematic-to-PCB part of rule 7 (variants are data) and the `opendap.board-variant/v1` record of [RFC 0018](https://github.com/opendap-project/rfcs/blob/main/text/0018-digital-thread.md) §3, the absent-state check of RFC 0011 rule 2 for unfitted blocks (§6), and the software outputs of rule 7 and rule 8: a capabilities fragment for the device description and a devicetree overlay fragment (§7). The verification plan is not generated yet.
+- **Tool:** `odapkit variant` ([`bin/odapkit-variant`](../../bin/odapkit-variant), an entry point to [`tools/variant/`](../../tools/variant/): `cli.py` the command line, `catalog.py`, `variantfile.py`, `resolve.py`, `kicad.py`, `absent.py`, `software.py`, `build.py`); Python 3.11 standard library and KiCad 10's `kicad-cli`.
+- **Schemas:** [`schemas/board-variant.schema.json`](../../schemas/board-variant.schema.json), [`schemas/block.schema.json`](../../schemas/block.schema.json), [`schemas/variant-absent-state.schema.json`](../../schemas/variant-absent-state.schema.json), [`schemas/variant-capabilities.schema.json`](../../schemas/variant-capabilities.schema.json), [`schemas/variant-devicetree.schema.json`](../../schemas/variant-devicetree.schema.json).
 
 ## 1. What it does
 
@@ -16,8 +16,8 @@ It is generic: nothing in it names a board. A component is found by its folder l
 | `get <variant>` | one variant file, its catalog | Every catalog block's resolved state (fit, dnp, alternate and its name, parameters, open decision) and the findings |
 | `diff <a> <b>` | two variants, the schematic | Block-level differences; part-level differences (fitted, value, MPN); BOM quantity changes per part. `--blocks-only` skips KiCad |
 | `bom <variant>` | variant, catalog, schematic | The BOM with DNP and alternates applied; `--out FILE` writes `.csv` or `.json` |
-| `apply <variant> --out DIR` | variant, catalog, KiCad project | The variant build (§5) |
-| `check` | every variant | Every variant valid and consistent with the schematic; each one built twice and compared file by file. `--no-build` skips the builds, `--no-schematic` also skips KiCad |
+| `apply <variant> --out DIR` | variant, catalog, KiCad project | The variant build (§5), with the absent-state report (§6) and the software outputs (§7) |
+| `check` | every variant | Every variant valid and consistent with the schematic; its absent-state check (§6); each one built twice and compared file by file. `--no-build` skips the builds, `--no-schematic` also skips KiCad (and the absent-state check) |
 
 The verbs are the command standard's closed set; `show`, the name `get` had before, still runs it and prints a one-line hint to use `get`, and is not listed in `--help`.
 
@@ -61,7 +61,7 @@ Checks (code, level):
 
 ### 3.1 Block records: `opendap.block/v1`
 
-`catalog = "blocks"` names a folder of records, `blocks/<block>.toml`. The tool reads these fields and accepts the other RFC 0011 §1 fields (`interface`, `power_domain`, `absent_state`, `measure`, `software`, `sheet`, `layout_block`, `level`, `note`) without reading them; any other key is `catalog.field-unknown`.
+`catalog = "blocks"` names a folder of records, `blocks/<block>.toml`. The tool reads these fields and accepts the other RFC 0011 §1 fields (`interface`, `power_domain`, `measure`, `sheet`, `layout_block`, `level`, `note`) without reading them; any other key is `catalog.field-unknown`.
 
 | Key | Type | Meaning |
 |---|---|---|
@@ -73,13 +73,15 @@ Checks (code, level):
 | `alternates` | array | `{ name, note }`: the names a variant may select |
 | `params` | array | Parameter names a variant may set |
 | `sub_blocks` | array | `Block` field values of nested sheets that belong to this block |
+| `absent_state` | string or array | The block-level absent state (a string), or `[{ nets = ["NET", …], state = "…" }]`: what each group of interface nets does when the block is not fitted (§6). Another shape is `catalog.absent-state` (error) |
+| `software` | string or table | `{ devicetree = "<label>" \| "</path>", compatible = [...], provides = ["org.opendap.hw.…"], description = ["<section>"], note }`, or a string read as a Markdown `Software` cell (§3.2). Another shape is `catalog.software` (error) |
 
 ### 3.2 Markdown catalog (transitional)
 
 `catalog = "docs/specs/<file>.md"` reads a catalog laid out as RFC 0011 asks, until it becomes block records:
 
 - the summary table is the first table with an `ID` column; each row with one backticked `blk.*` ID is a block; a `Function` cell starting with "Removed" removes it; the `Bound by …` column gives the requirements, each with the priority of the parenthesis that follows it (`A-1, A-2 (must), B-3 (should)`), or the requirements of another block (``as `blk.x` ``); columns named like a variant are compared with that variant's file;
-- a block record is a heading naming one or more blocks in backticks (a heading ending in ": removed" removes them); its `Alternates` row gives the alternates (backticked names) and, after the word "Parameter" or "Parameters", the parameters.
+- a block record is a heading naming one or more blocks in backticks (a heading ending in ": removed" removes them); its `Alternates` row gives the alternates (backticked names) and, after the word "Parameter" or "Parameters", the parameters; its `Absent state` row is the block-level absent state; its `Software` row gives the devicetree node (a backticked name followed by the word "node": `` `sdhci` node ``), the compatibles (backticked `vendor,device`), the `org.opendap.hw.*` interfaces (a backticked `.Name` continues the previous one's namespace) and the device-description sections (backticked after the word "description").
 
 ## 4. From blocks to parts
 
@@ -109,22 +111,74 @@ The BOM groups the parts in the BOM by value, footprint, MPN and manufacturer; f
 | `bom-kicad.csv` | `kicad-cli sch export bom --variant` per reference: compared part by part with the resolution (`bom.parity`, error on a difference) |
 | `checks/erc-base.json`, `checks/erc.json` | ERC of the copy, then of an ERC copy without the variant's DNP symbols |
 | `checks/drc-base.json`, `checks/drc.json` | DRC of the copy, then of a DRC copy whose footprints carry the variant's DNP attribute |
+| `absent-state.json` | `opendap.variant-absent-state/v1` (§6) |
+| `software/capabilities.json` | `opendap.variant-capabilities/v1` (§7) |
+| `software/devicetree.json`, `software/variant.dtso` | `opendap.variant-devicetree/v1` and the overlay fragment (§7) |
 | `manifest.json` | `opendap.variant-build/v1` |
 
 **Per-variant ERC and DRC.** KiCad 10's ERC and DRC take no variant, so the tool runs them on variant copies and reports what the variant adds to the base results (`erc.new`, `drc.new`: an error for new errors, a warning for new warnings). Removing a symbol leaves its power symbols, flags, No Connect markers, labels and wires behind; violations whose items are only those are taken out of `checks/erc.json`, counted in its `removal_artifacts`, and not reported (KiCad flags one of several orphaned power symbols of a net, and which one changes from run to run). A real pin left alone (`pin_not_connected` on a part) and a label left with one pin (`isolated_pin_label`) are reported: they are where an absent block leaves a net undefined.
 
 **Title block.** The variant name reaches plots through the text variable `VARIANT`. A design whose title blocks and drawing sheet never use `${VARIANT}` gets `titleblock.no-variant` (warning).
 
-**Manifest.** The variant, its board, kind, status and variant-data mode; KiCad's version; the sha256 of the tool's own sources; the sha256 of every input (the variant file, the catalog, every design file of the project, paths relative to the component root: the nearest folder above the variant file holding `component.toml`, up to the repository root, else the folder that holds `variants/` or `hardware/variants/`, so the paths are the same in a repository of its own and in a merged monorepo); the BOM counts and parity; the ERC and DRC summaries; the findings; the sha256 of every output. It holds no time and no absolute path.
+**Manifest.** The variant, its board, kind, status and variant-data mode; KiCad's version; the sha256 of the tool's own sources; the sha256 of every input (the variant file, the catalog, every design file of the project, paths relative to the component root: the nearest folder above the variant file holding `component.toml`, up to the repository root, else the folder that holds `variants/` or `hardware/variants/`, so the paths are the same in a repository of its own and in a merged monorepo); the BOM counts and parity; the ERC and DRC summaries; the absent-state counts (`absent_state`) and the software summary (`software`: blocks present and absent, devicetree counts); the findings; the sha256 of every output. It holds no time and no absolute path.
 
 **Reproducibility.** KiCad writes the time into PDF metadata, SVG titles and check reports; the build zeroes those dates, makes report paths relative and drops what KiCad leaves in `design/` while plotting (`.kicad_prl`), so two builds of the same inputs are identical file by file. `check` copies the project's design files once and builds each variant twice from that snapshot, so an edit to the design during the check cannot mix two states; it reports `build.not-reproducible` (error) for any file that differs, and `build.inputs-changed` (warning, nothing established) when the variant file or its catalog changed between the two builds. DRC runs in threads and lists its findings in a different order each run, so the reports are written sorted; for a missing connection KiCad names one representative pair of items, and the pair changes from run to run, so `unconnected_items` are kept per net with their count.
 
-## 6. Limits
+## 6. Absent-state check
 
-- The netlist is the same for every variant (shared copper): the per-variant ERC sees a removed symbol, not an unpowered one; the absent-state check of RFC 0011 rule 2 (floating inputs, back-powering, held buses, straps, enable defaults) is the next step and will read the same resolution.
-- Devicetree overlays, the device description and the verification plan per variant (RFC 0011 rule 7) are not generated yet.
+RFC 0011 rule 2: a block left off leaves every net it touches in a declared state. `apply` and `check` run it per variant on the XML netlist (nets with their nodes and pin types) and the variant's resolution (§4).
+
+**Declarations.** A block's declared absent states come from two places, read the same way:
+
+- the **interface tables** of its schematic sheets: a table whose header has a `Net` column and a column starting with `Absent state` (the RFC 0011 block sheets carry one: `Net | Direction | Absent state (block not fitted)`). A sheet belongs to the block named by its file (`<stem>.kicad_sch` → `blk.<stem>`, resolved as a `Block` field is, §4), else to the block most of its parts belong to;
+- its record's `absent_state` list (§3.1).
+
+A net-name cell lists names separated by commas; text in parentheses and after an item's first word is ignored; `_RXD` after `BT_UART_TXD` is `BT_UART_RXD`; `SD_D0-D3` is `SD_D0` to `SD_D3`; `*` and a lowercase `x` in an otherwise uppercase name stand for any characters (`DDR_*_A`, `DSD_x`). A name matches a net's last path element. The state text is classified by its words: `not-applicable`, `pull` (a pull-up or pull-down on the board), `internal-pull` (the SoC's or a ball's own pull; block IDs such as `blk.soc-pmuio` name a place and do not count), `tied`, `floating` (open, floating, no load) or `described`. A record's block-level `absent_state` or Markdown `Absent state` row that says "not applicable" makes a `dnp` of that block `absent.not-applicable` (error).
+
+**Classes.** Every net with a node on a part the variant leaves unfitted is looked at with the fitted nodes only:
+
+| Class | Rule |
+|---|---|
+| removed | No fitted node is left: counted, not listed |
+| rail | A node of pin type `power_in` or `power_out`, or a net a power symbol names (a symbol whose library symbol has the `power` flag): counted, not listed |
+| rail-unsourced | A rail whose only `power_out` was on removed parts, with fitted `power_in` loads left |
+| single-pin | One fitted part left on a net that had two or more |
+| floating | An `input`, `bidirectional` or `tri_state` pin left with no driver (`output`, `power_out`) and no pull: a fitted two-pin resistor (`R<n>`) whose other pin is on a rail |
+| defined | Anything else |
+
+**Scope.** A net touched by a part of a `dnp` block has scope `block`: it needs a declaration of that block. A net touched only by other unfitted parts (option lands, alternate twins, base-design DNP) has scope `part` and is listed only when it becomes single-pin; it is an expected option when every remaining part is in the block of the removed ones.
+
+**Findings** (one per code and block, naming up to eight nets):
+
+| Code | Level | When |
+|---|---|---|
+| `absent.floating` | error | A floating net with no declaration |
+| `absent.single-pin` | error | A single-pin net with no declaration whose remaining pin is an undriven input |
+| `absent.single-pin` | warning | Any other undeclared single-pin net (an output or a passive left alone) |
+| `absent.rail-unsourced` | warning | An undeclared rail-unsourced net |
+| `absent.undeclared` | warning | A net of scope `block` that is defined but has no declaration |
+| `absent.declared-mismatch` | warning | Declared `pull`, but the netlist finds the net floating (the pull sits inside the absent block or is missing) |
+| `absent.not-applicable` | error | Declared not applicable (never omitted), yet the variant leaves the block off |
+
+**Report** (`absent-state.json`, `opendap.variant-absent-state/v1`): the `dnp` blocks with their block-level state and number of declarations; counts per class and expected/unexpected; one entry per listed net with its class, scope, the blocks of its removed parts, the removed and remaining references, the remaining pins with their types, the declaration it matched (block, names, text, kind, source sheet or record) and its finding. `check` prints the counts per variant; its JSON carries them in each variant's `absent_state`.
+
+The check sees the schematic, not firmware ordering or the unpowered scenario of the board's catalog (a switched block that is fitted but off): those stay review items (§8).
+
+## 7. Software outputs
+
+Rule 7 and rule 8 (SYS-040): software enables what the variant fits and treats what it leaves off as absent. Both outputs are generated from the variant file and its catalog alone, so they are the same bytes for the same inputs.
+
+**Capabilities** (`software/capabilities.json`, `opendap.variant-capabilities/v1`): the board, variant, kind and status; `present` (blocks `fit` or `alternate`) and `absent` (`dnp`); per block its state, alternate, parameters, open decision, requirements, devicetree node and compatibles, `org.opendap.hw.*` interfaces and device-description sections; the union of `provides` and of `description_sections` over the present blocks; the open entries. It is a fragment for the board's device description: `opendap.device-description/v1` (system hardware support spec §3) has a `provides` section but no component records carrying the block identity yet (RFC 0011 §6, system row), and its reader rejects unknown sections, so the fragment is not merged into it. **The consumer side is open.**
+
+**Devicetree** (`software/devicetree.json`, `opendap.variant-devicetree/v1`, and `software/variant.dtso`): for each block whose catalog record names its devicetree node, `status = "okay"` when the variant fits the block and `"disabled"` when it does not; a node is a label (`&sdhci`) or a path (`&{/memory@0}`). A block that names no node, or names something that is neither (`usb-c-connector`), is listed as skipped with the reason, in the JSON and at the end of the fragment. A node named by blocks of both states is written `okay` and reported as `software.node-conflict` (warning). The fragment is the input for the board's overlay: `/dts-v1/; /plugin/;`, a header naming the variant file relative to the component, no date.
+
+## 8. Limits
+
+- The netlist is the same for every variant (shared copper): the per-variant ERC sees a removed symbol, not an unpowered one. The absent-state check (§6) covers unfitted blocks: floating and single-pin nets, unsourced rails and their declarations. Back-powering, held buses, straps, enable defaults and the unpowered scenario (a fitted block switched off) are not checked yet.
+- A pull is recognised by the reference `R<n>` of a two-pin part; pins typed `passive` on an IC hide drivers and inputs from the check.
+- The verification plan per variant (RFC 0011 rule 7) is not generated yet. The capabilities fragment has no consumer yet (§7).
 - The Markdown catalog reader depends on the layout of §3.2; it is replaced by block records.
 
-## 7. Tests
+## 9. Tests
 
-`tests/test_variant.py`: the validation rules one by one on mutated copies of the fixture variants; the Markdown reader on `tests/fixtures/variant/md/`; part resolution in both modes, its mismatches and the BOM and diffs on synthetic parts; the S-expression edits (idempotent, only the named variant touched); the JSON Schemas on the fixtures (with uv); and, with kicad-cli, every command on `tests/fixtures/variant/board/`, a three-block KiCad 10 project written by `make_fixture.py`: the build's outputs, placement and parity, the variant ERC, an unchanged base design, the refusals, reproducibility and the exit codes.
+`tests/test_variant.py`: the validation rules one by one on mutated copies of the fixture variants; the Markdown reader on `tests/fixtures/variant/md/` (with its `Absent state` and `Software` rows); the absent-state classes, scopes, declarations, name patterns and findings on synthetic nets; the capabilities and devicetree outputs; part resolution in both modes, its mismatches and the BOM and diffs on synthetic parts; the S-expression edits (idempotent, only the named variant touched); the JSON Schemas on the fixtures (with uv); and, with kicad-cli, every command on `tests/fixtures/variant/board/`, a three-block KiCad 10 project written by `make_fixture.py`, whose sensor sheet carries an interface table: the build's outputs, placement and parity, the variant ERC, the absent-state report (a declared single-pin net and a declared defined net; an undeclared one on a mutated copy), the software outputs and their JSON Schemas, an unchanged base design, the refusals, reproducibility and the exit codes.

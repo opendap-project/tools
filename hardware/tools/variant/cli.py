@@ -21,6 +21,7 @@ from clihost import load  # noqa: E402
 
 TOOL = "odapkit variant"
 clikit = load(TOOL)
+import absent  # noqa: E402
 import build  # noqa: E402
 import catalog as catalogs  # noqa: E402
 import kicad  # noqa: E402
@@ -104,13 +105,14 @@ def netlist(v, project):
     sch = project[:-len(".kicad_pro")] + ".kicad_sch"
     with tempfile.TemporaryDirectory() as tmp:
         try:
-            return kicad.netlist(k, sch, os.path.join(tmp, "net.xml"))
+            return kicad.netlist(k, sch, os.path.join(tmp, "net.xml"), with_nets=True)
         except RuntimeError as e:
             fail("kicad.failed", str(e), "the project must open in KiCad 10", f"kicad-cli sch erc {sch}")
 
 
-def evaluate(arg, folder, project=None, schematic=False):
-    """A variant, its catalog, its findings and, with schematic=True, its resolved parts."""
+def evaluate(arg, folder, project=None, schematic=False, absent_state=False):
+    """A variant, its catalog, its findings and, with schematic=True, its resolved parts; with absent_state=True also
+    the absent-state check (v.absent_state holds its report)."""
     v = load_variant(arg, folder)
     cat = load_catalog(v)
     findings = (cat.findings if cat else []) + variantfile.validate(v, cat)
@@ -118,8 +120,12 @@ def evaluate(arg, folder, project=None, schematic=False):
     rows, mode, pro = None, None, None
     if schematic and cat:
         pro = find_project(v, project)
-        rows, f, mode = resolve.components(v, cat, netlist(v, pro))
+        comps, nets = netlist(v, pro)
+        rows, f, mode = resolve.components(v, cat, comps)
         findings += f
+        if absent_state:
+            v.absent_state, f = absent.check(v, cat, rows, comps, nets, *build.sheet_data(os.path.dirname(pro)))
+            findings += f
         pcb = pro[:-len(".kicad_pro")] + ".kicad_pcb"
         if mode == "kicad" and os.path.isfile(pcb):
             with open(pcb, encoding="utf-8") as fh:
@@ -142,6 +148,14 @@ def errors(findings):
 def print_findings(findings):
     for f in findings:
         print(f"  {f['level']} {f['code']}: {f['message']}")
+
+
+def absent_line(a):
+    c = a["counts"]
+    dnp = ", ".join(a["dnp_blocks"]) or "none"
+    return (f"absent state (dnp blocks: {dnp}): {c['touched']} nets touched, {c['expected']} expected, "
+            f"{c['unexpected']} unexpected ({c['single-pin']} single-pin, {c['floating']} floating, "
+            f"{c['rail-unsourced']} rails without source, {c['defined']} defined)")
 
 
 def emit(as_json, doc, text):
@@ -271,6 +285,10 @@ def cmd_apply(a):
         for k, s in m["checks"].items():
             print(f"  {k.upper()}: base {s['base']}, variant {s['variant']} ({s['new']} new, "
                   f"{s['new_errors']} new errors, {s['resolved']} gone, {s['removal_artifacts']} removal artifacts)")
+        print(f"  {absent_line(m['absent_state'])}")
+        sw = m["software"]
+        print(f"  software: {sw['present']} blocks present, {sw['absent']} absent; devicetree {sw['devicetree']['okay']} "
+              f"okay, {sw['devicetree']['disabled']} disabled, {sw['devicetree']['skipped']} blocks with no node")
         print_findings(m["findings"])
     return emit(a.json, m, text)
 
@@ -279,8 +297,11 @@ def cmd_check(a):
     folder = variants_dir(a.dir)
     items, k = [], None
     for path in variantfile.discover(folder):
-        v, cat, findings, rows, mode, pro = evaluate(path, folder, a.project, schematic=not a.no_schematic)
+        v, cat, findings, rows, mode, pro = evaluate(path, folder, a.project, schematic=not a.no_schematic,
+                                                     absent_state=True)
         item = {"variant": v.name, "mode": mode, "findings": findings}
+        if getattr(v, "absent_state", None):
+            item["absent_state"] = {"dnp_blocks": v.absent_state["dnp_blocks"], "counts": v.absent_state["counts"]}
         if not a.no_build and not v.file_errors:     # schematic findings are reported, and the build still runs
             k = k or kicad_cli()
             hashes, inputs = [], []
@@ -317,6 +338,8 @@ def cmd_check(a):
             rep = {True: ", reproducible", False: ", NOT reproducible"}.get(i.get("reproducible"), "")
             print(f"{i['variant']}: {'ok' if not e else f'{e} errors'}, "
                   f"{len(i['findings']) - e} warnings{rep}" + (f" (variant data: {i['mode']})" if i["mode"] else ""))
+            if "absent_state" in i:
+                print(f"  {absent_line(i['absent_state'])}")
             print_findings(i["findings"])
     return emit(a.json, doc, text)
 

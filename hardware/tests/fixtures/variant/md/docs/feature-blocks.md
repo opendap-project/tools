@@ -19,18 +19,23 @@ A Markdown catalog laid out as RFC 0011 asks: a summary table with an ID column,
 | Field | Content |
 |---|---|
 | Alternates | None same-land |
+| Absent state | Not applicable: never omitted |
+| Software | Board devicetree (H1) |
 
 ### 2. `blk.sensor`: sensor
 
 | Field | Content |
 |---|---|
 | Alternates | `sensor-b` (second source); mute shunt as `fit` option |
+| Absent state | `SENSOR_EN` pulled down on `blk.core`; 0x48 free |
+| Software | `acme,tiny-sensor` (`acme-sensor`), `sensor0` node; `org.opendap.hw.Fixture`, `.Probe`; description `sensors` |
 
 ### 3–4. `blk.mem`, `blk.mem-supply`: memory and its supply
 
 | Field | Content |
 |---|---|
 | Alternates | `mem-16` (16 GB). Parameter: `capacity_gb` |
+| Software | `/memory@0` node; description `identity` and `power` sections |
 
 ### 5. `blk.radio`: removed
 

@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/tools/blob/main/hardware/schemas/variant-devicetree.schema.json",
+  "title": "opendap.variant-devicetree/v1",
+  "description": "The devicetree status of each block's node in one variant (RFC 0011 rule 7): okay when the variant fits the block, disabled when it does not; blocks whose catalog record names no node are listed as skipped. Written by odapkit variant apply as software/devicetree.json next to software/variant.dtso. Spec: docs/specs/variant-tool.md §7.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "board",
+    "variant",
+    "source",
+    "counts",
+    "conflicts",
+    "blocks"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opendap.variant-devicetree/v1"
+    },
+    "board": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "variant": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "okay",
+        "disabled",
+        "skipped"
+      ],
+      "properties": {
+        "okay": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "disabled": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "skipped": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "block",
+          "state",
+          "alternate",
+          "status",
+          "node",
+          "compatible",
+          "skipped",
+          "open"
+        ],
+        "properties": {
+          "block": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "fit",
+              "dnp",
+              "alternate",
+              null
+            ]
+          },
+          "alternate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "okay",
+              "disabled"
+            ]
+          },
+          "node": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "compatible": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "skipped": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "open": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

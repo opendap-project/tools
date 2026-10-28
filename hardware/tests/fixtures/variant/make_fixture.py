@@ -11,6 +11,10 @@ libraries of the KiCad that runs the script. What the variants select:
 
 - `blk.sensor` holds the pull-up R201, its capacitor C201 and the measurement link R202, whose field
   `Alt.zero-ohm.Value` (and MPN) is the 0 ohm fitted when the variant's links are `zero-ohm`;
+- `blk.core` holds the host side of the sensor's interface: R102 pulls `SENSOR_EN` down, R103 pulls `SENSOR_INT`
+  up and C102 filters it; `blk.sensor`'s R203 joins the two nets, and the sensor sheet's interface table gives
+  each net's absent state, so the sensor left off leaves `SENSOR_EN` a declared single-pin net and `SENSOR_INT`
+  defined by its pull-up (the absent-state check, docs/specs/variant-tool.md §6);
 - `blk.mem` holds the memory stand-in R301 (`Alt.mem-16.*` fields: the alternate's value and MPN)
   and R302, an alternate-footprint twin that is DNP in the base design and fitted by `mem-16`
   (`Alt.mem-16.DNP = no`).
@@ -66,17 +70,26 @@ ROOT_UUID = uid("root")
 # sheet file, block, title, page
 SHEETS = [("core", "blk.core", "Core", "2"), ("sensor", "blk.sensor", "Sensor", "3"),
           ("mem", "blk.mem", "Memory", "4")]
-# block sheet -> parts: (ref, lib_id, value, x, y, extra fields, base dnp)
+# block sheet -> parts: (ref, lib_id, value, x, y, extra fields, base dnp[, (pin 1 net, pin 2 net)]); the nets
+# default to +3V3 on pin 1 and GND on pin 2; a net that is not a power symbol is a global label at the pin.
 PARTS = {
     "core": [("R101", "Device:R", "10 kΩ", 63.5, 60.96, {"MPN": "RC0603FR-0710KL", "Manufacturer": "YAGEO"}, False),
              ("C101", "Device:C", "100 nF", 88.9, 60.96, {"MPN": "GRM155R71C104KA88D", "Manufacturer": "Murata"},
-              False)],
+              False),
+             ("R102", "Device:R", "100 kΩ", 114.3, 60.96, {"MPN": "RC0603FR-07100KL", "Manufacturer": "YAGEO"}, False,
+              ("SENSOR_EN", "GND")),
+             ("R103", "Device:R", "4.7 kΩ", 139.7, 60.96, {"MPN": "RC0603FR-074K7L", "Manufacturer": "YAGEO"}, False,
+              ("+3V3", "SENSOR_INT")),
+             ("C102", "Device:C", "100 nF", 165.1, 60.96, {"MPN": "GRM155R71C104KA88D", "Manufacturer": "Murata"},
+              False, ("SENSOR_INT", "GND"))],
     "sensor": [("R201", "Device:R", "4.7 kΩ", 63.5, 60.96, {"MPN": "RC0603FR-074K7L", "Manufacturer": "YAGEO"}, False),
                ("C201", "Device:C", "100 nF", 88.9, 60.96, {"MPN": "GRM155R71C104KA88D", "Manufacturer": "Murata"},
                 False),
                ("R202", "Device:R", "1 Ω", 114.3, 60.96,
                 {"MPN": "RL0603FR-7W1RL", "Manufacturer": "YAGEO", "Alt.zero-ohm.Value": "0 Ω",
-                 "Alt.zero-ohm.MPN": "RC0603JR-070RL"}, False)],
+                 "Alt.zero-ohm.MPN": "RC0603JR-070RL"}, False),
+               ("R203", "Device:R", "1 kΩ", 139.7, 60.96, {"MPN": "RC0603FR-071KL", "Manufacturer": "YAGEO"}, False,
+                ("SENSOR_EN", "SENSOR_INT"))],
     "mem": [("R301", "Device:R", "MEM-32", 63.5, 60.96,
              {"MPN": "MEM32-X", "Manufacturer": "Acme", "Alt.mem-16.Value": "MEM-16", "Alt.mem-16.MPN": "MEM16-X"},
              False),
@@ -129,13 +142,19 @@ def block_sheet(name, block, title):
                  ({"power:PWR_FLAG"} if name == "core" else set()))
     text = header(title, block) + lib_symbols(ids)
     n = 0
-    for ref, lib_id, value, x, y, fields, dnp in PARTS[name]:
+    for ref, lib_id, value, x, y, fields, dnp, *pins in PARTS[name]:
         f = {"Block": block, **fields}
         text += symbol(lib_id, ref, value, x, y, f, dnp, path, ["1", "2"])
-        # Device:R and Device:C have their pins at y -/+ 3.81: +3V3 above, GND below.
+        # Device:R and Device:C have their pins at y -/+ 3.81: pin 1 above, pin 2 below.
         n += 1
-        text += symbol("power:+3V3", f"#PWR0{SHEETS_INDEX[name]}{n}1", "+3V3", x, y - 3.81, {}, False, path, ["1"])
-        text += symbol("power:GND", f"#PWR0{SHEETS_INDEX[name]}{n}2", "GND", x, y + 3.81, {}, False, path, ["1"])
+        for k, (net, py) in enumerate(zip(pins[0] if pins else ("+3V3", "GND"), (y - 3.81, y + 3.81)), 1):
+            if net in ("+3V3", "GND"):
+                text += symbol(f"power:{net}", f"#PWR0{SHEETS_INDEX[name]}{n}{k}", net, x, py, {}, False, path,
+                               ["1"])
+            else:
+                text += global_label(net, x, py, (name, ref, str(k)))
+    if name in TABLES:
+        text += table(TABLES[name], 30.48, 101.6, name)
     if name == "core":
         text += symbol("power:PWR_FLAG", "#FLG0101", "PWR_FLAG", 50.8, 57.15, {}, False, path, ["1"])
         text += symbol("power:+3V3", "#PWR01901", "+3V3", 50.8, 57.15, {}, False, path, ["1"])
@@ -146,6 +165,32 @@ def block_sheet(name, block, title):
 
 
 SHEETS_INDEX = {"core": 1, "sensor": 2, "mem": 3}
+
+# The interface table a block sheet carries (as the T1 main board's sheets do): net, direction, absent state.
+TABLES = {"sensor": [("Net", "Direction", "Absent state (block not fitted)"),
+                     ("SENSOR_EN", "Input", "100 kΩ pull-down on blk.core: off"),
+                     ("SENSOR_INT", "Output", "4.7 kΩ pull-up on blk.core")]}
+
+
+def global_label(net, x, y, key):
+    return (f'(global_label {q(net)} (shape passive) (at {x} {y} 90) (effects (font (size 1.27 1.27)) '
+            f'(justify left)) (uuid {q(uid("label", *key))}))\n')
+
+
+def table(rows, x, y, key):
+    widths, h = (30.48, 20.32, 60.96), 5.08
+    out = (f'(table (column_count {len(widths)}) (border (external yes) (header yes) (stroke (width 0) (type solid))) '
+           f'(separators (rows yes) (cols yes) (stroke (width 0) (type solid))) '
+           f'(column_widths {" ".join(str(w) for w in widths)}) (row_heights {" ".join([str(h)] * len(rows))}) (cells')
+    for r, row in enumerate(rows):
+        cx = x
+        for c, cell in enumerate(row):
+            bold = " (bold yes)" if r == 0 else ""
+            out += (f' (table_cell {q(cell)} (exclude_from_sim no) (at {round(cx, 2)} {round(y + r * h, 2)} 0) '
+                    f'(size {widths[c]} {h}) (margins 0.9525 0.9525 0.9525 0.9525) (span 1 1) (fill (type none)) '
+                    f'(effects (font (size 1.27 1.27){bold}) (justify left top)) (uuid {q(uid("cell", key, str(r), str(c)))}))')
+            cx += widths[c]
+    return out + "))\n"
 
 
 def root_sheet():
@@ -189,13 +234,13 @@ def board():
     tb.SetDate("2026-10-27")
     tb.SetRevision("A")
     nets = {}
-    for n in ("+3V3", "GND"):
+    for n in ("+3V3", "GND", "SENSOR_EN", "SENSOR_INT"):
         nets[n] = pcbnew.NETINFO_ITEM(b, n)
         b.Add(nets[n])
     lib = os.path.join(STOCK, "footprints")
     x0 = 10.0
     for name, block, _, _ in SHEETS:
-        for ref, lib_id, value, x, y, fields, dnp in PARTS[name]:
+        for ref, lib_id, value, x, y, fields, dnp, *pins in PARTS[name]:
             libname, fpname = FP[lib_id].split(":")
             fp = pcbnew.FootprintLoad(os.path.join(lib, libname + ".pretty"), fpname)
             fp.SetFPIDAsString(FP[lib_id])
@@ -212,9 +257,9 @@ def board():
                 fp.Add(f)
             b.Add(fp)
             for pad in fp.Pads():
-                pad.SetNet(nets["+3V3"] if pad.GetNumber() == "1" else nets["GND"])
+                pad.SetNet(nets[(pins[0] if pins else ("+3V3", "GND"))[int(pad.GetNumber()) - 1]])
             x0 += 4.0
-    for (xa, ya), (xb, yb) in [((5, 5), (45, 5)), ((45, 5), (45, 15)), ((45, 15), (5, 15)), ((5, 15), (5, 5))]:
+    for (xa, ya), (xb, yb) in [((5, 5), (65, 5)), ((65, 5), (65, 15)), ((65, 15), (5, 15)), ((5, 15), (5, 5))]:
         s = pcbnew.PCB_SHAPE(b)
         s.SetShape(pcbnew.SHAPE_T_SEGMENT)
         s.SetStart(pcbnew.VECTOR2I(pcbnew.FromMM(xa), pcbnew.FromMM(ya)))

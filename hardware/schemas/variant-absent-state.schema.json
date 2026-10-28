@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/tools/blob/main/hardware/schemas/variant-absent-state.schema.json",
+  "title": "opendap.variant-absent-state/v1",
+  "description": "The absent-state check of one variant (RFC 0011 rule 2): every net that touches a part the variant leaves unfitted, classified with the fitted parts only, and the declared absent state it was matched to. Written by odapkit variant apply as absent-state.json. Spec: docs/specs/variant-tool.md §6.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "board",
+    "variant",
+    "dnp_blocks",
+    "blocks",
+    "counts",
+    "nets",
+    "findings"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opendap.variant-absent-state/v1"
+    },
+    "board": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "variant": {
+      "type": "string"
+    },
+    "dnp_blocks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^blk\\.[a-z0-9][a-z0-9-]*$"
+      }
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "block",
+          "absent_state",
+          "declared_nets"
+        ],
+        "properties": {
+          "block": {
+            "type": "string"
+          },
+          "absent_state": {
+            "type": "string"
+          },
+          "declared_nets": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "touched",
+        "removed",
+        "rails",
+        "single-pin",
+        "floating",
+        "defined",
+        "rail-unsourced",
+        "expected",
+        "unexpected"
+      ],
+      "properties": {
+        "touched": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "removed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rails": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "single-pin": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "floating": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "defined": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rail-unsourced": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "expected": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unexpected": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "nets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "net",
+          "class",
+          "scope",
+          "blocks",
+          "removed",
+          "remaining",
+          "pins",
+          "declared",
+          "expected",
+          "finding"
+        ],
+        "properties": {
+          "net": {
+            "type": "string"
+          },
+          "class": {
+            "enum": [
+              "single-pin",
+              "floating",
+              "defined",
+              "rail-unsourced"
+            ]
+          },
+          "scope": {
+            "enum": [
+              "block",
+              "part"
+            ]
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "removed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "remaining": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pins": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "declared": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "block",
+                  "nets",
+                  "text",
+                  "kind",
+                  "source"
+                ],
+                "properties": {
+                  "block": {
+                    "type": "string"
+                  },
+                  "nets": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "enum": [
+                      "not-applicable",
+                      "pull",
+                      "internal-pull",
+                      "tied",
+                      "floating",
+                      "described"
+                    ]
+                  },
+                  "source": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          },
+          "expected": {
+            "type": "boolean"
+          },
+          "finding": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^absent\\."
+          }
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "level",
+          "code",
+          "where",
+          "message"
+        ],
+        "properties": {
+          "level": {
+            "enum": [
+              "error",
+              "warning"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "where": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

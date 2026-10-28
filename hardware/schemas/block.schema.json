@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/opendap-project/tools/blob/main/hardware/schemas/block.schema.json",
   "title": "opendap.block/v1 (the fields odapkit variant reads)",
-  "description": "A feature block record, blocks/<block>.toml (RFC 0011 §1). This schema fixes the fields odapkit variant reads (id, function, status, requirements, alternates, params, sub_blocks) and admits the other RFC 0011 §1 fields as free values. Spec: docs/specs/variant-tool.md §3.",
+  "description": "A feature block record, blocks/<block>.toml (RFC 0011 §1). This schema fixes the fields odapkit variant reads (id, function, status, requirements, alternates, params, sub_blocks, absent_state, software) and admits the other RFC 0011 §1 fields as free values. Spec: docs/specs/variant-tool.md §3.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "id"],
@@ -33,7 +33,39 @@
     },
     "params": {"type": "array", "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}},
     "sub_blocks": {"type": "array", "items": {"type": "string", "pattern": "^blk\\.[a-z0-9][a-z0-9-]*$"}},
-    "interface": {}, "power_domain": {}, "absent_state": {}, "measure": {}, "software": {},
+    "absent_state": {
+      "description": "The block-level absent state (a string), or one entry per group of interface nets: what they do when the block is not fitted",
+      "oneOf": [
+        {"type": "string"},
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["nets", "state"],
+            "properties": {"nets": {"type": "array", "minItems": 1, "items": {"type": "string"}}, "state": {"type": "string"}}
+          }
+        }
+      ]
+    },
+    "software": {
+      "description": "What the block gives software: a string read like a Markdown catalog's Software cell, or a table",
+      "oneOf": [
+        {"type": "string"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "devicetree": {"type": "string", "description": "The block's devicetree node: a label (sdhci) or a path (/memory@0)"},
+            "compatible": {"type": "array", "items": {"type": "string"}},
+            "provides": {"type": "array", "items": {"type": "string", "pattern": "^org\\.opendap\\.hw(\\.[A-Za-z][A-Za-z0-9]*)+$"}},
+            "description": {"type": "array", "items": {"type": "string"}},
+            "note": {"type": "string"}
+          }
+        }
+      ]
+    },
+    "interface": {}, "power_domain": {}, "measure": {},
     "sheet": {}, "layout_block": {}, "level": {}, "note": {}
   }
 }

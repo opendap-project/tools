@@ -5,3 +5,5 @@ requirements = [{ id = "FIX-001", priority = "must" }, { id = "FIX-003", priorit
 alternates = [{ name = "mem-16", note = "R301 takes the 16 GB value; R302, the twin land, is fitted" }]
 params = ["capacity_gb"]
 sheet = "mem.kicad_sch"
+absent_state = [{ nets = ["MEM_*"], state = "Not applicable: never omitted (FIX-001)" }]
+software = { devicetree = "/memory@0", description = ["identity"] }

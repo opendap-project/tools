@@ -1,0 +1,202 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/opendap-project/tools/blob/main/hardware/schemas/variant-capabilities.schema.json",
+  "title": "opendap.variant-capabilities/v1",
+  "description": "What one variant fits and what each block gives software (RFC 0011 rule 7 and rule 8, SYS-040): a fragment for the board's device description (opendap.device-description/v1), which has no section for it yet. Written by odapkit variant apply as software/capabilities.json. Spec: docs/specs/variant-tool.md §7.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "board",
+    "variant",
+    "kind",
+    "status",
+    "present",
+    "absent",
+    "provides",
+    "description_sections",
+    "open",
+    "blocks"
+  ],
+  "properties": {
+    "schema": {
+      "const": "opendap.variant-capabilities/v1"
+    },
+    "board": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "variant": {
+      "type": "string"
+    },
+    "kind": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "present": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "absent": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "provides": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "description_sections": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "open": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "block",
+          "open"
+        ],
+        "properties": {
+          "block": {
+            "type": "string"
+          },
+          "open": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "function",
+          "state",
+          "alternate",
+          "params",
+          "open",
+          "present",
+          "requirements",
+          "devicetree",
+          "provides",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^blk\\.[a-z0-9][a-z0-9-]*$"
+          },
+          "function": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "fit",
+              "dnp",
+              "alternate",
+              null
+            ]
+          },
+          "alternate": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "params": {
+            "type": "object"
+          },
+          "open": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "present": {
+            "type": "boolean"
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "priority"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "priority": {
+                  "enum": [
+                    "must",
+                    "should",
+                    null
+                  ]
+                }
+              }
+            }
+          },
+          "devicetree": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "node",
+              "compatible"
+            ],
+            "properties": {
+              "node": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "compatible": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "provides": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

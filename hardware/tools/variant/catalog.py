@@ -7,6 +7,12 @@ Two sources, chosen by the variant file's `catalog` path:
   column, then one record per block under a heading that names it in backticks, with an `Alternates` row.
   This reader is transitional: it goes when the catalog becomes block records.
 
+Besides the fields `odapkit variant` validates against, each block carries what the absent-state check and the
+software outputs read: `absent_text` (the block-level absent state), `absent_nets` (per-net declarations of a
+record's `absent_state` table; the schematic's interface tables add theirs in absent.py) and `software` (devicetree
+node, compatibles, `org.opendap.hw.*` interfaces, device-description sections), parsed from a record's `software`
+table or from a Markdown `Software` cell by `parse_software`.
+
 `load(path)` returns a `Catalog`; every problem in the catalog itself is a finding, never an exception, except
 a path that does not exist (CatalogError).
 """
@@ -25,8 +31,36 @@ NAME_RE = re.compile(r"[a-z0-9][a-z0-9_.-]*")
 STATES = ("fit", "dnp", "alternate")
 
 
+SOFTWARE_KEYS = {"devicetree", "compatible", "provides", "description", "note"}
+COMPATIBLE_RE = re.compile(r"[a-z0-9][a-z0-9-]*,[a-z0-9][a-z0-9.,+_-]*")
+PROVIDES_RE = re.compile(r"org\.opendap\.hw(?:\.[A-Za-z][A-Za-z0-9]*)+")
+
+
 class CatalogError(Exception):
     pass
+
+
+def parse_software(text):
+    """The software of a block from a Markdown `Software` cell (or a record's `software` string): the devicetree node
+    named as "`<label>` node" (or "`/path` node"), backticked compatibles (`vendor,device`), `org.opendap.hw.*`
+    interfaces (a backticked `.Name` continues the previous one's namespace) and the device-description sections
+    backticked after the word "description"."""
+    sw = {"devicetree": None, "compatible": [], "provides": [], "description": [], "note": text}
+    m = re.search(r"`([^`]+)` node\b", text)
+    if m:
+        sw["devicetree"] = m.group(1)
+    last = None
+    for tok in re.findall(r"`([^`]+)`", text):
+        if COMPATIBLE_RE.fullmatch(tok) and tok not in sw["compatible"]:
+            sw["compatible"].append(tok)
+        elif PROVIDES_RE.fullmatch(tok):
+            last = tok
+            sw["provides"].append(tok)
+        elif last and re.fullmatch(r"\.[A-Za-z][A-Za-z0-9]*", tok):
+            sw["provides"].append(last.rsplit(".", 1)[0] + tok)
+    for clause in re.findall(r"\bdescription\b([^;.]*)", text):
+        sw["description"] += [t for t in re.findall(r"`([a-z][a-z-]*)`", clause) if t not in sw["description"]]
+    return sw
 
 
 class Block:
@@ -35,6 +69,9 @@ class Block:
         self.requirements = []          # [(requirement id, priority or None)]
         self.alternates, self.params, self.sub_blocks = [], [], []
         self.table_states = {}          # Markdown summary table: variant column -> cell text
+        self.absent_text = ""           # the block-level absent state
+        self.absent_nets = []           # [([net names or patterns], absent state text, source)]
+        self.software = parse_software("")
 
     @property
     def must(self):
@@ -126,8 +163,50 @@ def _load_records(folder):
             b.alternates.append(name)
         b.params = [p for p in d.get("params", []) if isinstance(p, str)]
         b.sub_blocks = [s for s in d.get("sub_blocks", []) if isinstance(s, str)]
+        _record_absent(cat, b, d.get("absent_state"), where, os.path.join(os.path.basename(folder), f))
+        _record_software(cat, b, d.get("software"), where)
         cat.blocks[bid] = b
     return cat
+
+
+def _record_absent(cat, b, value, where, source):
+    """absent_state: a string (the block-level state) or a list of {nets = [...], state = "..."}."""
+    if value is None:
+        return
+    if isinstance(value, str):
+        b.absent_text = value
+        return
+    if not isinstance(value, list):
+        cat.finding("error", "catalog.absent-state", where, "absent_state is a string or a list of {nets, state}")
+        return
+    for e in value:
+        if not (isinstance(e, dict) and set(e) <= {"nets", "state"} and isinstance(e.get("state"), str) and
+                isinstance(e.get("nets"), list) and e["nets"] and all(isinstance(n, str) for n in e["nets"])):
+            cat.finding("error", "catalog.absent-state", where,
+                        "each absent_state entry is {nets = [\"NET\", ...], state = \"...\"}")
+            continue
+        b.absent_nets.append((list(e["nets"]), e["state"], source))
+
+
+def _record_software(cat, b, value, where):
+    """software: a string (read as a Markdown Software cell) or {devicetree, compatible, provides, description, note}."""
+    if value is None:
+        return
+    if isinstance(value, str):
+        b.software = parse_software(value)
+        return
+    ok = isinstance(value, dict) and set(value) <= SOFTWARE_KEYS
+    ok = ok and all(isinstance(value.get(k, ""), str) for k in ("devicetree", "note"))
+    ok = ok and all(isinstance(value.get(k, []), list) and all(isinstance(x, str) for x in value.get(k, []))
+                    for k in ("compatible", "provides", "description"))
+    if not ok:
+        cat.finding("error", "catalog.software", where,
+                    "software is a string or {devicetree = \"label or /path\", compatible, provides, description "
+                    "(lists of strings), note}")
+        return
+    b.software = {"devicetree": value.get("devicetree"), "compatible": list(value.get("compatible", [])),
+                  "provides": list(value.get("provides", [])), "description": list(value.get("description", [])),
+                  "note": value.get("note", "")}
 
 
 # ------------------------------------------------------------------ Markdown catalog
@@ -215,6 +294,12 @@ def _load_markdown(path):
                     cat.blocks[b].status = "removed"
             continue
         row = _cells(line)
+        if current and row and len(row) >= 2 and row[0] == "Absent state":
+            for b in current:
+                cat.blocks[b].absent_text = row[1]
+        if current and row and len(row) >= 2 and row[0] == "Software":
+            for b in current:
+                cat.blocks[b].software = parse_software(row[1])
         if current and row and len(row) >= 2 and row[0] == "Alternates":
             cell = row[1]
             split = re.search(r"\bParameters?\b", cell)

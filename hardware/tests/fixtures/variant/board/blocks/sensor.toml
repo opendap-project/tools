@@ -4,3 +4,4 @@ function = "Optional sensor: pull-up, decoupling and its measurement link"
 requirements = [{ id = "FIX-002", priority = "should" }]
 absent_state = "The bus keeps its pull-up on blk.core"
 sheet = "sensor.kicad_sch"
+software = { devicetree = "sensor0", compatible = ["acme,tiny-sensor"], provides = ["org.opendap.hw.Fixture"], description = ["sensors"] }

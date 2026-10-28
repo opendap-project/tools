@@ -6,6 +6,8 @@
 - `write_sch_variant()` / `write_pcb_variant()` write one variant's data into a copy of a schematic sheet or board,
   as KiCad 10 stores it: `(variant (name …) (dnp yes|no) (field (name …) (value …)))` inside each symbol instance
   path and each footprint, and the board's `(variants (variant (name …) (description …)))` list.
+- `nets(xml)` reads the same export's nets: name and nodes (reference, pin, pin type);
+  `interface_tables(text)` reads a sheet's interface tables (a `Net` column and an `Absent state…` column).
 - `drop_symbols()` removes the symbols of a set of references from a sheet (the variant's ERC copy).
 
 Edits are made on the text, by span, so everything else in the file stays byte-identical.
@@ -63,7 +65,14 @@ def components(xml_path):
     return out
 
 
-def netlist(kcli, sch, out_xml):
+def nets(xml_path):
+    root = ET.parse(xml_path).getroot()
+    return [{"name": n.get("name"), "nodes": [{"ref": x.get("ref"), "pin": x.get("pin"),
+                                               "pintype": x.get("pintype") or ""} for x in n.findall("node")]}
+            for n in root.iter("net")]
+
+
+def netlist(kcli, sch, out_xml, with_nets=False):
     """Export from a copy of the project's sheets: kicad-cli writes local state (.kicad_prl) next to what it opens,
     and the base design is never written."""
     src = os.path.dirname(os.path.abspath(sch))
@@ -74,7 +83,8 @@ def netlist(kcli, sch, out_xml):
         if f.endswith((".kicad_sch", ".kicad_pro")) and not f.startswith(("_autosave", "~")):
             shutil.copy(os.path.join(src, f), os.path.join(work, f))
     try:
-        return _netlist(kcli, os.path.join(work, os.path.basename(sch)), out_xml)
+        comps = _netlist(kcli, os.path.join(work, os.path.basename(sch)), out_xml)
+        return (comps, nets(out_xml)) if with_nets else comps
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
@@ -87,6 +97,30 @@ def _netlist(kcli, sch, out_xml):
 
 
 # ------------------------------------------------------------------ S-expression spans
+
+
+def _unq(s):
+    return re.sub(r"\\(.)", lambda m: "\n" if m.group(1) == "n" else m.group(1), s)
+
+
+def interface_tables(text):
+    """(net names cell, absent state cell) of every row of every table in a sheet whose header has a `Net` column
+    and a column starting with `Absent state` (the interface tables of RFC 0011 block sheets)."""
+    out = []
+    for m in re.finditer(r"\(table \(column_count (\d+)\)", text):
+        span = (m.start(), _scan(text, m.start()))
+        cells = [_unq(c) for c in re.findall(r'\(table_cell "((?:[^"\\]|\\.)*)"', text[span[0]:span[1]])]
+        n = int(m.group(1))
+        rows = [cells[i:i + n] for i in range(0, len(cells) - n + 1, n)]
+        if not rows:
+            continue
+        head = rows[0]
+        net = next((i for i, h in enumerate(head) if h.strip() == "Net"), None)
+        state = next((i for i, h in enumerate(head) if h.strip().startswith("Absent state")), None)
+        if net is None or state is None:
+            continue
+        out += [(r[net], r[state]) for r in rows[1:] if r[net].strip()]
+    return out
 
 
 def _scan(text, start):
@@ -199,6 +233,29 @@ def write_sch_variant(text, name, plan):
                     continue
                 edits.append((path[1] - 1, path[1] - 1, " " + _variant_sexpr(name, dnp, fields)))
     return _apply(text, edits)
+
+
+def power_nets(text):
+    """The net names a sheet's power symbols create: the Value of every placed symbol whose library symbol carries
+    the `(power …)` flag."""
+    root = (0, _scan(text, text.index("(")))
+    libs = _first(text, root, "lib_symbols")
+    power = set()
+    for c in children(text, *libs) if libs else []:
+        if c[2] == "symbol" and any(k[2] == "power" for k in children(text, *c)):
+            name = re.match(r'\(symbol\s+"((?:[^"\\]|\\.)*)"', text[c[0]:c[1]])
+            if name:
+                power.add(_unq(name.group(1)))
+    out = set()
+    for sym in symbol_spans(text):
+        lib = _first(text, sym, "lib_id")
+        if lib and _str_arg(text, lib) in power:
+            for p in children(text, *sym):
+                m = re.match(r'\(property\s+"Value"\s+"((?:[^"\\]|\\.)*)"', text[p[0]:p[1]]) if p[2] == "property" \
+                    else None
+                if m:
+                    out.add(_unq(m.group(1)))
+    return out
 
 
 def drop_symbols(text, refs):
