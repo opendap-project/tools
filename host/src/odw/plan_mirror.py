@@ -24,7 +24,6 @@ import unicodedata
 import pathlib
 import re
 import subprocess
-import tomllib
 import urllib.parse
 
 from odw import clikit, rfcstatus, schemas
@@ -48,7 +47,7 @@ def load_config(root):
         raise clikit.CliError("mirror.no_config", f"no {path}",
                               "the programme folder holds mirror.toml (opendap.plan-mirror-config/v1)",
                               f"odapkit plan --programme DIR mirror --dry-run", status=2)
-    cfg = tomllib.loads(path.read_text())
+    cfg = clikit.load_toml(path, "mirror.invalid_config", status=2)
     errs = schemas.errors(cfg, "plan-mirror-config")
     if errs:
         raise clikit.CliError("mirror.invalid_config", f"{path}: " + "; ".join(errs),
@@ -146,7 +145,7 @@ def private_terms(ws, programme):
             terms.append((rf"(?<![\w/-]){re.escape(name)}(?![\w-])", f"private repository {name}"))
             terms.append((re.escape(slug), f"private repository {slug}"))
     decisions = pathlib.Path(programme) / "decisions.toml"
-    for d in tomllib.loads(decisions.read_text()).get("decision", []) if decisions.is_file() else []:
+    for d in clikit.load_toml(decisions, "decisions.invalid").get("decision", []) if decisions.is_file() else []:
         terms.append((rf"(?<![\w-]){re.escape(d['id'])}(?![\w-])", f"decision {d['id']}"))
     for entry in sorted(pathlib.Path(programme).iterdir()):
         name = entry.name + ("/" if entry.is_dir() else "")

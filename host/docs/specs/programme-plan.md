@@ -25,6 +25,7 @@ A programme is a piece of maintainers' work that spans many sessions and reposit
 - `homes` lists the rules found only in the programme: a rule with no home, a home that is missing, or a home that no longer states the rule (case and spacing ignored). It exits 1 while any is listed; a programme ends when it exits 0, so deleting the programme loses no rule.
 - Records are written with a fixed field order so diffs stay small.
 - A refused action is an error with a stable code (`task.not_found`, `task.claimed`, `task.not_ready`, `task.invalid`, `task.no_evidence`; `programme.not_found` when there is no programme), a hint and a fix (a command), exit status 1 (2 for no programme); with `--json` also an `opendap.error/v1` document on stdout.
+- A programme file that is not valid TOML is such an error, never a traceback: `task.invalid` (a task file), `decisions.invalid`, `claim.invalid`, `homes.invalid`, `mirror.invalid_config` (exit 2), its message `<file>:<line>:<column>: not valid TOML: …`, with `file`, `line` and `column` in the JSON error. Every command that reads the file reports it, `check` and `render --check` included, so the pre-commit hook names the file and line.
 - Sessions set `ODAP_SESSION` to name themselves in claims; otherwise the tool uses user, host and parent process.
 
 ## Public tracking mirror

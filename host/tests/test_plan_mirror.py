@@ -205,3 +205,10 @@ def test_cli_refusal_exits_1_with_code(ws, capsys):
 def test_cli_without_config_is_a_usage_error(ws):
     (ws / "programme" / "mirror.toml").unlink()
     assert plan.main(["--programme", str(ws / "programme"), "mirror", "--workspace", str(ws), "--dry-run"]) == 2
+
+
+def test_cli_config_that_is_not_toml_is_a_coded_usage_error(ws, capsys):
+    (ws / "programme" / "mirror.toml").write_text('schema = "opendap.plan-mirror-config/v1\n')
+    assert plan.main(["--programme", str(ws / "programme"), "mirror", "--workspace", str(ws), "--dry-run"]) == 2
+    err = capsys.readouterr().err
+    assert "Traceback" not in err and "error mirror.invalid_config: " in err and "mirror.toml:1:" in err

@@ -221,3 +221,45 @@ def test_refusals_carry_a_code_a_hint_and_a_fix(prog, capsys):
     assert plan.main(["--programme", str(prog.root), "--json", "get", "ZZ-99"]) == 1
     out, err = capsys.readouterr()
     assert json.loads(out)["error"]["code"] == "task.not_found" and "hint: " in err and "fix: " in err
+
+
+# A file that is not valid TOML is a coded error with its file and line, never a traceback (HL-99).
+BROKEN = 'id = "AA-09"\nphase = 0\ntitle = "an "unescaped" quote"\n'
+
+
+@pytest.mark.parametrize("cmd", [["check"], ["list"], ["next"], ["render", "--check"], ["--json", "list"]])
+def test_a_task_file_that_is_not_toml_is_task_invalid(prog, capsys, cmd):
+    (prog.root / "tasks" / "AA-09.toml").write_text(BROKEN)
+    assert plan.main(["--programme", str(prog.root), "--claims", str(prog.claims_dir), *cmd]) == 1
+    out, err = capsys.readouterr()
+    assert "Traceback" not in err
+    assert "error task.invalid: tasks/AA-09.toml:3:" in err and "hint: " in err and "fix: " in err
+    if "--json" in cmd:
+        e = json.loads(out)["error"]
+        assert e["code"] == "task.invalid" and e["file"] == "tasks/AA-09.toml" and e["line"] == 3
+
+
+def test_get_of_a_broken_task_is_task_invalid(prog, capsys):
+    (prog.root / "tasks" / "AA-09.toml").write_text(BROKEN)
+    assert plan.main(["--programme", str(prog.root), "get", "AA-09"]) == 1
+    assert "error task.invalid: tasks/AA-09.toml:3:" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("name,code,cmd", [
+    ("decisions.toml", "decisions.invalid", ["check"]),
+    ("homes.toml", "homes.invalid", ["homes", "--workspace", "."]),
+])
+def test_other_programme_files_that_are_not_toml_are_coded_errors(prog, capsys, name, code, cmd):
+    (prog.root / name).write_text("[[decision]\nid = 1\n")
+    assert plan.main(["--programme", str(prog.root), "--claims", str(prog.claims_dir), *cmd]) == 1
+    err = capsys.readouterr().err
+    assert "Traceback" not in err and f"error {code}: {name}:1:" in err
+
+
+def test_a_claim_file_that_is_not_toml_is_claim_invalid(prog, capsys, monkeypatch):
+    monkeypatch.setenv("ODAP_SESSION", "s")
+    prog.claims_dir.mkdir()
+    (prog.claims_dir / "AA-02.toml").write_text('task = "AA-02\n')
+    assert plan.main(["--programme", str(prog.root), "--claims", str(prog.claims_dir), "claim", "AA-02"]) == 1
+    err = capsys.readouterr().err
+    assert "Traceback" not in err and "error claim.invalid: " in err and "AA-02.toml:1:" in err

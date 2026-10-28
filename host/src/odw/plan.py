@@ -19,8 +19,9 @@ Usage:
 The programme folder is --programme, else $ODAP_PROGRAMME, else the nearest folder at or above the current one
 that holds decisions.toml and tasks/. Claims live in <workspace>/.state/claims (outside git). A task is ready when
 its status is todo, every task it depends on is done and every decision blocking it is decided.
-Errors carry a stable code (task.not_found, task.claimed, task.not_ready, task.invalid, task.no_evidence), a
-hint and a fix. Exit status: 0 ok, 1 a check failed or the action was refused, 2 usage error. Spec: docs/specs/programme-plan.md.
+Errors carry a stable code (task.not_found, task.claimed, task.not_ready, task.invalid, task.no_evidence; a file that
+is not valid TOML is task.invalid, decisions.invalid, claim.invalid or homes.invalid with its file and line), a hint
+and a fix. Exit status: 0 ok, 1 a check failed or the action was refused, 2 usage error. Spec: docs/specs/programme-plan.md.
 """
 import datetime as dt
 import getpass
@@ -29,8 +30,6 @@ import os
 import pathlib
 import socket
 import sys
-import tomllib
-
 from odw import clikit, plan_mirror, schemas, workspace
 
 TOOL = "odapkit plan"
@@ -46,8 +45,8 @@ class PlanError(clikit.CliError):
     """A refused plan action: a stable code, a hint and a fix (odw.clikit)."""
 
     def __init__(self, message, code="task.refused", hint="the programme's state is in odapkit plan list",
-                 fix=f"{TOOL} list"):
-        super().__init__(code, message, hint, fix)
+                 fix=f"{TOOL} list", details=None):
+        super().__init__(code, message, hint, fix, details=details)
 
 
 def _now():
@@ -88,14 +87,25 @@ class Programme:
             claims_dir = state / "claims" if state else self.root / ".claims"
         self.claims_dir = pathlib.Path(claims_dir)
 
-    # ---- reading ----
+    # ---- reading (every file through _load: one that does not parse is a coded error, never a traceback) ----
+    def _load(self, path, code):
+        path = pathlib.Path(path)
+        try:
+            shown = str(path.relative_to(self.root))
+        except ValueError:
+            shown = str(path)
+        try:
+            return clikit.load_toml(path, code, shown)
+        except clikit.CliError as e:
+            raise PlanError(e.message, e.code, e.hint, e.fix, e.details) from None
+
     def _files(self):
         return sorted((self.root / "tasks").glob("*.toml"))
 
     def tasks(self):
         out = []
         for f in self._files():
-            t = tomllib.loads(f.read_text())
+            t = self._load(f, "task.invalid")
             t["_file"] = f.name
             out.append(t)
         return sorted(out, key=lambda t: (t.get("phase", 99), t.get("id", "")))
@@ -104,10 +114,10 @@ class Programme:
         path = self.root / "tasks" / f"{tid}.toml"
         if not path.is_file():
             raise PlanError(f"no task {tid}", "task.not_found", "a task id is a file name in tasks/", f"{TOOL} list")
-        return tomllib.loads(path.read_text())
+        return self._load(path, "task.invalid")
 
     def decisions(self):
-        doc = tomllib.loads((self.root / "decisions.toml").read_text())
+        doc = self._load(self.root / "decisions.toml", "decisions.invalid")
         return {d["id"]: d for d in doc.get("decision", [])}
 
     def _is_ready(self, t, status, decided):
@@ -130,7 +140,7 @@ class Programme:
         ts = self.tasks()
         ids = {t.get("id") for t in ts}
         decs = self.decisions()
-        for e in schemas.errors(tomllib.loads((self.root / "decisions.toml").read_text()), "decisions"):
+        for e in schemas.errors(self._load(self.root / "decisions.toml", "decisions.invalid"), "decisions"):
             problems.append(f"decisions.toml: {e}")
         for t in ts:
             name = t.pop("_file")
@@ -198,7 +208,7 @@ class Programme:
 
     def claim_of(self, tid):
         p = self._claim_path(tid)
-        return tomllib.loads(p.read_text()) if p.is_file() else None
+        return self._load(p, "claim.invalid") if p.is_file() else None
 
     def claim(self, tid, session, hours=4):
         t = self.task(tid)
@@ -268,8 +278,8 @@ class Programme:
         self._put(self.index_path(), self.render())
 
     def index_is_current(self):
-        p = self.index_path()
-        return p.is_file() and p.read_text() == self.render()
+        text, p = self.render(), self.index_path()
+        return p.is_file() and p.read_text() == text
 
 
 def _norm(text):
@@ -282,7 +292,7 @@ def _homes(self, ws):
     f = self.root / "homes.toml"
     if not f.is_file():
         return []
-    doc = tomllib.loads(f.read_text())
+    doc = self._load(f, "homes.invalid")
     out = []
     for r in doc.get("rule", []):
         if r.get("pending"):
