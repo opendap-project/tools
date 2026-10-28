@@ -300,6 +300,9 @@ def _load_markdown(path):
         if current and row and len(row) >= 2 and row[0] == "Software":
             for b in current:
                 cat.blocks[b].software = parse_software(row[1])
+        if current and row and len(row) >= 2 and row[0] == "Sub-blocks":
+            for b in current:
+                cat.blocks[b].sub_blocks = [t for t in ID_RE.findall(" ".join(_ticks(row[1]))) if t not in cat.blocks]
         if current and row and len(row) >= 2 and row[0] == "Alternates":
             cell = row[1]
             split = re.search(r"\bParameters?\b", cell)

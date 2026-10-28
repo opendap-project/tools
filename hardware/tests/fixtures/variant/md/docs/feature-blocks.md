@@ -21,6 +21,7 @@ A Markdown catalog laid out as RFC 0011 asks: a summary table with an ID column,
 | Alternates | None same-land |
 | Absent state | Not applicable: never omitted |
 | Software | Board devicetree (H1) |
+| Sub-blocks | `blk.core-power` and `blk.core-io` (sheets of this block) |
 
 ### 2. `blk.sensor`: sensor
 

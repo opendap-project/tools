@@ -187,6 +187,12 @@ class MarkdownCatalog(unittest.TestCase):
         self.assertEqual(c.blocks["blk.mem"].software["description"], ["identity", "power"])
         self.assertIsNone(c.blocks["blk.core"].software["devicetree"])
 
+    def test_sub_blocks_row(self):
+        c = self.cat
+        self.assertEqual(c.blocks["blk.core"].sub_blocks, ["blk.core-power", "blk.core-io"])
+        self.assertEqual(c.blocks["blk.sensor"].sub_blocks, [])
+        self.assertEqual(c.owner("blk.core-io"), ("blk.core", "sub_block"))
+
     def test_summary_table_disagreement_is_a_warning(self):
         v = variantfile.load(os.path.join(FIX, "md", "variants", "prod.toml"))
         found = variantfile.validate(v, self.cat)
