@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/homes.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/homes.schema.json",
   "title": "opendap.homes/v1: the rules a programme introduced and their permanent homes",
   "type": "object",
   "additionalProperties": false,

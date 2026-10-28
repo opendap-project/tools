@@ -4,7 +4,7 @@ description = "Umbrella-command dispatch of the command standard: tools.toml dis
 version = "0.1.0"
 edition = "2024"
 license = "MPL-2.0"
-repository = "https://github.com/opendap-project/toolkit-host"
+repository = "https://github.com/opendap-project/tools"
 publish = false
 
 [lib]

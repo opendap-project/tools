@@ -2,7 +2,7 @@
 
 Tools to build Blackbird OS images and the software that goes into them, for the platform's maintainers. Part of the OpenDAP Developer Toolkit, which is a set of repositories, each with the tools of one domain.
 
-Each tool is an `odapkit-<tool>` executable in `bin/`, run as `odapkit <tool>` through toolkit-host's `odapkit` command ([RFC 0009](https://github.com/opendap-project/rfcs/blob/main/text/0009-odapkit.md)); `odapkit help` lists them, `--help` describes each. Each does one thing, finds the repositories it works on through the workspace's `repos.tsv` (or `ODAP_<REPOSITORY>_DIR`), and prints its result on stdout. Exit status is 0 on success, 1 on failure and 2 on a usage error (an unknown flag included). Each tool is declared in `tools.toml`, whose summary is the first line of its `--help`; errors carry a stable dotted code, a hint and a fix (a command), from toolkit-host's [shared helpers](https://github.com/opendap-project/toolkit-host/blob/main/docs/specs/cli-conformance.md#shared-helper). Every command that changes state takes `--dry-run`, which names what it would do and changes nothing; `--json` prints one document with a `schema` (below), and errors as `opendap.error/v1`.
+Each tool is an `odapkit-<tool>` executable in `bin/`, run as `odapkit <tool>` through toolkit-host's `odapkit` command ([RFC 0009](https://github.com/opendap-project/rfcs/blob/main/text/0009-odapkit.md)); `odapkit help` lists them, `--help` describes each. Each does one thing, finds the repositories it works on through the workspace's `repos.tsv` (or `ODAP_<REPOSITORY>_DIR`), and prints its result on stdout. Exit status is 0 on success, 1 on failure and 2 on a usage error (an unknown flag included). Each tool is declared in `tools.toml`, whose summary is the first line of its `--help`; errors carry a stable dotted code, a hint and a fix (a command), from toolkit-host's [shared helpers](../host/docs/specs/cli-conformance.md#shared-helper). Every command that changes state takes `--dry-run`, which names what it would do and changes nothing; `--json` prints one document with a `schema` (below), and errors as `opendap.error/v1`.
 
 | Tool | Does |
 |---|---|
@@ -14,7 +14,7 @@ Each tool is an `odapkit-<tool>` executable in `bin/`, run as `odapkit <tool>` t
 | `odapkit dev-key [create\|path\|tree] [--dry-run] [--json]` | The development SSH key that `qemu` images accept, kept host-wide in `~/.local/share/opendap/dev-ssh` (`opendap.dev-key/v1`) |
 | `odapkit security-check [--json] [--dry-run]` | Checks built images' package manifests against Debian's security, updates and backports archives; `--json` prints `opendap.check-result/v1`, `--dry-run` does not record the run |
 
-Run them as `odapkit <tool>` (toolkit-host `setup.sh` links `odapkit` into `~/.local/bin`), or call them by path. Host prerequisites: toolkit-host `setup.sh` (Lima, zig, cargo-zigbuild, QEMU). Process: [development workflow](https://github.com/opendap-project/toolkit-host/blob/main/docs/specs/development-workflow.md).
+Run them as `odapkit <tool>` (toolkit-host `setup.sh` links `odapkit` into `~/.local/bin`), or call them by path. Host prerequisites: toolkit-host `setup.sh` (Lima, zig, cargo-zigbuild, QEMU). Process: [development workflow](../host/docs/specs/development-workflow.md).
 
 ## Layout
 

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/check-result.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/check-result.schema.json",
   "title": "opendap.check-result/v1: what any check, test runner or study reports",
   "type": "object",
   "additionalProperties": false,

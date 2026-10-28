@@ -8,7 +8,7 @@ Usage:
 `odapkit craft check` runs it for .kicad_sch and .kicad_sym files. It needs only Python 3.9 or
 later and kicad-cli (KiCad 10): it reads the S-expressions itself and runs kicad-cli for ERC and the
 netlist. Standard: kicad-lib's docs/specs/pcb-craft-standard.md, section 9
-(https://github.com/opendap-project/kicad-lib/blob/main/docs/specs/pcb-craft-standard.md). Each
+(https://github.com/opendap-project/libs/blob/main/kicad/docs/specs/pcb-craft-standard.md). Each
 check carries its CRAFT ID and its quality level (RFC 0010, Q0 to Q4).
 
 For a schematic, give the project's root sheet: the check walks the hierarchy. Unless --no-erc, the

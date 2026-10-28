@@ -4,7 +4,7 @@
 # Every field is the standard's own text; `limits` holds the values a check or a generator reads,
 # each one stated in the rule's row. Schema: schemas/craft-rules.schema.json.
 schema = "opendap.craft-rules/v1"
-spec = "https://github.com/opendap-project/kicad-lib/blob/main/docs/specs/pcb-craft-standard.md"
+spec = "https://github.com/opendap-project/libs/blob/main/kicad/docs/specs/pcb-craft-standard.md"
 levels = ["Q0", "Q1", "Q2", "Q3", "Q4"]
 
 [[rule]]

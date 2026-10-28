@@ -8,7 +8,7 @@ Run it with KiCad's bundled Python (it needs pcbnew); `odapkit craft check` find
 Keep it compatible with Python 3.9, the version KiCad 10 ships on macOS.
 
 The standard is kicad-lib's docs/specs/pcb-craft-standard.md
-(https://github.com/opendap-project/kicad-lib/blob/main/docs/specs/pcb-craft-standard.md). Each
+(https://github.com/opendap-project/libs/blob/main/kicad/docs/specs/pcb-craft-standard.md). Each
 check carries its CRAFT ID and its quality level (RFC 0010, Q0 to Q4). Unless --no-drc, the board's
 DRC (kicad-cli, with its own <project>.kicad_dru) is folded in: a rule whose name carries "[Qn]"
 counts at that level; any other DRC error and every unconnected item count at Q0 (the fab and

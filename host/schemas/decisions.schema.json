@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/decisions.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/decisions.schema.json",
   "title": "Programme decisions file (decisions.toml)",
   "type": "object",
   "additionalProperties": false,

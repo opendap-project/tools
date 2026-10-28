@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/tools-list.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/tools-list.schema.json",
   "title": "The tools an umbrella command offers, as <front> help --json prints them",
   "type": "object",
   "additionalProperties": false,

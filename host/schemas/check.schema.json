@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/check.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/check.schema.json",
   "title": "A root's lifecycle checks (check.toml), run by the umbrella command's check",
   "type": "object",
   "additionalProperties": false,

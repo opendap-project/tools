@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/toolkit-hardware/blob/main/schemas/block.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/hardware/schemas/block.schema.json",
   "title": "opendap.block/v1 (the fields odapkit variant reads)",
   "description": "A feature block record, blocks/<block>.toml (RFC 0011 §1). This schema fixes the fields odapkit variant reads (id, function, status, requirements, alternates, params, sub_blocks) and admits the other RFC 0011 §1 fields as free values. Spec: docs/specs/variant-tool.md §3.",
   "type": "object",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/toolkit-host/blob/main/schemas/plan-mirror.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/plan-mirror.schema.json",
   "title": "The public tracking issues of a programme (odapkit plan mirror --json)",
   "type": "object",
   "additionalProperties": false,
