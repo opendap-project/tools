@@ -1,0 +1,139 @@
+# Local checks for every commit. Install once per clone: pre-commit install
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-added-large-files
+        args: ["--maxkb=5120"]
+  - repo: https://github.com/fsfe/reuse-tool
+    rev: v6.2.0
+    hooks:
+      - id: reuse
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.24.0
+    hooks:
+      - id: markdownlint-cli2
+  # Shell scripts (found by their shebang): shellcheck, pinned through shellcheck-py.
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: ["-x", "--source-path=SCRIPTDIR"]
+        files: ^image/
+  # Hooks this repository provides, run from its own tree for every folder.
+  - repo: local
+    hooks:
+      # This repository provides the shared hooks, so it runs them from its own tree.
+      - id: no-stray-files
+        name: No stray files
+        entry: hooks/hooks/no-stray-files.sh
+        language: script
+        files: \.(pdf|html?)$
+  # hardware/
+  - repo: local
+    hooks:
+      # The requirements README is rendered from requirements.toml and checked.
+      - id: requirements-current-hardware
+        name: hardware requirements README rendered (odapkit req render --check)
+        entry: sh -c 'cd hardware && odapkit req render docs/requirements/requirements.toml --check'
+        language: system
+        pass_filenames: false
+        files: ^hardware/docs/requirements/
+      # The craft standard's rule tables are rendered from tools/craft/rules.toml; the fixture copy
+      # of the standard must stay current with it, and the checks must agree with the data.
+      - id: craft-rules-current
+        name: hardware craft rule tables rendered (odapkit craft rules render --check)
+        entry: sh -c 'cd hardware && bin/odapkit-craft rules render tests/fixtures/craft-rules/pcb-craft-standard.md --check'
+        language: system
+        pass_filenames: false
+        files: ^hardware/(tools/craft/|tests/fixtures/craft-rules/|bin/odapkit-craft$)
+      - id: craft-rules-tests
+        name: hardware craft rules data, golden and drift tests; the craft checks' S-expression model
+        entry: sh -c 'cd hardware && python3 -m unittest tests.test_craft_rules tests.test_sexpr_model'
+        language: system
+        pass_filenames: false
+        files: ^hardware/(tools/craft/|tools/(pcb|sch)-craft-check\.py$|tests/test_(craft_rules|sexpr_model)\.py$|tests/fixtures/craft-rules/|schemas/craft-rules\.schema\.json$)
+      # Every tool's command-line contract, without KiCad, ngspice or the network.
+      - id: cli-contract-hardware
+        name: hardware command-line contract and the toolkit-host lookup (tests/test_cli_contract.py, tests/test_host_lookup.py)
+        entry: sh -c 'cd hardware && python3 -m unittest tests.test_cli_contract tests.test_host_lookup'
+        language: system
+        pass_filenames: false
+        files: ^hardware/(?:(bin|lib|tools|tests)/|tools\.toml$)
+  # hooks/
+  - repo: local
+    hooks:
+      - id: hooks-tests
+        name: hooks hook and tool tests (python3 -m unittest discover tests)
+        entry: sh -c 'cd hooks && python3 -m unittest discover tests'
+        language: system
+        pass_filenames: false
+        files: ^hooks/(?:(bin|hooks|lib|tests)/|tools\.toml$|\.pre-commit-hooks\.yaml$)
+  # host/
+  - repo: local
+    hooks:
+      - id: odw-tests
+        name: host odw tests (schemas, plan, audit)
+        entry: sh -c 'cd host && uv run --quiet pytest -q'
+        language: system
+        pass_filenames: false
+        files: ^host/(?:(src|schemas|tests)/|pyproject\.toml$)
+      # The odw dispatch crate: its unit and fixture-workspace tests, built into this checkout's target/.
+      - id: odw-dispatch-tests
+        name: host odw dispatch tests (cargo test)
+        entry: sh -c 'cd host && CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-4}" cargo test --quiet --locked --manifest-path crates/odw-dispatch/Cargo.toml --target-dir target'
+        language: system
+        pass_filenames: false
+        files: ^host/(?:crates/odw-dispatch/|rust-toolchain\.toml$)
+      # The requirements README is rendered from requirements.toml and checked.
+      - id: requirements-current-host
+        name: host requirements README rendered (odapkit req render --check)
+        entry: sh -c 'cd host && odapkit req render docs/requirements/requirements.toml --check'
+        language: system
+        pass_filenames: false
+        files: ^host/docs/requirements/
+  # image/
+  - repo: local
+    hooks:
+      # The requirements README is rendered from requirements.toml and checked.
+      - id: requirements-current-image
+        name: image requirements README rendered (odapkit req render --check)
+        entry: sh -c 'cd image && odapkit req render docs/requirements/requirements.toml --check'
+        language: system
+        pass_filenames: false
+        files: ^image/docs/requirements/
+      # Every tool's command-line contract (command standard §6), without a device, a VM or the network.
+      - id: cli-contract-image
+        name: image command-line contract (tests/cli.sh)
+        entry: sh -c 'cd image && tests/cli.sh'
+        language: system
+        pass_filenames: false
+        files: ^image/(?:(bin|lib|tests)/|tools\.toml$)
+  # verify/
+  - repo: local
+    hooks:
+      # The requirements README is rendered from requirements.toml and checked.
+      - id: requirements-current-verify
+        name: verify requirements README rendered (odapkit req render --check)
+        entry: sh -c 'cd verify && odapkit req render docs/requirements/requirements.toml --check'
+        language: system
+        pass_filenames: false
+        files: ^verify/docs/requirements/
+      # odapkit motion's command-line contract (command standard §6), without a screen or a recording.
+      - id: cli-contract-verify
+        name: verify command-line contract (tests/cli.sh)
+        entry: sh -c 'cd verify && tests/cli.sh'
+        language: system
+        pass_filenames: false
+        files: ^verify/(?:(bin|tools|tests)/|tools\.toml$)
+      - id: motion-tests
+        name: verify odapkit motion engine tests (tests/test_motion.py; a synthetic recording through ffmpeg)
+        entry: sh -c 'cd verify && python3 -m unittest discover tests'
+        language: system
+        pass_filenames: false
+        files: ^verify/(?:(bin|tools|tests)/|tools\.toml$)

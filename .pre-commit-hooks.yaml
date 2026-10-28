@@ -3,33 +3,33 @@
 - id: kicad-erc
   name: KiCad ERC (changed schematics)
   description: Runs kicad-cli ERC on every KiCad project whose schematic changed; fails on errors.
-  entry: hooks/kicad-check.py erc
+  entry: hooks/hooks/kicad-check.py erc
   language: script
   files: \.kicad_sch$
   require_serial: true
 - id: kicad-drc
   name: KiCad DRC (changed boards)
   description: Runs kicad-cli DRC, with schematic parity, on every KiCad project whose board changed; fails on errors.
-  entry: hooks/kicad-check.py drc
+  entry: hooks/hooks/kicad-check.py drc
   language: script
   files: \.kicad_pcb$
   require_serial: true
 - id: no-fab-outputs
   name: No generated fab outputs
   description: Fab outputs (Gerbers, drill, pick-and-place) are generated locally with /opendap:fab-package, never committed.
-  entry: hooks/no-fab-outputs.sh
+  entry: hooks/hooks/no-fab-outputs.sh
   language: script
   files: (\.(gbr|gbrjob|drl|g[tb][lsopa]|g[0-9]+|gm[0-9]+)$|-(pos|all-pos|top-pos|bottom-pos)\.csv$)
 - id: no-stray-files
   name: No stray files
   description: Rejects PDFs (manufacturer documents are not redistributed) and HTML outside renders/web/ (saved web pages).
-  entry: hooks/no-stray-files.sh
+  entry: hooks/hooks/no-stray-files.sh
   language: script
   files: \.(pdf|html?)$
 - id: kicad-dru-composed
   name: KiCad rule files composed and up to date
   description: Every <project>.kicad_dru that has a <project>.dru.toml manifest equals the composition of the sources it lists (fab rule set + product rules); fails on stale files and duplicate rule names.
-  entry: hooks/kicad-dru.py check
+  entry: hooks/hooks/kicad-dru.py check
   language: script
   pass_filenames: false
   always_run: true

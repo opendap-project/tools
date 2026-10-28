@@ -1,0 +1,11 @@
+version = 1
+
+[[annotations]]
+path = ["README.md", "CLAUDE.md", ".claude/**", ".github/**"]
+SPDX-FileCopyrightText = "2026 The OpenDAP Project"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
+path = [".pre-commit-config.yaml", ".pre-commit-hooks.yaml", ".gitignore", ".gitattributes", ".markdownlint-cli2.jsonc", "REUSE.toml"]
+SPDX-FileCopyrightText = "2026 The OpenDAP Project"
+SPDX-License-Identifier = "MIT"
