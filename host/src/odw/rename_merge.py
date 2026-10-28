@@ -13,11 +13,12 @@ import dataclasses
 import json
 import os
 import pathlib
+import re
 import shutil
 import sys
 import tempfile
 
-from odw import clikit, rename_map, workspace
+from odw import audit, clikit, rename_map, workspace
 from odw import rename_merge_git as g
 
 TOOL = "odapkit rename merge"
@@ -205,6 +206,19 @@ def message(root, srcs, engine):
     return (f"{root}: join {names} with their history\n\nRFC 0017 §7 step 2. Each source's history is rewritten "
             f"under its folder (odapkit rename merge {root}, engine {engine}); its last commit is recorded below.\n\n"
             f"{rows}\n{trailers}")
+
+
+LANDING_LINE = re.compile(r"^- (\S+) → (\S+?)/: \d+ commits, head ", re.M)
+
+
+def recorded(checkout):
+    """A cut root's checkout as it is: its tracked files and the landing of each source its merge commit recorded
+    (`- <name> → <folder>/: …`); (None, {}) when there is no checkout."""
+    if not (checkout / ".git").exists():
+        return None, {}
+    log = g.git(checkout, "log", "--format=%B", "--grep=^Source-Head: ", check=False)
+    landings = {n: "" if f == "." else f for n, f in LANDING_LINE.findall(log)}
+    return set(audit.tracked(checkout)), landings
 
 
 def document(root, into, branch, engine, srcs, mode, head=None, problems=(), into_dir=None):

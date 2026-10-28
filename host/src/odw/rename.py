@@ -19,7 +19,7 @@ import pathlib
 import subprocess
 import sys
 
-from odw import audit, clikit, rename_generated, rename_keys as rk, rename_map, rename_rewrite as rw, workspace
+from odw import audit, clikit, rename_generated, rename_keys as rk, rename_map, rename_merge, rename_rewrite as rw, workspace
 
 TOOL = "odapkit rename"
 
@@ -73,8 +73,14 @@ def view(m, root, ws, root_dir):
     return "sources", files
 
 
-def _paths_from_rows(m, root):
-    """Where a cut root's paths went, from its map rows alone (used for URLs into roots cut earlier)."""
+def _paths_from_rows(m, root, tracked=None):
+    """Where a cut root's paths went, from its map rows (used for URLs into roots cut earlier). With `tracked`, the
+    files of that root's checkout, a row whose source is still there and whose target is not has not landed (a root
+    cut as structure only) and is left out."""
+    def landed(frm, to, prefix=False):
+        has = (lambda p: any(f.startswith(p + "/") for f in tracked)) if prefix else (lambda p: p in tracked)
+        return tracked is None or has(to) or not has(frm)
+
     moves, prefixes = {}, []
     for r in m.rows:
         if r.action not in rename_map.MOVE_ACTIONS or ";" in r.new or not rename_map.is_path_row(m, r):
@@ -84,8 +90,9 @@ def _paths_from_rows(m, root):
             continue
         to = r.new.split("/", 1)[1] if "/" in r.new else ""
         if frm.endswith("/**") and to.endswith("/**"):
-            prefixes.append((frm[:-3], to[:-3]))
-        elif "*" not in frm:
+            if landed(frm[:-3], to[:-3], prefix=True):
+                prefixes.append((frm[:-3], to[:-3]))
+        elif "*" not in frm and landed(frm, to):
             moves[frm] = to
     return rw.Paths(moves, prefixes=prefixes)
 
@@ -203,12 +210,15 @@ def build(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
     own = rw.Paths(moves, deleted=[d["path"] for d in plan.deletes], prefixes=prefixes)
     cache = {root: own}
 
+    seen_roots = {r: rename_merge.recorded(ws / "public" / r) for r in cut if r != root}
+
     def paths_of(r):
         if r not in cache:
-            cache[r] = _paths_from_rows(m, r)
+            cache[r] = _paths_from_rows(m, r, seen_roots.get(r, (None,))[0])
         return cache[r]
 
-    sources = {s.name: s for s in m.sources.values() if s.root in cut and s.kind != "root"}
+    sources = {s.name: dataclasses.replace(s, landing=seen_roots.get(s.root, (None, {}))[1].get(s.name, s.landing))
+               for s in m.sources.values() if s.root in cut and s.kind != "root"}
     table = dict(pairs)
     pattern = rw.identifier_pattern(pairs)
     values = {v: (i, st) for i, st in scan for v in i.old}

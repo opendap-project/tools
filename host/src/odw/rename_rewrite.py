@@ -15,6 +15,8 @@ REFDEF = re.compile(r"^(\s{0,3}\[[^\]]+\]:\s*)(<?)(\S+?)(>?)(\s.*)?$")
 SCHEME = re.compile(r"^[a-z][a-z0-9+.-]*:", re.I)
 MOVABLE_REFS = {"main", "master", "HEAD"}
 PIN_LINE = re.compile(r"^\s*(?:-\s+)?repo:\s")  # a pre-commit pin: it moves with its rev, after the cut
+CARGO_PIN = re.compile(r"\bgit\s*=\s*\"|^\s*source\s*=\s*\"git\+")  # a Cargo git pin moves with its rev, after the cut
+ISSUES = re.compile(r"https://github\.com/opendap-project/([A-Za-z0-9_.-]+)/issues(?![\w/])")
 METADATA_LINE = re.compile(r"^\s*(?:repository|homepage|documentation|Repository|Homepage|Source)\s*=")
 FROZEN = ("tests/",)  # tests and their fixtures are inputs (URLs as test data, sha256 goldens): never rewritten
 
@@ -116,9 +118,12 @@ def links(text, src, dst, paths):
 def urls(text, sources, root, paths_of, path=""):
     """Rewrite GitHub URLs to source repositories of cut roots (`sources`: name → Source) into URLs of their root.
     Pinned refs (tags, commits) stay: the archived repository keeps serving them. A pre-commit `repo:` pin stays
-    (its `rev` is a tag of the old repository); package metadata (`repository = `) gets the root's own URL."""
+    (its `rev` is a tag of the old repository), and so does a Cargo git pin (`git =`, `source = "git+`); package
+    metadata (`repository = `) gets the root's own URL, and an issue tracker (`<repo>/issues`) the root's tracker."""
     edits = []
-    pins = posixpath.basename(path) == ".pre-commit-config.yaml"
+    base_name = posixpath.basename(path)
+    pin_line = PIN_LINE if base_name == ".pre-commit-config.yaml" else (
+        CARGO_PIN if base_name in ("Cargo.toml", "Cargo.lock") else None)
 
     def sub(m, n, bare):
         name, kind, ref, path = m.group(1), m.group(2), m.group(3), (m.group(4) or "").lstrip("/")
@@ -140,10 +145,22 @@ def urls(text, sources, root, paths_of, path=""):
         edits.append(Edit("url", n, m.group(0), new))
         return new
 
+    def tracker(m, n):
+        s = sources.get(m.group(1))
+        if s is None or s.landing is None:
+            return m.group(0)
+        new = f"{ORG}{s.root}/issues"
+        edits.append(Edit("url", n, m.group(0), new))
+        return new
+
     out = []
     for n, line in enumerate(text.split("\n"), start=1):
+        if pin_line is not None and pin_line.search(line):
+            out.append(line)
+            continue
         bare = bool(METADATA_LINE.match(line))
-        out.append(line if pins and PIN_LINE.match(line) else URL.sub(lambda m: sub(m, n, bare), line))
+        line = ISSUES.sub(lambda m: tracker(m, n), line)
+        out.append(URL.sub(lambda m: sub(m, n, bare), line))
     return "\n".join(out), edits
 
 

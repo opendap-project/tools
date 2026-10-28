@@ -157,3 +157,48 @@ def test_without_structure_only_the_map_applies(cut, capsys):
     assert code == 0 and doc["structure_only"] is False
     assert [(m["from"], m["to"]) for m in doc["moves"]] == [("host/src/plan.py", "workspace/plan.py")]
     assert [d["path"] for d in doc["deletes"]] == ["host/docs/old.md"]
+
+
+def test_cargo_git_pins_stay_and_issue_trackers_follow_the_root(cut, capsys):
+    ws, top = cut
+    (top / "hooks/Cargo.toml").write_text(f'[dependencies]\nh = {{ git = "{ORG}/toolkit-host", rev = "abc1234" }}\n')
+    (top / "hooks/Cargo.lock").write_text(f'[[package]]\nname = "h"\nsource = "git+{ORG}/toolkit-host?rev=abc1234'
+                                          '#abc1234"\n')
+    (top / "hooks/os.env").write_text(f"HOME_URL={ORG}/toolkit-hooks\nBUG_URL={ORG}/toolkit-hooks/issues\n"
+                                      f"ONE={ORG}/toolkit-hooks/issues/7\n")
+    git(top, "add", "-A")
+    git(top, "commit", "-q", "-m", "pins")
+    pins = {p: (top / p).read_text() for p in ("hooks/Cargo.toml", "hooks/Cargo.lock")}
+    assert run(capsys, "apply", ws, top, "--structure-only")[0] == 0
+    assert {p: (top / p).read_text() for p in pins} == pins  # a git pin moves with its rev, after the cut
+    env = (top / "hooks/os.env").read_text()
+    assert f"BUG_URL={ORG}/tools/issues\n" in env  # an archived repository takes no issues
+    assert f"ONE={ORG}/toolkit-hooks/issues/7\n" in env  # one issue stays where it was filed
+
+
+def test_urls_into_a_root_cut_as_structure_only_follow_its_checkout(cut, capsys):
+    ws, top = cut
+    libs = ws / "public/libs"
+    (libs / "kicad/symbols").mkdir(parents=True)
+    (libs / "kicad/symbols/Murata.kicad_sym").write_text("(kicad_symbol_lib)\n")
+    git(libs, "init", "-q", "-b", "main")
+    git(libs, "add", "-A")
+    git(libs, "-c", "user.email=t@example.org", "-c", "user.name=T", "commit", "-q", "-m", "libs")
+    assert run(capsys, "apply", ws, top, "--structure-only")[0] == 0
+    readme = (top / "host/README.md").read_text()
+    assert f"{ORG}/libs/blob/main/kicad/symbols/Murata.kicad_sym" in readme  # its map row has not landed
+
+
+def test_urls_into_an_earlier_root_follow_the_landing_its_merge_recorded(cut, capsys):
+    ws, top = cut
+    libs = ws / "public/libs"
+    (libs / "lib/symbols").mkdir(parents=True)
+    (libs / "lib/symbols/Murata.kicad_sym").write_text("(kicad_symbol_lib)\n")
+    git(libs, "init", "-q", "-b", "main")
+    git(libs, "add", "-A")
+    git(libs, "-c", "user.email=t@example.org", "-c", "user.name=T", "commit", "-q", "-m",
+        "libs: join kicad-lib with their history\n\n- kicad-lib → lib/: 3 commits, head abc\n\n"
+        "Source-Head: kicad-lib abc\n")
+    assert run(capsys, "apply", ws, top, "--structure-only")[0] == 0
+    readme = (top / "host/README.md").read_text()
+    assert f"{ORG}/libs/blob/main/lib/symbols/Murata.kicad_sym" in readme  # not the map's kicad/
