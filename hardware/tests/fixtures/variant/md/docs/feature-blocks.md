@@ -37,6 +37,7 @@ A Markdown catalog laid out as RFC 0011 asks: a summary table with an ID column,
 |---|---|
 | Alternates | `mem-16` (16 GB). Parameter: `capacity_gb` |
 | Software | `/memory@0` node; description `identity` and `power` sections |
+| Sub-blocks | `blk.mem-supply-ldo`, `blk.mem-bank` |
 
 ### 5. `blk.radio`: removed
 

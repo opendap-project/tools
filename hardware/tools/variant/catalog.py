@@ -301,8 +301,10 @@ def _load_markdown(path):
             for b in current:
                 cat.blocks[b].software = parse_software(row[1])
         if current and row and len(row) >= 2 and row[0] == "Sub-blocks":
-            for b in current:
-                cat.blocks[b].sub_blocks = [t for t in ID_RE.findall(" ".join(_ticks(row[1]))) if t not in cat.blocks]
+            # in a record of several blocks, a sub-block belongs to the one its name starts with (the longest)
+            for t in [t for t in ID_RE.findall(" ".join(_ticks(row[1]))) if t not in cat.blocks]:
+                own = max((b for b in current if t.startswith(b + "-")), key=len, default=current[0])
+                cat.blocks[own].sub_blocks.append(t)
         if current and row and len(row) >= 2 and row[0] == "Alternates":
             cell = row[1]
             split = re.search(r"\bParameters?\b", cell)

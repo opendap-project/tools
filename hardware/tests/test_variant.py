@@ -192,6 +192,8 @@ class MarkdownCatalog(unittest.TestCase):
         self.assertEqual(c.blocks["blk.core"].sub_blocks, ["blk.core-power", "blk.core-io"])
         self.assertEqual(c.blocks["blk.sensor"].sub_blocks, [])
         self.assertEqual(c.owner("blk.core-io"), ("blk.core", "sub_block"))
+        self.assertEqual(c.blocks["blk.mem-supply"].sub_blocks, ["blk.mem-supply-ldo"])   # one record, two blocks:
+        self.assertEqual(c.blocks["blk.mem"].sub_blocks, ["blk.mem-bank"])                # the longest prefix owns it
 
     def test_summary_table_disagreement_is_a_warning(self):
         v = variantfile.load(os.path.join(FIX, "md", "variants", "prod.toml"))
