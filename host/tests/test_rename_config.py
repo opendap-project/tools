@@ -397,3 +397,12 @@ def test_the_schema_is_valid():
 def test_python_files_stay_within_budget():
     for mod in (rename_config, rp):
         assert pathlib.Path(mod.__file__).read_text().count("\n") <= 500, mod.__name__
+
+
+def test_the_root_readme_rebases_relative_links_onto_each_folder(tmp_path):
+    (tmp_path / "ui").mkdir()
+    (tmp_path / "ui/README.md").write_text("# UI\n\nThe design system ([spec](docs/specs/ds.md)), "
+                                           "[site](https://opendap.cc) and [top](#license).\n")
+    text = rename_config.readme("blackbird", tmp_path, ["ui"], ["blackbird-ui"])
+    assert "([spec](ui/docs/specs/ds.md))" in text
+    assert "[site](https://opendap.cc)" in text and "[top](#license)" in text

@@ -155,7 +155,7 @@ Otherwise it moves every file with `git mv` in two steps through a temporary fol
 | `.pre-commit-config.yaml` | One configuration (below); the folder copies are removed |
 | `.pre-commit-hooks.yaml` | Moved to the root; a `language: script` entry gets the folder as a prefix (`hooks/no-stray-files.sh` → `hooks/hooks/no-stray-files.sh`), since script entries are relative to the repository root |
 | Folder `CLAUDE.md` | The managed block is removed; the root's `CLAUDE.md` carries the only one |
-| Root `README.md`, `CLAUDE.md`, `REUSE.toml` | Written when absent, kept when present: the README's folder table (each folder's first README sentence) and the former repositories; the CLAUDE.md title, folders, managed block and working rules; REUSE annotations for the root files, `.gitattributes` included |
+| Root `README.md`, `CLAUDE.md`, `REUSE.toml` | Written when absent, kept when present: the README's folder table (each folder's first README sentence, its relative links rebased onto the folder) and the former repositories; the CLAUDE.md title, folders, managed block and working rules; REUSE annotations for the root files, `.gitattributes` included |
 
 Folder `README.md`, `CLAUDE.md`, `REUSE.toml`, `.gitignore` and `.gitattributes` stay. The pre-commit configuration is joined as text, comments kept:
 

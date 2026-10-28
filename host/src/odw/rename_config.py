@@ -15,11 +15,12 @@ import datetime as dt
 import json
 import os
 import pathlib
+import posixpath
 import re
 import subprocess
 import sys
 
-from odw import audit, clikit, rename_map, rename_precommit as rp, workspace
+from odw import audit, clikit, rename_map, rename_precommit as rp, rename_rewrite as rw, workspace
 
 TOOL = "odapkit rename config"
 SCHEMA = "opendap.rename-config/v1"
@@ -56,8 +57,19 @@ def _summary(readme):
     return first.rstrip(".").replace("|", "\\|")
 
 
+def _rebased(text, folder):
+    """A folder README's relative Markdown links, as seen from the root (HL-75)."""
+    def sub(m):
+        target = m.group(3)
+        if not target or target.startswith(("#", "/")) or rw.SCHEME.match(target):
+            return m.group(0)
+        return m.group(0).replace(target, posixpath.normpath(f"{folder}/{target}"), 1)
+    return rw.LINK.sub(sub, text)
+
+
 def readme(root, top, folders, names):
-    rows = "".join(f"| [`{f}/`]({f}/README.md) | {_summary(top / f / 'README.md')} |\n" for f in folders)
+    rows = "".join(f"| [`{f}/`]({f}/README.md) | {_rebased(_summary(top / f / 'README.md'), f)} |\n"
+                   for f in folders)
     year = dt.date.today().year
     return (f"# {root}\n\n| Folder | Content |\n| --- | --- |\n{rows}\nEach folder keeps its own `README.md`, "
             f"`CLAUDE.md` and `REUSE.toml`; the licence texts are in `LICENSES/`. The folders came from the former "
