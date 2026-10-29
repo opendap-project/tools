@@ -13,7 +13,7 @@
 #   qemu    the development key tree (odapkit dev-key tree) and the virtual board's support package
 #           (virtual-devices export/bsp, a mkosi config directory: its file tree, drivers and trimming)
 #   every image with a UI (not sysroot): Blackbird UI's fonts (blackbird-ui export/fonts) at
-#           /usr/share/fonts/opendap, where the session's SLINT_FONT_PATH finds the script
+#           /usr/share/fonts/blackbird, where the session's SLINT_FONT_PATH finds the script
 #           companions (they are Git LFS objects: a checkout without them is refused)
 # --dry-run: build, vm start and vm stop check their inputs, name what they would run and change
 # nothing. --json: path prints opendap.image-output/v1 (profile, path, exists, building), vm status
@@ -126,7 +126,7 @@ case "$cmd" in
         [ "$(head -c 4 "$f" 2>/dev/null)" = OTTO ] || cli_fail "fonts.not_fonts" "$f is not a font" \
           "the fonts are Git LFS objects; a checkout without them has pointers" "git -C $(repo_dir blackbird-ui) lfs pull"
       done
-      set -- "$@" --extra-tree="$fonts:/usr/share/fonts/opendap"
+      set -- "$@" --extra-tree="$fonts:/usr/share/fonts/blackbird"
     fi
     if [ "$DRY_RUN" = 1 ]; then
       echo "$CLI_TOOL: would start the build VM $vm if it is not running" >&2

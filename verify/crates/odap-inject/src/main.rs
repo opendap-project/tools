@@ -152,7 +152,7 @@ fn main() {
 /// The display's size from the device description (system hardware support spec §3), read with a
 /// plain scan of its [display] table so the tool needs no TOML parser.
 fn description_size() -> Option<(i32, i32)> {
-    let text = ["/run/opendap/device/description.toml", "/usr/share/opendap/device/description.toml"]
+    let text = ["/run/blackbird/device/description.toml", "/usr/share/blackbird/device/description.toml"]
         .iter()
         .find_map(|p| std::fs::read_to_string(p).ok())?;
     let mut in_display = false;
