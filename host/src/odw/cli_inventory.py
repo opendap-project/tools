@@ -5,7 +5,8 @@ shebang or a Python `__main__`; tests, fixtures, vendored code and library modul
 binary target of a Cargo package (`[[bin]]`, `src/main.rs`, `src/bin/*.rs`). Kinds: `umbrella`, `plugin`,
 `device-binary`, `host-binary`, `script`, `hook`. Each entry carries the facts read from its source (and the
 sources it runs, one level down) that the conformance test needs, whether it may be probed by running it, and the
-read-only --json call its tools.toml declares (`probe`, as `json_probe` with `declared_in`). A Cargo umbrella (odw)
+read-only --json calls its tools.toml declares (`probe`, one call or a list, as `json_probe`, a list of calls, with
+`declared_in`). A Cargo umbrella (odw)
 is probed through its checkout's release build when there is one (`exec`), and read from source otherwise.
 Spec: docs/specs/cli-conformance.md.
 """
@@ -276,6 +277,11 @@ def _entry(root, path, name, kind, mode, f, built=None):
     return item
 
 
+def calls(probe):
+    """A tools.toml `probe` as a list of calls: one call (a list of arguments), or a list of them (HL-105)."""
+    return [list(c) for c in probe] if probe and isinstance(probe[0], list) else [list(probe)]
+
+
 def declarations(ws, root):
     """{executable path: (folder, tools.toml entry)} for a root's tools.toml files: its own, and one in each
     folder directly below it (the merged `tools` root keeps one per tool folder), entries relative to it."""
@@ -312,7 +318,7 @@ def inventory(ws, roots=None):
             item = _entry(root, rel, pathlib.PurePath(rel).name, kind, mode, facts(_closure(repo, files, rel)))
             base, tool = declared.get(item["path"], (None, {}))
             if tool.get("probe"):
-                item.update(declared_in=base, json_probe=list(tool["probe"]))
+                item.update(declared_in=base, json_probe=calls(tool["probe"]))
             items.append(item)
         crates = _crates(repo, files)
         for name, crate, entry, deps in _cargo_bins(repo, files):

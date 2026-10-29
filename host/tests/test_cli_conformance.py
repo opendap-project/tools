@@ -343,18 +343,18 @@ def test_a_probe_declared_in_tools_toml_is_attached_and_run(ws):
     toml = ws / "public/tools/tools.toml"
     toml.write_text(toml.read_text() + 'probe = ["--json"]\n')
     good = by_name(cli_inventory.inventory(ws))["odapkit-good"]
-    assert good["json_probe"] == ["--json"] and good["declared_in"] == "public/tools"
+    assert good["json_probe"] == [["--json"]] and good["declared_in"] == "public/tools"
     assert "json_probe" not in by_name(cli_inventory.inventory(ws))["odapkit-bad"]
     probes = cli_probe.probe_all([good], ws, timeout=10)
     assert probes[good["path"]]["json"]["argv"][-1] == "--json"
 
 
 def test_probe_arguments_resolve_the_root_and_the_workspace(tmp_path):
-    entry = {"kind": "plugin", "json_probe": ["get", "{root}/tests/fixtures/x", "--workspace", "{workspace}", "--json"],
+    entry = {"kind": "plugin", "json_probe": [["get", "{root}/tests/fixtures/x", "--workspace", "{workspace}", "--json"]],
              "declared_in": "public/tools/host"}
-    assert cli_probe.json_args(entry, tmp_path) == [
-        "get", f"{tmp_path}/public/tools/host/tests/fixtures/x", "--workspace", str(tmp_path), "--json"]
-    assert cli_probe.json_args({"kind": "umbrella", "name": "odw"}, tmp_path) == ["help", "--json"]
+    assert cli_probe.json_args(entry, tmp_path) == [[
+        "get", f"{tmp_path}/public/tools/host/tests/fixtures/x", "--workspace", str(tmp_path), "--json"]]
+    assert cli_probe.json_args({"kind": "umbrella", "name": "odw"}, tmp_path) == [["help", "--json"]]
     assert cli_probe.json_args({"kind": "plugin", "name": "odapkit-x"}, tmp_path) is None
     assert not hasattr(cli_probe, "JSON_PROBES")
 
@@ -366,6 +366,17 @@ def test_the_tools_schema_takes_a_probe_with_json():
     doc["tool"][0]["probe"] = ["list", "--json"]
     assert schemas.errors(doc, "tools") == []
     for bad in ([], ["list"], ["list", 1]):
+        doc["tool"][0]["probe"] = bad
+        assert schemas.errors(doc, "tools"), bad
+
+
+def test_the_tools_schema_takes_a_list_of_probe_calls():
+    """HL-105: one call, or a list of calls (each with --json) when a tool's scripts answer different calls."""
+    doc = {"schema": "opendap.tools/v1", "front": "odw", "tool": [{
+        "name": "x", "summary": "s", "entry": "bin/x", "audience": "maintainer", "stability": "preview",
+        "probe": [["check", "--json", "a"], ["rules", "render", "s.md", "--check", "--json"]]}]}
+    assert schemas.errors(doc, "tools") == []
+    for bad in ([[]], [["check", "--json"], ["rules"]], [["check", "--json"], "--json"]):
         doc["tool"][0]["probe"] = bad
         assert schemas.errors(doc, "tools"), bad
 
@@ -382,3 +393,15 @@ def test_every_tool_that_had_a_probe_declares_it_in_its_tools_toml():
         assert schemas.errors(doc, "tools") == [], folder
         declared = {t["name"] for t in doc["tool"] if t.get("probe")}
         assert names <= declared, (folder, names - declared)
+
+
+def test_a_list_of_probe_calls_runs_each_and_fails_on_any(ws):
+    """HL-105: every declared call is run; the json cell passes only when each prints a document with a schema."""
+    toml = ws / "public/tools/tools.toml"
+    toml.write_text(toml.read_text() + 'probe = [["--json"], ["--json", "--dry-run"]]\n')
+    good = by_name(cli_inventory.inventory(ws))["odapkit-good"]
+    assert good["json_probe"] == [["--json"], ["--json", "--dry-run"]]
+    probes = cli_probe.probe_all([good], ws, timeout=10)
+    assert [j["argv"][-1] for j in probes[good["path"]]["json_calls"]] == ["--json", "--dry-run"]
+    m = cli_conformance.conformance(ws, [good], probes)
+    assert {c["criterion"]: c["state"] for c in m["results"]}["json"] == "fail"  # good prints no JSON

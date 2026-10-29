@@ -30,14 +30,15 @@ SHELLS = {"sh", "bash", "dash", "zsh"}
 
 
 def json_args(entry, ws):
-    """The arguments of an entry's read-only --json probe, {root} and {workspace} resolved; None when it has none."""
+    """The read-only --json calls of an entry, each a list of arguments with {root} and {workspace} resolved; None
+    when it has none."""
     if entry.get("kind") == "umbrella":
-        return list(UMBRELLA_PROBE)
-    args = entry.get("json_probe")
-    if not args:
+        return [list(UMBRELLA_PROBE)]
+    calls = entry.get("json_probe")
+    if not calls:
         return None
     root = str(pathlib.Path(ws) / entry["declared_in"])
-    return [a.replace("{root}", root).replace("{workspace}", str(ws)) for a in args]
+    return [[a.replace("{root}", root).replace("{workspace}", str(ws)) for a in call] for call in calls]
 
 
 def _uv_cache():
@@ -147,19 +148,24 @@ def probe(entry, ws, timeout=20.0):
     # A built Cargo umbrella runs as its binary; its entry path is the source it was built from.
     base = [entry["exec"]] if entry.get("exec") else command(pathlib.Path(ws) / entry["path"], entry["mode"])
     res = {"help": run(base + ["--help"], timeout, ws), "unknown_flag": run(base + [UNKNOWN_FLAG], timeout, ws)}
-    args = json_args(entry, ws)
-    if not args:
+    calls = json_args(entry, ws)
+    if not calls:
         return res
     shell = None if entry.get("exec") or entry.get("kind") == "umbrella" else shell_of(base[-1])
+    res["json_calls"] = [_json_call(base, args, shell, timeout, ws, entry) for args in calls]
+    res["json"] = res["json_calls"][0]
+    return res
+
+
+def _json_call(base, args, shell, timeout, ws, entry):
+    """One --json call; a shell tool's runs traced and names the scripts it reached."""
     if not shell:
-        res["json"] = run(base + args, timeout, ws)
-        return res
+        return run(base + args, timeout, ws)
     j = run([shell, "-x", base[-1], *args], timeout, ws, {"PS4": "+" + TRACE_MARK})
     j["argv"] = base + args
     j["stderr"], trace = split_trace(j["stderr"])
     j["reached"] = reached(trace, ws, entry)
-    res["json"] = j
-    return res
+    return j
 
 
 def probe_all(entries, ws, timeout=20.0, jobs=4):

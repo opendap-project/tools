@@ -92,7 +92,15 @@ def json_(e, p, ctx):
         if via:
             return _through(*via)
         return "unverified", "--json declared; no read-only --json invocation is listed to probe it"
-    j = p["json"]
+    # Every declared call must pass (HL-105); the first that does not is the cell's reason.
+    for j in p.get("json_calls", [p["json"]]):
+        state, why = _json_call(j)
+        if state != "pass":
+            return state, why
+    return state, why
+
+
+def _json_call(j):
     doc = _document(j["stdout"])
     if doc is None:
         return "fail", f"--json ({_probe_word(j)}): stdout is not JSON; stderr: {_tail(j['stderr'], 100)}"
@@ -122,10 +130,16 @@ def no_prompt(e, p, ctx):
     return "pass", "from source: no prompt (not run)"
 
 
+def _runs(p):
+    """Every run of an executable's probes: --help, the unknown flag and each --json call."""
+    p = p or {}
+    return [v for k, v in p.items() if k not in ("json", "json_calls")] + p.get("json_calls", [])
+
+
 def exit_status(e, p, ctx):
     allowed = {0, 1, 2} | (OPENDAP_CODES if e["name"].startswith("opendap") else set())
     bad = [b for b in e["facts"]["bad_exits"] if b["code"] not in allowed]
-    seen = sorted({v["exit"] for v in (p or {}).values() if v["exit"] is not None and v["exit"] not in allowed})
+    seen = sorted({v["exit"] for v in _runs(p) if v["exit"] is not None and v["exit"] not in allowed})
     if bad or seen:
         where = ", ".join(f"{b['path']}:{b['line']} exits {b['code']}" for b in bad[:3])
         return "fail", "; ".join(x for x in (where, f"probes exited {seen}" if seen else "") if x)

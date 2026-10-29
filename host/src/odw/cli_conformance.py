@@ -53,9 +53,9 @@ def reached(probes):
     """{script path: (parent path, the parent's json probe)} for the scripts a parent's tools.toml probe ran."""
     out = {}
     for parent, res in sorted(probes.items()):
-        j = (res or {}).get("json") or {}
-        for child in j.get("reached", []):
-            out.setdefault(child, (parent, j))
+        for j in (res or {}).get("json_calls", []):
+            for child in j.get("reached", []):
+                out.setdefault(child, (parent, j))
     return out
 
 

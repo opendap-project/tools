@@ -27,8 +27,26 @@ pub struct Entry {
     pub audience: Audience,
     pub stability: Stability,
     pub replaces: Option<String>,
-    /// The conformance test's read-only `--json` call (arguments after the entry); dispatch ignores it.
-    pub probe: Option<Vec<String>>,
+    /// The conformance test's read-only `--json` calls (arguments after the entry); dispatch ignores them.
+    pub probe: Option<Probe>,
+}
+
+/// A `probe`: one call, or a list of calls when the tool's scripts answer different calls (HL-105).
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(untagged)]
+pub enum Probe {
+    One(Vec<String>),
+    Many(Vec<Vec<String>>),
+}
+
+impl Probe {
+    /// Every call, in order.
+    pub fn calls(&self) -> Vec<Vec<String>> {
+        match self {
+            Probe::One(call) => vec![call.clone()],
+            Probe::Many(calls) => calls.clone(),
+        }
+    }
 }
 
 /// Parse and check what the schema says (the JSON Schema is the reference; this mirrors it).
@@ -184,10 +202,26 @@ stability = "preview"
         ))
         .unwrap();
         assert_eq!(
-            f.tool[0].probe.as_deref(),
-            Some(&["list".to_string(), "--json".into(), "{root}/x".into()][..])
+            f.tool[0].probe.as_ref().map(Probe::calls),
+            Some(vec![vec!["list".to_string(), "--json".into(), "{root}/x".into()]])
         );
         assert_eq!(parse_tools(GOOD).unwrap().tool[0].probe, None);
+    }
+
+    #[test]
+    fn a_probe_may_be_a_list_of_calls() {
+        // HL-105: a tool whose scripts answer different calls declares each (craft: check and rules render).
+        let f = parse_tools(&format!(
+            "{GOOD}probe = [[\"check\", \"--json\", \"x.kicad_sym\"], [\"rules\", \"render\", \"s.md\", \"--check\", \"--json\"]]\n"
+        ))
+        .unwrap();
+        let calls = f.tool[0].probe.as_ref().unwrap().calls();
+        assert_eq!(calls.len(), 2);
+        assert_eq!(calls[1][..2], ["rules".to_string(), "render".into()]);
+        // One call, as before, is a list of one.
+        let one = parse_tools(&format!("{GOOD}probe = [\"list\", \"--json\"]\n")).unwrap();
+        assert_eq!(one.tool[0].probe.as_ref().unwrap().calls().len(), 1);
+        assert!(parse_tools(&format!("{GOOD}probe = [[\"list\", 1]]\n")).is_err());
     }
 
     #[test]

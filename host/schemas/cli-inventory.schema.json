@@ -27,7 +27,7 @@
           "probe": {"type": "boolean"},
           "probe_skipped": {"type": "string"},
           "declared_in": {"type": "string", "minLength": 1},
-          "json_probe": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "json_probe": {"type": "array", "minItems": 1, "items": {"type": "array", "minItems": 1, "items": {"type": "string"}}},
           "facts": {
             "type": "object",
             "required": ["lang", "help", "json", "prompt", "writes", "network", "bad_exits", "forbidden_verbs", "sources"],

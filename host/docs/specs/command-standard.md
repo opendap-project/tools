@@ -47,7 +47,8 @@ entry = "electronics/pcb/bin/odw-stackup"           # path from the root, execut
 audience = "maintainer"       # maintainer | developer | user
 stability = "stable"          # internal | preview | stable | deprecated
 # replaces = "odapkit-stackup" # the name this tool takes over, kept as a deprecated alias
-# probe = ["stack", "{root}/tests/fixtures/stackup/fixture.toml", "--json"]  # a read-only --json call (§8 item 5)
+# probe = ["stack", "{root}/tests/fixtures/stackup/fixture.toml", "--json"]  # a read-only --json call (§8 item 5),
+#   or a list of calls: probe = [["check", "--json", "…"], ["rules", "render", "…", "--json"]]
 ```
 
 Resolution order, first match wins:
@@ -146,7 +147,7 @@ A test in `tools/workspace`, run in every root's `full` stage for the tools that
 2. `entry` exists and is executable;
 3. `--help` exits 0, prints on stdout, and its first line carries the `tools.toml` summary;
 4. an unknown flag exits 2;
-5. `--json` output (where the tool declares it) parses and carries `schema`; a check tool's output validates against `opendap.check-result/v1`. The call is the entry's `probe` in `tools.toml`: the arguments after the entry, read-only, with `{root}` for the folder of that `tools.toml` and `{workspace}` for the workspace; a tool that declares `--json` without one is unverified;
+5. `--json` output (where the tool declares it) parses and carries `schema`; a check tool's output validates against `opendap.check-result/v1`. The call is the entry's `probe` in `tools.toml`: the arguments after the entry, read-only, or a list of such calls when the tool's scripts answer different calls (each must pass), with `{root}` for the folder of that `tools.toml` and `{workspace}` for the workspace; a tool that declares `--json` without one is unverified;
 6. with stdin closed and no TTY, the tool does not wait for input;
 7. an `opendap` entry: run in a clean environment without a workspace, without `odw` on `PATH` and without `ODAP_*`, `--help` still works, and the source names no maintainer tool;
 8. a `deprecated` entry names its replacement;
