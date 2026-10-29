@@ -110,7 +110,7 @@ def _json_call(j):
 
 
 def _through(parent, j):
-    """The json cell of a script its parent's tools.toml probe ran (HL-100)."""
+    """The json cell of a script a parent's tools.toml call names (`reaches`, HL-105)."""
     doc = _document(j["stdout"])
     if doc is None:
         return "fail", f"--json through {parent}'s probe ({_probe_word(j)}): stdout is not JSON; stderr: {_tail(j['stderr'], 100)}"

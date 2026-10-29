@@ -62,8 +62,7 @@ def test_a_built_odw_is_probed_as_the_binary(tmp_path):
     assert {k: v for k, v in states.items() if v not in ("pass", "n/a")} == {}, states
 
 
-# HL-100: a script a declared tool runs is verified through that tool's own tools.toml probe, when the probe's
-# run reaches it (a shell parent's json probe is traced), never by a table of its own.
+# HL-100, HL-105: a script a tool runs is verified through the tool's own tools.toml call that names it (`reaches`).
 PARENT = """\
 #!/bin/sh
 # odapkit par: a parent that runs one script per command
@@ -99,37 +98,20 @@ def _parent_ws(tmp_path):
     return tmp_path
 
 
-def test_a_script_is_verified_through_the_parent_probe_that_reaches_it(tmp_path):
-    ws = _parent_ws(tmp_path)
-    items = cli_inventory.inventory(ws)
-    probes = cli_probe.probe_all(items, ws, timeout=10)
-    assert probes["public/tools/bin/odapkit-par"]["json"]["reached"] == ["public/tools/tools/a.py"]
-    m = cli_conformance.conformance(ws, items, probes)
-    why = {(c["option"], c["criterion"]): (c["state"], c["why"]) for c in m["results"]}
-    state, reason = why[("public/tools/tools/a.py", "json")]
-    assert state == "pass" and "odapkit-par" in reason and "opendap.a/v1" in reason
-    assert why[("public/tools/tools/b.py", "json")][0] == "unverified"  # no probe of its parent reaches it
-    assert why[("public/tools/bin/odapkit-par", "json")][0] == "pass"
-
-
-def test_the_trace_does_not_change_what_the_parent_prints(tmp_path):
-    ws = _parent_ws(tmp_path)
-    par = by_name(cli_inventory.inventory(ws))["odapkit-par"]
-    j = cli_probe.probe(par, ws, timeout=10)["json"]
-    assert j["exit"] == 0 and json.loads(j["stdout"]) == {"schema": "opendap.a/v1"}
-    assert not any(line.startswith("+") for line in j["stderr"].splitlines())
-
-
 @pytest.mark.skipif(not (HOST.parent / "hardware" / "tools.toml").is_file(), reason="not the merged tools root")
-def test_sch_craft_check_is_verified_through_the_craft_probe(tmp_path):
+def test_the_craft_scripts_are_verified_through_the_calls_that_name_them(tmp_path):
     (tmp_path / "repos.tsv").write_text("path\trepository\npublic/tools\to/t\n")
     (tmp_path / "public").mkdir()
     (tmp_path / "public/tools").symlink_to(HOST.parent)
     items = [e for e in cli_inventory.inventory(tmp_path)
-             if e["name"] in ("odapkit-craft", "sch-craft-check.py")]
+             if e["name"] in ("odapkit-craft", "sch-craft-check.py", "craftrules.py", "pcb-craft-check.py")]
     m = cli_conformance.conformance(tmp_path, items, cli_probe.probe_all(items, tmp_path, timeout=60))
     why = {(c["option"], c["criterion"]): (c["state"], c["why"]) for c in m["results"]}
-    assert why[("public/tools/hardware/tools/sch-craft-check.py", "json")][0] == "pass", why
+    tools = "public/tools/hardware/tools"
+    for script in ("sch-craft-check.py", "craft/craftrules.py"):
+        assert why[(f"{tools}/{script}", "json")][0] == "pass", why[(f"{tools}/{script}", "json")]
+    # Needs KiCad: no call names it, so it is never credited by a call that ran another script.
+    assert why[(f"{tools}/pcb-craft-check.py", "json")][0] == "unverified"
 
 
 # HL-105: a call names the script it reaches (`reaches`, from the tools.toml folder); that script, and only it, is
