@@ -1,7 +1,8 @@
 //! `odw doctor` (command standard §3, §6): every problem of the front's tools in one report. Discovery's
 //! findings (an invalid `tools.toml`, an unsafe or shadowing entry, a summary outside 1–100 characters, an
-//! audience that does not fit the front, a name declared twice) and each tool's `--help`, run with stdin
-//! closed and a timeout. Dispatch itself stays quiet; this is where those problems are looked at.
+//! audience that does not fit the front, a name declared twice) and the `--help` of each tool a workspace
+//! root declares, run with stdin closed and a timeout (a tool found only on `PATH` is never run).
+//! Dispatch itself stays quiet; this is where those problems are looked at.
 
 use std::time::Duration;
 
@@ -39,6 +40,17 @@ pub fn doctor(
         .and_then(|v| v.parse().ok())
         .unwrap_or(HELP_TIMEOUT_SECS);
     for tool in &catalog.tools {
+        // Workspace roots are trusted (§3); a tool found only on PATH runs only when asked for by name.
+        if tool.declared.is_none() {
+            findings.push(Finding {
+                id: tool.name.clone(),
+                rule: "tool.help".into(),
+                verdict: Verdict::Skip,
+                message: format!("{} is not declared in a workspace root: not run", tool.name),
+                path: Some(tool.entry.to_string_lossy().into_owned()),
+            });
+            continue;
+        }
         let ran = host.run(
             &tool.entry,
             &["--help".into()],
@@ -90,8 +102,9 @@ pub fn usage(front: &str) -> String {
          Reports, as opendap.check-result/v1 with --json or one line per problem, every tools.toml that does\n\
          not parse, every entry that is not dispatched (a bad name, a built-in, an entry outside its root or\n\
          not executable), summaries outside 1-100 characters, audiences that do not fit the front, names\n\
-         declared twice, and each tool's --help (exit 0, usage on stdout, stdin closed, within\n\
-         ODAP_DOCTOR_TIMEOUT seconds, {HELP_TIMEOUT_SECS} by default). Quiet when everything passes.\n\n\
+         declared twice, and the --help of each tool a workspace root declares (exit 0, usage on stdout,\n\
+         stdin closed, within ODAP_DOCTOR_TIMEOUT seconds, {HELP_TIMEOUT_SECS} by default); a tool found only on\n\
+         PATH is listed as skip, never run. Quiet when everything passes.\n\n\
          Exit status: 0 no problem, 1 a problem, 2 usage error.\n\n\
          Examples:\n  {front} doctor\n  {front} doctor --json\n"
     )

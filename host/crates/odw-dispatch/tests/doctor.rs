@@ -203,3 +203,34 @@ fn usage_errors_exit_2_and_doctor_is_a_builtin() {
     assert!(!stdout(&o).contains("evil-doctor"));
     assert!(stdout(&o).contains("would shadow the built-in command odw doctor"));
 }
+
+#[test]
+fn a_tool_found_only_on_path_is_never_run() {
+    // Workspace roots are trusted (§3); a PATH executable is only run when someone asks for it by name.
+    let f = clean();
+    let marker = f.dir.join("ran");
+    f.write(
+        "path/odw-stray",
+        &format!(
+            "#!/bin/sh\n# odw stray: a stray tool\ntouch {}\necho usage\n",
+            marker.display()
+        ),
+        true,
+    );
+    let (code, doc) = doctor_json(&f);
+    assert_eq!(code, Some(0), "{doc}");
+    assert!(!marker.exists(), "doctor ran a PATH tool");
+    let stray = doc["results"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["id"] == "stray")
+        .unwrap();
+    assert_eq!(stray["verdict"], "skip");
+    assert!(
+        stray["message"]
+            .as_str()
+            .unwrap()
+            .contains("not declared in a workspace root")
+    );
+}

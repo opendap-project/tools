@@ -9,6 +9,7 @@ pub const CHECK_RESULT_SCHEMA: &str = "opendap.check-result/v1";
 pub enum Verdict {
     Pass,
     Fail,
+    Skip,
 }
 
 impl Verdict {
@@ -16,6 +17,7 @@ impl Verdict {
         match self {
             Verdict::Pass => "pass",
             Verdict::Fail => "fail",
+            Verdict::Skip => "skip",
         }
     }
 }
