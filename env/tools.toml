@@ -1,0 +1,28 @@
+# The tools this folder adds to the maintainers' umbrella command (command standard §3).
+schema = "opendap.tools/v1"
+front = "odw"
+
+[[tool]]
+name = "noindex"
+summary = "Keep generated trees (target/, .venv/, test caches) out of the macOS Spotlight index"
+entry = "bin/odw-noindex"
+replaces = "odapkit-noindex"
+audience = "maintainer"
+stability = "preview"
+probe = ["--dry-run", "--json", "{root}"]
+
+[[tool]]
+name = "qemu"
+summary = "QEMU for virtual OpenDAP devices, with the patches OpenDAP carries"
+entry = "bin/odw-qemu"
+replaces = "odapkit-qemu"
+audience = "maintainer"
+stability = "preview"
+
+[[tool]]
+name = "vmnet"
+summary = "Give virtual OpenDAP devices a NIC on this Mac's network"
+entry = "bin/odw-vmnet"
+replaces = "odapkit-vmnet"
+audience = "maintainer"
+stability = "preview"

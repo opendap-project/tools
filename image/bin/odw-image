@@ -5,7 +5,7 @@
 #   build   build PROFILE (default: qemu); prints the output's path. While it builds, the output
 #           has a <output>.building marker next to it
 #   path    the output of PROFILE (blackbird-os image/mkosi.output/)
-#   vm      the build VM (Lima, created on first use from vm/build-vm.yaml). It holds all its CPUs
+#   vm      the build VM (Lima, created on first use from env/build-vm.yaml). It holds all its CPUs
 #           and memory while it runs, so it stops itself after ODAP_BUILD_VM_IDLE minutes (default
 #           10, 0: never) with no build and no shell open; idle-stop is that watcher, which build,
 #           start and shell launch in the background
@@ -43,7 +43,7 @@ vm_up() {
   data="$(odap_data)"; mkdir -p "$data"
   if [ "$(vm_status)" = absent ] || [ -z "$(vm_status)" ]; then
     cfg="$(odap_cache)/build-vm.yaml"; mkdir -p "$(odap_cache)"
-    sed -e "s|__WORKSPACE__|$ws|" -e "s|__DATA__|$data|" "$here/../vm/build-vm.yaml" > "$cfg"
+    sed -e "s|__WORKSPACE__|$ws|" -e "s|__DATA__|$data|" "$here/../env/build-vm.yaml" > "$cfg"
     limactl start --name="$vm" --tty=false "$cfg"
     return
   fi

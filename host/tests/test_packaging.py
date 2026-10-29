@@ -14,7 +14,7 @@ def test_the_wheel_carries_the_schemas(tmp_path):
     # HL-71: one odw package from the domain folders, only the schemas themselves (no tests or fixtures), and
     # every folder's tools.toml for the --help summaries.
     assert all(n.endswith(".schema.json") for n in names if n.startswith("odw/schemas/"))
-    assert {"odw/__init__.py", "odw/clikit.py", "odw/plan.py", "odw/tools/core.toml", "odw/tools/documentation.toml", "odw/tools/host.toml", "odw/docs.py"} <= set(names)
+    assert {"odw/__init__.py", "odw/clikit.py", "odw/plan.py", "odw/tools/core.toml", "odw/tools/documentation.toml", "odw/tools/env.toml", "odw/tools/host.toml", "odw/docs.py"} <= set(names)
 
 
 def test_schemas_are_found_inside_the_package_first(tmp_path, monkeypatch):

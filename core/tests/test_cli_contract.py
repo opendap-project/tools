@@ -14,7 +14,7 @@ from odw import (audit, cli_conformance, clikit, docs, noindex, plan, rename, re
 TOP = pathlib.Path(__file__).resolve().parents[2]
 HOST = TOP / "host"
 # The folders whose tools.toml declares the odw package's tools (HL-71: core, then each domain as it moves).
-FOLDERS = ["core", "documentation", "host"]
+FOLDERS = ["core", "documentation", "env", "host"]
 TOOLS = {t["name"]: {**t, "folder": d} for d in FOLDERS
          for t in tomllib.loads((TOP / d / "tools.toml").read_text())["tool"]}
 PYTHON = {"audit": audit, "cli": cli_conformance, "docs": docs, "noindex": noindex, "plan": plan,
@@ -50,21 +50,21 @@ def test_a_usage_error_with_json_is_an_error_document(name, capsys):
 
 @pytest.mark.parametrize("name", ["qemu", "vmnet"])
 def test_shell_plugins_help_first_line(name):
-    r = subprocess.run([str(HOST / "bin" / f"odw-{name}"), "--help"], capture_output=True, text=True)
+    r = subprocess.run([str(TOP / "env" / "bin" / f"odw-{name}"), "--help"], capture_output=True, text=True)
     assert r.returncode == 0
     assert r.stdout.splitlines()[0] == f"odw {name}: {TOOLS[name]['summary']}"
 
 
 @pytest.mark.parametrize("name", ["qemu", "vmnet"])
 def test_shell_plugins_unknown_flag_exits_2_with_a_code(name):
-    r = subprocess.run([str(HOST / "bin" / f"odw-{name}"), "--odw-no-such-flag"], capture_output=True,
+    r = subprocess.run([str(TOP / "env" / "bin" / f"odw-{name}"), "--odw-no-such-flag"], capture_output=True,
                        text=True)
     assert r.returncode == 2 and "error input.invalid:" in r.stderr and "hint: " in r.stderr
 
 
 def test_qemu_install_dry_run_names_its_steps_and_changes_nothing(tmp_path):
     env = {"HOME": str(tmp_path), "PATH": "/usr/bin:/bin"}
-    r = subprocess.run([str(HOST / "bin" / "odw-qemu"), "install", "--dry-run"], capture_output=True,
+    r = subprocess.run([str(TOP / "env" / "bin" / "odw-qemu"), "install", "--dry-run"], capture_output=True,
                        text=True, env=env)
     # Without the build tools on PATH the dry run says the install would fail, and exits 1.
     assert r.returncode == 1 and "would fail: missing" in r.stderr
@@ -73,7 +73,7 @@ def test_qemu_install_dry_run_names_its_steps_and_changes_nothing(tmp_path):
 
 
 def test_qemu_status_json_has_a_schema(tmp_path):
-    r = subprocess.run([str(HOST / "bin" / "odw-qemu"), "status", "--json"], capture_output=True, text=True,
+    r = subprocess.run([str(TOP / "env" / "bin" / "odw-qemu"), "status", "--json"], capture_output=True, text=True,
                        env={"HOME": str(tmp_path), "PATH": "/usr/bin:/bin"})
     assert r.returncode == 1
     doc = json.loads(r.stdout)
@@ -84,7 +84,7 @@ def test_qemu_status_json_has_a_schema(tmp_path):
                     reason="odw vmnet is macOS only")
 @pytest.mark.parametrize("verb", ["install", "uninstall"])
 def test_vmnet_dry_run_names_its_steps_and_runs_nothing_as_root(verb):
-    r = subprocess.run([str(HOST / "bin" / "odw-vmnet"), verb, "--dry-run"], capture_output=True, text=True,
+    r = subprocess.run([str(TOP / "env" / "bin" / "odw-vmnet"), verb, "--dry-run"], capture_output=True, text=True,
                        stdin=subprocess.DEVNULL, env={"PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
                                                       "ODAP_LAN_INTERFACE": "en9"})
     assert r.returncode == 0, r.stderr
@@ -94,7 +94,7 @@ def test_vmnet_dry_run_names_its_steps_and_runs_nothing_as_root(verb):
 @pytest.mark.skipif(subprocess.run(["uname", "-s"], capture_output=True, text=True).stdout.strip() != "Darwin",
                     reason="odw vmnet is macOS only")
 def test_vmnet_status_json_has_a_schema():
-    r = subprocess.run([str(HOST / "bin" / "odw-vmnet"), "status", "--json"], capture_output=True, text=True,
+    r = subprocess.run([str(TOP / "env" / "bin" / "odw-vmnet"), "status", "--json"], capture_output=True, text=True,
                        env={"PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "ODAP_LAN_INTERFACE": "en9"})
     doc = json.loads(r.stdout)
     assert doc["schema"] == "opendap.vmnet-status/v1" and doc["running"] is False and r.returncode == 1

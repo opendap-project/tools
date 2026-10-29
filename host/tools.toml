@@ -12,15 +12,6 @@ stability = "preview"
 probe = ["--workspace", "{workspace}", "--json"]
 
 [[tool]]
-name = "noindex"
-summary = "Keep generated trees (target/, .venv/, test caches) out of the macOS Spotlight index"
-entry = "bin/odw-noindex"
-replaces = "odapkit-noindex"
-audience = "maintainer"
-stability = "preview"
-probe = ["--dry-run", "--json", "{root}"]
-
-[[tool]]
 name = "plan"
 summary = "A maintainers' programme as data: list, claim and record its tasks, check it, render its index"
 entry = "bin/odw-plan"
@@ -28,14 +19,6 @@ replaces = "odapkit-plan"
 audience = "maintainer"
 stability = "preview"
 probe = ["--programme", "{root}/tests/fixtures/programme", "--json", "list"]
-
-[[tool]]
-name = "qemu"
-summary = "QEMU for virtual OpenDAP devices, with the patches OpenDAP carries"
-entry = "bin/odw-qemu"
-replaces = "odapkit-qemu"
-audience = "maintainer"
-stability = "preview"
 
 [[tool]]
 name = "rename"
@@ -54,11 +37,3 @@ replaces = "odapkit-sync"
 audience = "maintainer"
 stability = "preview"
 probe = ["--workspace", "{workspace}", "--check", "--json"]
-
-[[tool]]
-name = "vmnet"
-summary = "Give virtual OpenDAP devices a NIC on this Mac's network"
-entry = "bin/odw-vmnet"
-replaces = "odapkit-vmnet"
-audience = "maintainer"
-stability = "preview"

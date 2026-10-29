@@ -275,7 +275,7 @@ def test_the_tool_passes_its_own_test_on_a_copy(tmp_path):
     root's Python project (pyproject.toml, uv.lock, conftest.py) that builds odw since HL-71."""
     repo = tmp_path / "public/tools"
     top = HOST.parent
-    files = [f for f in _git(["ls-files", "-z"], top).split("\0") if f.split("/")[0] in ("core", "documentation", "host", "schemas")]
+    files = [f for f in _git(["ls-files", "-z"], top).split("\0") if f.split("/")[0] in ("core", "documentation", "env", "host", "schemas")]
     files += list(ROOT_PROJECT)
     for f in files:
         if (top / f).is_file():
@@ -397,7 +397,7 @@ def test_the_tools_schema_takes_a_list_of_probe_calls():
         assert schemas.errors(doc, "tools"), bad
 
 
-MIGRATED = {"core": {"cli", "component"}, "documentation": {"docs", "req", "verify"}, "host": {"audit", "noindex", "plan", "rename", "sync"},
+MIGRATED = {"core": {"cli", "component"}, "documentation": {"docs", "req", "verify"}, "env": {"noindex"}, "host": {"audit", "plan", "rename", "sync"},
             "electronics": {"craft", "variant", "stackup"}, "sim": {"sim"}}
 
 

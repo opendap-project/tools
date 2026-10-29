@@ -1,0 +1,26 @@
+version = 1
+
+[[annotations]]
+path = "**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 The OpenDAP Project"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = "**/*.md"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 The OpenDAP Project"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+[[annotations]]
+path = "docs/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 The OpenDAP Project"
+SPDX-License-Identifier = "CC-BY-SA-4.0"
+
+# Patches to QEMU files under the MIT licence (audio/), carried until QEMU has the fixes.
+[[annotations]]
+path = "qemu/patches/**"
+precedence = "override"
+SPDX-FileCopyrightText = ["2026 The OpenDAP Project", "2021 Red Hat, Inc.", "2004-2005 Vassili Karpov (malc)", "1998 Fabrice Bellard"]
+SPDX-License-Identifier = "MIT"
