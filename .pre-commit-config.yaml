@@ -123,6 +123,16 @@ repos:
         language: system
         pass_filenames: false
         files: ^image/(?:(bin|lib|tests)/|tools\.toml$)
+  # parts/
+  - repo: local
+    hooks:
+      # odw parts: the engine offline on synthetic fixtures, and the contract of odw parts and parts-sync.py.
+      - id: parts-tests
+        name: parts odw parts and parts-sync tests (sourcing/tests, tests)
+        entry: sh -c 'cd parts && python3 -m unittest discover -s sourcing/tests && python3 -m unittest discover -s tests'
+        language: system
+        pass_filenames: false
+        files: ^(?:core/clihost\.py$|parts/)
   # sim/
   - repo: local
     hooks:

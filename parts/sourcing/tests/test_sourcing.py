@@ -1,4 +1,4 @@
-"""Tests for odw parts (its engine, tools/sourcing/partscli.py) and tools/sourcing on synthetic fixtures (tests/fixtures/parts).
+"""Tests for odw parts (its engine, sourcing/partscli.py), sourcing/ and selection/ on synthetic fixtures (sourcing/tests/fixtures).
 
 The channel fixtures copy the structure of each source (Digi-Key's __NEXT_DATA__, FindChips'
 result rows, the JLCPCB parts API, and the documented responses of the keyed APIs) with made-up
@@ -18,11 +18,12 @@ import time
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FIX = os.path.join(HERE, "fixtures", "parts")
-TOOL = os.path.join(HERE, "..", "tools", "sourcing", "__main__.py")
-sys.path.insert(0, os.path.join(HERE, "..", "tools"))
+FIX = os.path.join(HERE, "fixtures")
+TOOL = os.path.join(HERE, "..", "__main__.py")
+sys.path.insert(0, os.path.join(HERE, "..", ".."))  # parts/: sourcing and selection (HL-71)
 
-from sourcing import channels, matrix, rkddr  # noqa: E402
+from sourcing import channels, matrix  # noqa: E402
+from selection import rkddr  # noqa: E402
 from sourcing.model import Listing, lifecycle_class, matches, norm  # noqa: E402
 
 # Tests never inherit a hook's GIT_* variables (HL-64): under pre-commit, git exports GIT_DIR, GIT_INDEX_FILE and

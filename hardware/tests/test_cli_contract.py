@@ -58,23 +58,12 @@ class Plugins(unittest.TestCase):
             self.assertEqual(r.stdout.splitlines()[0], f"odw {name}: {TOOLS[name]}", name)
 
     def test_unknown_flag_exits_2_with_a_code_a_hint_and_a_fix(self):
-        for name in ["craft", "parts", "variant"]:
+        for name in ["craft", "variant"]:
             if name not in PLUGINS:
                 continue
             r = run(tool(name), "--odw-no-such-flag")
             self.assertEqual(r.returncode, 2, name)
             self.assertRegex(r.stderr, r"error input\.invalid: .*\n  hint: .*\n  fix: ", name)
-
-    def test_parts_matrix_dry_run_names_the_files(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            cand = os.path.join(tmp, "c.toml")
-            with open(cand, "w") as fh:
-                fh.write('version = 1\n[matrix]\ntitle = "t"\ncolumns = ["soc"]\n'
-                         '[[candidate]]\nmpn = "X1"\nquery = "X1"\n[candidate.attrs]\nsoc = "T/A"\n')
-            r = run(tool("parts"), "matrix", cand, "--out", os.path.join(tmp, "out"), "--dry-run")
-            self.assertEqual(r.returncode, 0, r.stderr)
-            self.assertIn("would write", r.stderr)
-            self.assertFalse(os.path.exists(os.path.join(tmp, "out")))
 
     def test_json_documents_carry_a_schema(self):
         cases = [("craft", "check", "--json", "tests/fixtures/craft-sch/bad.kicad_sym"),
@@ -91,7 +80,7 @@ class Plugins(unittest.TestCase):
 
 
 class Scripts(unittest.TestCase):
-    SCRIPTS = [[sys.executable, "tools/parts-sync.py"], [sys.executable, "tools/craft/craftrules.py"],
+    SCRIPTS = [[sys.executable, "tools/craft/craftrules.py"],
                [sys.executable, "tools/pcb-craft-check.py"], [sys.executable, "tools/stackup/stackup.py"],
                ["sh", "tools/fab-package.sh"]]
 
@@ -109,18 +98,6 @@ class Scripts(unittest.TestCase):
         for f in ("tools/stackup/explore.py", "tools/stackup/pdn.py"):
             with open(os.path.join(ROOT, f)) as fh:
                 self.assertNotIn("__main__", fh.read(), f)
-
-    def test_parts_sync_check_downloads_nothing(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            manifest = os.path.join(tmp, "manifest.toml")
-            with open(manifest, "w") as f:
-                f.write('[[file]]\nmpn = "X1"\nmanufacturer = "Acme"\nkind = "datasheet"\n'
-                        'url = "https://example.invalid/x1.pdf"\n')
-            r = run(sys.executable, "tools/parts-sync.py", manifest, "--check", "--json",
-                    env={"XDG_CACHE_HOME": os.path.join(tmp, "cache")})
-            self.assertEqual(r.returncode, 1)
-            self.assertEqual(json.loads(r.stdout)["items"][0]["status"], "missing")
-            self.assertFalse(os.path.exists(os.path.join(tmp, "cache")))
 
     def test_craft_rules_json(self):
         r = run(sys.executable, "tools/craft/craftrules.py", "render",

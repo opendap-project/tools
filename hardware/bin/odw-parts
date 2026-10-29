@@ -1,5 +1,0 @@
-#!/bin/sh
-# odw parts: a thin entry point; the engine, and its --help, is tools/sourcing/ (run as tools/sourcing/__main__.py).
-self="$(readlink -f "$0" 2>/dev/null || echo "$0")"
-here="$(cd "$(dirname "$self")/.." && pwd)"
-exec python3 "$here/tools/sourcing/__main__.py" "$@"

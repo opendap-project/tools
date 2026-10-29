@@ -16,14 +16,6 @@ probe = [
 ]
 
 [[tool]]
-name = "parts"
-summary = "Sourcing evaluation matrix: stock, price breaks and lifecycle per part and channel, scored"
-entry = "bin/odw-parts"
-replaces = "odapkit-parts"
-audience = "maintainer"
-stability = "preview"
-
-[[tool]]
 name = "variant"
 summary = "Board variants (RFC 0011): validate, diff, BOM and per-variant schematic and PCB builds"
 entry = "bin/odw-variant"

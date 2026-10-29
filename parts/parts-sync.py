@@ -32,7 +32,7 @@ def main(argv):
         else:
             args.append(a)
     here = os.path.dirname(os.path.abspath(__file__))
-    manifest = args[0] if args else os.path.join(here, "..", "..", "..", "libs", "parts", "manifest.toml")
+    manifest = args[0] if args else os.path.join(here, "..", "..", "libs", "parts", "manifest.toml")
     files = tomllib.load(open(manifest, "rb")).get("file", [])
     if mpns:
         files = [f for f in files if f.get("mpn") in mpns]

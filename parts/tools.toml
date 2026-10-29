@@ -1,0 +1,11 @@
+# The tools this folder adds to the maintainers' umbrella command (command standard §3).
+schema = "opendap.tools/v1"
+front = "odw"
+
+[[tool]]
+name = "parts"
+summary = "Sourcing evaluation matrix: stock, price breaks and lifecycle per part and channel, scored"
+entry = "bin/odw-parts"
+replaces = "odapkit-parts"
+audience = "maintainer"
+stability = "preview"

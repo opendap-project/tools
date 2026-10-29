@@ -42,9 +42,10 @@ import sys
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(HERE, ".."))
-sys.path.append(os.path.join(HERE, "..", "..", "..", "core"))  # core/: clihost (HL-71); last: core/kicad never shadows
+sys.path.append(os.path.join(HERE, "..", "..", "core"))  # core/: clihost (HL-71); last: core/kicad never shadows
 
-from sourcing import channels, matrix, rkddr  # noqa: E402
+from sourcing import channels, matrix  # noqa: E402
+from selection import rkddr  # noqa: E402  (parts/selection, HL-71)
 from clihost import load, summary  # noqa: E402
 
 TOOL = "odw parts"

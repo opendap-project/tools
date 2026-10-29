@@ -79,7 +79,7 @@ TOOL = "odw sim"
 clikit = load(TOOL)
 
 HERE = os.path.dirname(os.path.realpath(__file__))
-PARTS_SYNC = os.path.join(HERE, "..", "hardware", "tools", "parts-sync.py")  # until the parts domain moves (HL-71)
+PARTS_SYNC = os.path.join(HERE, "..", "parts", "parts-sync.py")  # the parts domain (HL-71)
 NGSPICE = os.environ.get("NGSPICE", "ngspice")
 NUMBER = r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?"
 REDUCE = ("first", "last", "min", "max", "all")
