@@ -33,9 +33,9 @@ SPDX-FileCopyrightText = "2026 The OpenDAP Project"
 SPDX-License-Identifier = "CC-BY-SA-4.0"
 
 # Schematic craft-check fixtures: copied from kicad-lib's examples/load-switch and its drawing
-# sheet (CERN-OHL-W-2.0), and derived from them by make_fixture.py.
+# sheet (CERN-OHL-W-2.0), and derived from them by make_fixture.py; the render fixture's schematic is a copy.
 [[annotations]]
-path = ["tests/fixtures/craft-sch/good/**", "tests/fixtures/craft-sch/bad/**", "tests/fixtures/craft-sch/drawing-sheets/**", "tests/fixtures/craft-sch/bad.kicad_sym"]
+path = ["tests/fixtures/craft-sch/good/**", "tests/fixtures/craft-sch/bad/**", "tests/fixtures/craft-sch/drawing-sheets/**", "tests/fixtures/craft-sch/bad.kicad_sym", "tests/fixtures/render/component/hardware/demo/*.kicad_sch", "tests/fixtures/render/component/hardware/demo/load-switch.kicad_pro", "tests/fixtures/render/component/hardware/demo/sym-lib-table", "tests/fixtures/render/component/hardware/demo/example.kicad_sym", "tests/fixtures/render/component/hardware/drawing-sheets/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 The OpenDAP Project"
 SPDX-License-Identifier = "CERN-OHL-W-2.0"

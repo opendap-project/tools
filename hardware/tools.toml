@@ -58,3 +58,12 @@ replaces = "odapkit-stackup"
 audience = "maintainer"
 stability = "preview"
 probe = [{ call = ["stack", "{root}/tests/fixtures/stackup/fixture.toml", "--json"], reaches = "tools/stackup/stackup.py" }]
+
+[[tool]]
+name = "render"
+summary = "Generate and check a component's committed visual outputs: schematics, layer plots, 3D renders"
+entry = "bin/odw-render"
+replaces = "odapkit-render"
+audience = "maintainer"
+stability = "preview"
+probe = ["check", "--json", "{root}/tests/fixtures/render/no-components"]

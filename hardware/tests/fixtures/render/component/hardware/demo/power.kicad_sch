@@ -1,0 +1,618 @@
+(kicad_sch
+	(version 20260306)
+	(generator "eeschema")
+	(generator_version "10.0")
+	(uuid "744c4d33-d2ab-57e6-af37-eba283ea0df5")
+	(paper "A4")
+	(title_block
+		(title "Power overview")
+		(date "2026-10-24")
+		(rev "A")
+		(company "The OpenDAP Project")
+		(comment 1 "power")
+		(comment 2 "Rails of the example board: source, switch, consumers and measurement")
+	)
+	(lib_symbols)
+	(rectangle
+		(start 19.05 38.1)
+		(end 49.53 48.26)
+		(stroke
+			(width 0)
+			(type solid)
+		)
+		(fill
+			(type none)
+		)
+		(uuid "6981018c-093e-5193-bc3c-96aae505cf65")
+	)
+	(rectangle
+		(start 130.81 38.1)
+		(end 166.37 48.26)
+		(stroke
+			(width 0)
+			(type solid)
+		)
+		(fill
+			(type none)
+		)
+		(uuid "b3f64128-013a-5957-aaf4-8c6ef3f22604")
+	)
+	(rectangle
+		(start 69.85 38.1)
+		(end 110.49 48.26)
+		(stroke
+			(width 0)
+			(type solid)
+		)
+		(fill
+			(type none)
+		)
+		(uuid "f533141c-2c6e-5c2d-93c6-302050f83b61")
+	)
+	(text "J201 pin 1"
+		(exclude_from_sim no)
+		(at 21.59 41.91 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "0d99f3b1-1f4e-5c92-bef5-a0062563e452")
+	)
+	(text "Rail table"
+		(exclude_from_sim no)
+		(at 19.05 62.23 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "18c539a1-149e-5028-b62e-e517f7b777ff")
+	)
+	(text "VSYS_LV, external"
+		(exclude_from_sim no)
+		(at 21.59 45.72 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "5ddcb488-d407-5d61-b573-30b242c157dd")
+	)
+	(text "J201 pin 2"
+		(exclude_from_sim no)
+		(at 133.35 45.72 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "7bc365d1-7e12-5cae-a91a-108075b49edf")
+	)
+	(text "blk.periph-switch, U101"
+		(exclude_from_sim no)
+		(at 72.39 41.91 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "9cdd1861-1479-5ea0-bde1-e84d0783c8bf")
+	)
+	(text "Power tree"
+		(exclude_from_sim no)
+		(at 19.05 30.48 0)
+		(effects
+			(font
+				(size 2.54 2.54)
+			)
+			(justify left bottom)
+		)
+		(uuid "e5f7bb50-85ec-56f9-ab32-e06a49b06787")
+	)
+	(text "PERIPH_3V3"
+		(exclude_from_sim no)
+		(at 133.35 41.91 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "fa5badf3-d421-55a6-a825-1c82d63b54b0")
+	)
+	(text "EN_PERIPH, default off"
+		(exclude_from_sim no)
+		(at 72.39 45.72 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "fff19b9b-dc7c-56bc-a2c1-56de7e1e4f3a")
+	)
+	(text_box "Notes\n1. Rail names here are the names used on every sheet (CRAFT-84): the power tree is their source.\n2. Voltages are the example's; a board takes them from its power tree document."
+		(exclude_from_sim no)
+		(at 19.05 99.06 0)
+		(size 129.54 11.43)
+		(margins 1.905 1.905 1.905 1.905)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(fill
+			(type none)
+		)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left top)
+		)
+		(uuid "94ea79e1-17cc-58ad-bcae-44d9588c2d5b")
+	)
+	(polyline
+		(pts
+			(xy 110.49 43.18) (xy 130.81 43.18)
+		)
+		(stroke
+			(width 0)
+			(type solid)
+		)
+		(uuid "4c57e60e-e3f1-5bf7-b363-3bef10832d58")
+	)
+	(polyline
+		(pts
+			(xy 49.53 43.18) (xy 69.85 43.18)
+		)
+		(stroke
+			(width 0)
+			(type solid)
+		)
+		(uuid "92193f89-1856-5c8f-b471-75424259f5ee")
+	)
+	(table
+		(column_count 6)
+		(border
+			(external yes)
+			(header yes)
+			(stroke
+				(width 0)
+				(type solid)
+			)
+		)
+		(separators
+			(rows yes)
+			(cols yes)
+			(stroke
+				(width 0)
+				(type solid)
+			)
+		)
+		(column_widths 27.94 22.86 38.1 33.02 38.1 33.02)
+		(row_heights 5.08 5.08 5.08 5.08)
+		(uuid "964d55b1-a04a-4e28-83db-21b39e0f94e7")
+		(cells
+			(table_cell "Rail"
+				(exclude_from_sim no)
+				(at 19.05 64.77 0)
+				(size 27.94 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+						(bold yes)
+					)
+					(justify left top)
+				)
+				(uuid "e54a28a7-5dd4-52f4-b843-971f7407a7d5")
+			)
+			(table_cell "Voltage"
+				(exclude_from_sim no)
+				(at 46.99 64.77 0)
+				(size 22.86 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+						(bold yes)
+					)
+					(justify left top)
+				)
+				(uuid "39322b3c-272e-5066-9c08-77d31bec4c45")
+			)
+			(table_cell "Source"
+				(exclude_from_sim no)
+				(at 69.85 64.77 0)
+				(size 38.1 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+						(bold yes)
+					)
+					(justify left top)
+				)
+				(uuid "e2025e6a-a883-53ba-a4e4-d70da80037fb")
+			)
+			(table_cell "Switch"
+				(exclude_from_sim no)
+				(at 107.95 64.77 0)
+				(size 33.02 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+						(bold yes)
+					)
+					(justify left top)
+				)
+				(uuid "0dfd2b0d-7bac-5348-9300-8ef610770e76")
+			)
+			(table_cell "Consumers"
+				(exclude_from_sim no)
+				(at 140.97 64.77 0)
+				(size 38.1 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+						(bold yes)
+					)
+					(justify left top)
+				)
+				(uuid "b41a7169-368b-53ba-82db-9e1f9f86777b")
+			)
+			(table_cell "Measure"
+				(exclude_from_sim no)
+				(at 179.07 64.77 0)
+				(size 33.02 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+						(bold yes)
+					)
+					(justify left top)
+				)
+				(uuid "2700cd1d-77ad-5a3b-b5c2-22c73bc2d865")
+			)
+			(table_cell "VSYS_LV"
+				(exclude_from_sim no)
+				(at 19.05 69.85 0)
+				(size 27.94 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "0c2066b3-eaec-5e71-a5a6-491a6baff1ce")
+			)
+			(table_cell "3.0-5.5 V"
+				(exclude_from_sim no)
+				(at 46.99 69.85 0)
+				(size 22.86 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "7467088d-db5e-5065-98e7-049a6bf02ae9")
+			)
+			(table_cell "J201 (external)"
+				(exclude_from_sim no)
+				(at 69.85 69.85 0)
+				(size 38.1 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "a8e095a0-0a57-54a8-aec8-b06f45a29a98")
+			)
+			(table_cell "none"
+				(exclude_from_sim no)
+				(at 107.95 69.85 0)
+				(size 33.02 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "207e82ba-985b-5711-b2d7-a03f01037c2c")
+			)
+			(table_cell "blk.periph-switch"
+				(exclude_from_sim no)
+				(at 140.97 69.85 0)
+				(size 38.1 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "f15460ef-c3ff-5332-a09a-5a302b17620e")
+			)
+			(table_cell "none"
+				(exclude_from_sim no)
+				(at 179.07 69.85 0)
+				(size 33.02 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "84784bd3-be7e-5161-b218-76c3c042a1f8")
+			)
+			(table_cell "PERIPH_3V3"
+				(exclude_from_sim no)
+				(at 19.05 74.93 0)
+				(size 27.94 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "13e2399b-1c64-5db2-8ddc-bd597dbf2ba1")
+			)
+			(table_cell "= VSYS_LV"
+				(exclude_from_sim no)
+				(at 46.99 74.93 0)
+				(size 22.86 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "b1d17d58-14fc-5bc3-9855-1953e363dfab")
+			)
+			(table_cell "U101 (blk.periph-switch)"
+				(exclude_from_sim no)
+				(at 69.85 74.93 0)
+				(size 38.1 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "88eba8de-0c1d-52f6-8bb8-57745fc0371f")
+			)
+			(table_cell "EN_PERIPH"
+				(exclude_from_sim no)
+				(at 107.95 74.93 0)
+				(size 33.02 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "962740c3-a757-521c-8d28-59c787f1eb5c")
+			)
+			(table_cell "J201 pin 2"
+				(exclude_from_sim no)
+				(at 140.97 74.93 0)
+				(size 38.1 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "d3659366-5222-5f0e-9710-38f53593d1dd")
+			)
+			(table_cell "R102, TP101, TP102"
+				(exclude_from_sim no)
+				(at 179.07 74.93 0)
+				(size 33.02 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "c8559fbc-e5dc-59b4-8c45-0d954eaedf2a")
+			)
+			(table_cell "GND"
+				(exclude_from_sim no)
+				(at 19.05 80.01 0)
+				(size 27.94 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "26001552-9728-5559-b3bc-eaa554da07fc")
+			)
+			(table_cell "0 V"
+				(exclude_from_sim no)
+				(at 46.99 80.01 0)
+				(size 22.86 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "74f2ef96-f973-524d-a2c3-309d6f10d4bb")
+			)
+			(table_cell "J201 pin 4"
+				(exclude_from_sim no)
+				(at 69.85 80.01 0)
+				(size 38.1 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "5d61a82c-3bec-5769-9c63-968938a978a2")
+			)
+			(table_cell "none"
+				(exclude_from_sim no)
+				(at 107.95 80.01 0)
+				(size 33.02 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "e7d97557-02c0-51cb-8d94-bc27677047d6")
+			)
+			(table_cell "all"
+				(exclude_from_sim no)
+				(at 140.97 80.01 0)
+				(size 38.1 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "ed5dcad9-4dfd-5f29-9be1-c321be364208")
+			)
+			(table_cell "none"
+				(exclude_from_sim no)
+				(at 179.07 80.01 0)
+				(size 33.02 5.08)
+				(margins 0.9525 0.9525 0.9525 0.9525)
+				(span 1 1)
+				(fill
+					(type none)
+				)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left top)
+				)
+				(uuid "7840210d-28c0-5b0a-9ad2-2cfa9b654290")
+			)
+		)
+	)
+)

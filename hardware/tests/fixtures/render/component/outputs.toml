@@ -1,0 +1,14 @@
+# The render tool's fixture component (tests/test_render.py): the craft-check schematic and board.
+schema = "opendap.outputs/v1"
+
+[[source]]
+type = "kicad-sch"
+path = "hardware/demo/load-switch.kicad_sch"
+
+[[source]]
+type = "kicad-pcb"
+path = "hardware/demo/board.kicad_pcb"
+name = "board"
+layers = ["F.Cu", "B.Cu", "F.Silkscreen"]
+views = ["top"]
+size = [400, 300]

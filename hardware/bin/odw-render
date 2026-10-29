@@ -1,0 +1,5 @@
+#!/bin/sh
+# odw render: a thin entry point; the engine, and its --help, is tools/render/ (run as tools/render/__main__.py).
+self="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+here="$(cd "$(dirname "$self")/.." && pwd)"
+exec python3 "$here/tools/render/__main__.py" "$@"

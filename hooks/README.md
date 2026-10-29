@@ -11,8 +11,10 @@ Part of the [OpenDAP](https://github.com/opendap-project) Developer Toolkit, whi
 | `kicad-erc` | ERC on changed KiCad schematics (errors only) |
 | `kicad-drc` | DRC, with schematic parity, on changed KiCad boards (errors only) |
 | `no-fab-outputs` | No generated fab outputs (Gerbers, drill files, packages) are committed |
-| `no-stray-files` | No PDFs, and no HTML outside `renders/web/` |
+| `no-stray-files` | No PDFs but a component's own generated ones (stamped in a declared `outputs/`, RFC 0021), and no HTML outside `renders/web/` |
 | `kicad-dru-composed` | Every `<project>.kicad_dru` with a `<project>.dru.toml` manifest equals the composition of the rule sources it lists; no duplicate rule names |
+| `outputs-current` | Every component's committed visual outputs match their source-hash stamp (pre-commit; hashes only) |
+| `outputs-regenerate` | Before a push, the pushed components' outputs regenerate to the committed files |
 
 Use them from a repository's `.pre-commit-config.yaml`, pinned to a tag:
 
@@ -22,6 +24,10 @@ Use them from a repository's `.pre-commit-config.yaml`, pinned to a tag:
     hooks:
       - id: no-stray-files
 ```
+
+## Visual outputs
+
+`outputs-current` and `outputs-regenerate` hold a repository to [RFC 0021](https://github.com/opendap-project/rfcs/blob/main/text/0021-committed-visual-outputs.md): each component with an `outputs.toml` commits its generated visual outputs in `outputs/`, with a source-hash stamp. Both run `odw render`'s engine from this checkout (`hardware/tools/render`), so a repository needs no `odw` on its `PATH`. `outputs-current` (pre-commit, every commit) runs `check .`: it hashes the sources and outputs and fails on a stale stamp, naming `odw render update <component>`. `outputs-regenerate` (`stages: [pre-push]`) runs `check --regenerate` on the pushed files: it regenerates the components that hold them and fails when their `outputs/` then differ from the commit, naming the files to commit. It needs the programs of the declared sources (KiCad 10 for KiCad sources). Python 3.11 or later. A repository takes both from the workspace templates (the `.pre-commit-config.yaml` block, for a repository that tracks an `outputs.toml`).
 
 ## KiCad ERC and DRC
 

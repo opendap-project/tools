@@ -33,3 +33,18 @@
   language: script
   pass_filenames: false
   always_run: true
+- id: outputs-current
+  name: Visual outputs current (RFC 0021)
+  description: Every component's committed visual outputs (outputs/, declared by outputs.toml) match their source-hash stamp; hashes files only, never runs KiCad, FreeCAD or Blender.
+  entry: hooks/hooks/outputs-current.sh
+  language: script
+  pass_filenames: false
+  always_run: true
+  require_serial: true
+- id: outputs-regenerate
+  name: Visual outputs regenerate to the committed files (RFC 0021)
+  description: Before a push, regenerates the components that hold the pushed files and fails when their outputs/ then differ from the commit.
+  entry: hooks/hooks/outputs-regenerate.sh
+  language: script
+  stages: [pre-push]
+  require_serial: true

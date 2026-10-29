@@ -58,6 +58,14 @@ repos:
         language: system
         pass_filenames: false
         files: ^hardware/(tools/craft/|tools/(pcb|sch)-craft-check\.py$|tests/test_(craft_rules|sexpr_model)\.py$|tests/fixtures/craft-rules/|schemas/craft-rules\.schema\.json$)
+      # odw render (RFC 0021): normalisation, manifests and stamps; the KiCad, FreeCAD and Blender
+      # adapters when their programs are installed.
+      - id: render-tests
+        name: hardware odw render (tests/test_render.py)
+        entry: sh -c 'cd hardware && python3 -m unittest tests.test_render'
+        language: system
+        pass_filenames: false
+        files: ^hardware/(tools/render/|tests/test_render\.py$|tests/fixtures/render/|bin/odw-render$)
       # Every tool's command-line contract, without KiCad, ngspice or the network.
       - id: cli-contract-hardware
         name: hardware command-line contract and the toolkit-host lookup (tests/test_cli_contract.py, tests/test_host_lookup.py)

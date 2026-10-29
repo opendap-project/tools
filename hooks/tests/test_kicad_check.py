@@ -188,7 +188,7 @@ class HookDefinitions(unittest.TestCase):
         self.assertEqual(got["kicad-erc"], (f"{check} erc", r"\.kicad_sch$"))
         self.assertEqual(got["kicad-drc"], (f"{check} drc", r"\.kicad_pcb$"))
         self.assertEqual(set(got), {"kicad-erc", "kicad-drc", "no-fab-outputs", "no-stray-files",
-                                    "kicad-dru-composed"})
+                                    "kicad-dru-composed", "outputs-current", "outputs-regenerate"})
         for h in self.hooks():
             entry = os.path.join(os.path.dirname(f), h["entry"].split()[0])
             self.assertTrue(os.access(entry, os.X_OK), h["id"])
