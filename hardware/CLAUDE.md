@@ -4,4 +4,4 @@ The component export contract and the hardware tools' Python project; the tools 
 
 ## Working here
 
-- Requirements are edited in `docs/requirements/requirements.toml`; `docs/requirements/README.md` is rendered from it with `odw req render` and never edited by hand.
+- Requirements are edited in the tools root's `docs/requirements/requirements.toml` (HL-71); its README is rendered with `odw req render` and never edited by hand.

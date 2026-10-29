@@ -12,4 +12,4 @@ Contributor rules (English, confirmed information only, REUSE licensing, the `do
 
 - Each folder has its own `CLAUDE.md` with its rules; read the one for the folder you change.
 - Tests never inherit a hook's `GIT_*` variables: each language's protection is in the README's [rule](README.md#tests-never-inherit-a-hooks-git-variables), and `odw audit` flags a test file that runs git without it.
-- Requirements are edited in each folder's `docs/requirements/requirements.toml`; its README is rendered with `odw req render` and never edited by hand.
+- Requirements are edited in `docs/requirements/requirements.toml` at this root (one file for every folder, HL-71); its README is rendered with `odw req render` and never edited by hand.

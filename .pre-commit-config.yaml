@@ -37,13 +37,6 @@ repos:
   # hardware/
   - repo: local
     hooks:
-      # The requirements README is rendered from requirements.toml and checked.
-      - id: requirements-current-hardware
-        name: hardware requirements README rendered (odw req render --check)
-        entry: sh -c 'cd hardware && odw req render docs/requirements/requirements.toml --check'
-        language: system
-        pass_filenames: false
-        files: ^hardware/docs/requirements/
       # odw render (RFC 0021): normalisation, manifests and stamps; the KiCad, FreeCAD and Blender
       # adapters when their programs are installed.
       - id: render-tests
@@ -85,9 +78,16 @@ repos:
         language: system
         pass_filenames: false
         files: ^hooks/(?:(bin|hooks|lib|tests)/|tools\.toml$|\.pre-commit-hooks\.yaml$)
-  # The root's Python project, workspace/ (odw itself) and host/'s requirements
+  # The root's requirements and Python project, and workspace/ (odw itself)
   - repo: local
     hooks:
+      # The tools' requirements (one file at the root, HL-71): the README is rendered from requirements.toml and checked.
+      - id: requirements-current
+        name: requirements README rendered (odw req render --check)
+        entry: odw req render docs/requirements/requirements.toml --check
+        language: system
+        pass_filenames: false
+        files: ^docs/requirements/
       # The root's Python project (pyproject.toml, uv.lock, conftest.py) runs every pytest suite from the root.
       - id: odw-tests
         name: odw tests (schemas, plan, audit; the root's pytest suites)
@@ -102,23 +102,9 @@ repos:
         language: system
         pass_filenames: false
         files: ^workspace/(?:crates/odw-dispatch/|rust-toolchain\.toml$)
-      # The requirements README is rendered from requirements.toml and checked.
-      - id: requirements-current-host
-        name: host requirements README rendered (odw req render --check)
-        entry: sh -c 'cd host && odw req render docs/requirements/requirements.toml --check'
-        language: system
-        pass_filenames: false
-        files: ^host/docs/requirements/
   # image/
   - repo: local
     hooks:
-      # The requirements README is rendered from requirements.toml and checked.
-      - id: requirements-current-image
-        name: image requirements README rendered (odw req render --check)
-        entry: sh -c 'cd image && odw req render docs/requirements/requirements.toml --check'
-        language: system
-        pass_filenames: false
-        files: ^image/docs/requirements/
       # Every tool's command-line contract (command standard §6), without a device, a VM or the network.
       - id: cli-contract-image
         name: image command-line contract (tests/cli.sh)
@@ -162,13 +148,3 @@ repos:
         language: system
         pass_filenames: false
         files: ^measure/(?:(bin|motion|tests)/|tools\.toml$)
-  # verify/
-  - repo: local
-    hooks:
-      # The requirements README is rendered from requirements.toml and checked.
-      - id: requirements-current-verify
-        name: verify requirements README rendered (odw req render --check)
-        entry: sh -c 'cd verify && odw req render docs/requirements/requirements.toml --check'
-        language: system
-        pass_filenames: false
-        files: ^verify/docs/requirements/
