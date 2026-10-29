@@ -10,7 +10,7 @@ Two sources, chosen by the variant file's `catalog` path:
 Besides the fields `odapkit variant` validates against, each block carries what the absent-state check and the
 software outputs read: `absent_text` (the block-level absent state), `absent_nets` (per-net declarations of a
 record's `absent_state` table; the schematic's interface tables add theirs in absent.py) and `software` (devicetree
-node, compatibles, `org.opendap.hw.*` interfaces, device-description sections), parsed from a record's `software`
+node, compatibles, `cc.opendap.Blackbird.Hw.*` interfaces, device-description sections), parsed from a record's `software`
 table or from a Markdown `Software` cell by `parse_software`.
 
 `load(path)` returns a `Catalog`; every problem in the catalog itself is a finding, never an exception, except
@@ -33,7 +33,7 @@ STATES = ("fit", "dnp", "alternate")
 
 SOFTWARE_KEYS = {"devicetree", "compatible", "provides", "description", "note"}
 COMPATIBLE_RE = re.compile(r"[a-z0-9][a-z0-9-]*,[a-z0-9][a-z0-9.,+_-]*")
-PROVIDES_RE = re.compile(r"org\.opendap\.hw(?:\.[A-Za-z][A-Za-z0-9]*)+")
+PROVIDES_RE = re.compile(r"cc\.opendap\.Blackbird\.Hw(?:\.[A-Za-z][A-Za-z0-9]*)+")
 
 
 class CatalogError(Exception):
@@ -42,7 +42,7 @@ class CatalogError(Exception):
 
 def parse_software(text):
     """The software of a block from a Markdown `Software` cell (or a record's `software` string): the devicetree node
-    named as "`<label>` node" (or "`/path` node"), backticked compatibles (`vendor,device`), `org.opendap.hw.*`
+    named as "`<label>` node" (or "`/path` node"), backticked compatibles (`vendor,device`), `cc.opendap.Blackbird.Hw.*`
     interfaces (a backticked `.Name` continues the previous one's namespace) and the device-description sections
     backticked after the word "description"."""
     sw = {"devicetree": None, "compatible": [], "provides": [], "description": [], "note": text}

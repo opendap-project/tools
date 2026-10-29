@@ -29,7 +29,7 @@ A Markdown catalog laid out as RFC 0011 asks: a summary table with an ID column,
 |---|---|
 | Alternates | `sensor-b` (second source); mute shunt as `fit` option |
 | Absent state | `SENSOR_EN` pulled down on `blk.core`; 0x48 free |
-| Software | `acme,tiny-sensor` (`acme-sensor`), `sensor0` node; `org.opendap.hw.Fixture`, `.Probe`; description `sensors` |
+| Software | `acme,tiny-sensor` (`acme-sensor`), `sensor0` node; `cc.opendap.Blackbird.Hw.Fixture`, `.Probe`; description `sensors` |
 
 ### 3–4. `blk.mem`, `blk.mem-supply`: memory and its supply
 

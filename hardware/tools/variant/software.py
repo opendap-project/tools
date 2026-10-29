@@ -1,7 +1,7 @@
 """Software outputs of a variant (RFC 0011 rule 7 and rule 8; docs/specs/variant-tool.md §7).
 
 - `capabilities()`: `opendap.variant-capabilities/v1`, the blocks a variant fits and what each one gives software
-  (devicetree node and compatibles, `org.opendap.hw.*` interfaces, device-description sections), so software enables
+  (devicetree node and compatibles, `cc.opendap.Blackbird.Hw.*` interfaces, device-description sections), so software enables
   what is present and treats what is absent as absent (SYS-040). It is a fragment for the board's device description
   (`opendap.device-description/v1`); the description has no section for it yet (consumer side open).
 - `devicetree()`: `opendap.variant-devicetree/v1` and an overlay source fragment with `status = "okay"` or

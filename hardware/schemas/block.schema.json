@@ -58,7 +58,7 @@
           "properties": {
             "devicetree": {"type": "string", "description": "The block's devicetree node: a label (sdhci) or a path (/memory@0)"},
             "compatible": {"type": "array", "items": {"type": "string"}},
-            "provides": {"type": "array", "items": {"type": "string", "pattern": "^org\\.opendap\\.hw(\\.[A-Za-z][A-Za-z0-9]*)+$"}},
+            "provides": {"type": "array", "items": {"type": "string", "pattern": "^cc\\.opendap\\.Blackbird\\.Hw(\\.[A-Za-z][A-Za-z0-9]*)+$"}},
             "description": {"type": "array", "items": {"type": "string"}},
             "note": {"type": "string"}
           }

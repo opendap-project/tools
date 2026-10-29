@@ -181,7 +181,7 @@ class MarkdownCatalog(unittest.TestCase):
         self.assertIn("SENSOR_EN", c.blocks["blk.sensor"].absent_text)
         self.assertEqual(c.blocks["blk.sensor"].software,
                          {"devicetree": "sensor0", "compatible": ["acme,tiny-sensor"],
-                          "provides": ["org.opendap.hw.Fixture", "org.opendap.hw.Probe"], "description": ["sensors"],
+                          "provides": ["cc.opendap.Blackbird.Hw.Fixture", "cc.opendap.Blackbird.Hw.Probe"], "description": ["sensors"],
                           "note": c.blocks["blk.sensor"].software["note"]})
         self.assertEqual(c.blocks["blk.mem-supply"].software["devicetree"], "/memory@0")   # one record, two blocks
         self.assertEqual(c.blocks["blk.mem"].software["description"], ["identity", "power"])
@@ -438,7 +438,7 @@ class Software(unittest.TestCase):
         mem = next(b for b in doc["blocks"] if b["id"] == "blk.mem")
         self.assertEqual((mem["state"], mem["alternate"], mem["params"]), ("alternate", "mem-16", {"capacity_gb": 16}))
         full = software.capabilities(self.full, self.cat)
-        self.assertEqual(full["provides"], ["org.opendap.hw.Fixture"])
+        self.assertEqual(full["provides"], ["cc.opendap.Blackbird.Hw.Fixture"])
         self.assertEqual(full["absent"], [])
 
     def test_devicetree(self):
@@ -470,9 +470,9 @@ class Software(unittest.TestCase):
         t = p("`ti,bq25798`, `ti,bq25792` (DKMS); board description `power` section")
         self.assertEqual((t["compatible"], t["description"], t["devicetree"]),
                          (["ti,bq25798", "ti,bq25792"], ["power"], None))
-        t = p("`simple-audio-card` or audio-graph card; `org.opendap.hw.audio.Dac`, `.Output`; description `audio` "
+        t = p("`simple-audio-card` or audio-graph card; `cc.opendap.Blackbird.Hw.Audio.Dac`, `.Output`; description `audio` "
               "and `outputs` sections")
-        self.assertEqual(t["provides"], ["org.opendap.hw.audio.Dac", "org.opendap.hw.audio.Output"])
+        self.assertEqual(t["provides"], ["cc.opendap.Blackbird.Hw.Audio.Dac", "cc.opendap.Blackbird.Hw.Audio.Output"])
         self.assertEqual(t["description"], ["audio", "outputs"])
         self.assertEqual(p("—"), {"devicetree": None, "compatible": [], "provides": [], "description": [], "note": "—"})
 
