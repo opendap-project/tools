@@ -52,7 +52,7 @@ On a Linux host the build VM is optional: mkosi can run on the host itself. Only
 |---|---|---|---|
 | **Host tests** | `cargo test -p <crate>` | Domain and core crates, which are platform-agnostic (Rust crate architecture §4); adapters with fakes | Seconds |
 | **UI on the host** | `cargo run -p blackbird-apps-player` | Product UI: layout, tokens, type, icons, touch with the pointer, with Blackbird UI's published outputs | Seconds |
-| **Virtual device** | `odapkit deploy` in the Cargo workspace, then `odap-vdev screen capture / input press ROLE / input tap`, the `--window`, and `odap-vdev ssh journalctl -u blackbird-composer` | The composer, the boot UI, and anything that needs DRM, libinput, logind, systemd, ALSA or a board's description | Seconds to deploy; a cross-build is incremental |
+| **Virtual device** | `odapkit deploy` in the Cargo workspace, then `odap-vdev screen capture / input press ROLE / input tap`, the `--window`, and `odap-vdev ssh journalctl -t composer` | The composer, the boot UI, and anything that needs DRM, libinput, logind, systemd, ALSA or a board's description | Seconds to deploy; a cross-build is incremental |
 | **T1** | The same extensions over SSH on the USB network link (`ODAP_DEVICE_SSH`), once the hardware exists | Timing, power, audio quality, the real panel, buttons and LED | — |
 | **Image** | `odapkit image build qemu`, then `odap-vdev start` | Changes to the image definition: packages, units, configuration | Minutes |
 
