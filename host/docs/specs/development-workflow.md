@@ -83,7 +83,7 @@ Build outputs, virtual environments and test caches (`target/`, `.venv/`, `.pyte
 
 | Decision | In the bring-up |
 |---|---|
-| ADR 0002 and ADR 0012: own compositor on Smithay, session of a dedicated user | `odap-composer` on Smithay (a pinned revision of master, ADR 0008 O2), started by `odap-composer.service` as `odap` in a logind session through PAM; libseat on logind. No third-party compositor |
+| ADR 0002 and ADR 0012: own compositor on Smithay, session of a dedicated user | `odap-composer` on Smithay (a pinned revision of master, ADR 0008 O2), started by `blackbird-composer.service` as `odap` in a logind session through PAM; libseat on logind. No third-party compositor |
 | Composer spec §2: DRM/KMS, GBM, GLES, libinput | `DrmCompositor`, `GbmAllocator`, `GlesRenderer`, libinput through the session |
 | Composer spec §5: no damage, no frame | A frame only after a client commit or while the splash screen fades; one per refresh; a timer, not frames, waits out the splash screen's minimum |
 | Composer spec §9, OS-035: boot | The boot UI (`odap-boot`) shows the splash screen from the first display; the composer takes over without a blank frame; consoles only in the debug boot mode |
