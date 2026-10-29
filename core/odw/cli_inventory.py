@@ -1,6 +1,7 @@
 """odw cli inventory: every command-line surface of the public roots, classed by its command-standard §5 kind.
 
-An executable is a tracked file in a `bin/`, `scripts/`, `tools/` or `hooks/` folder of a root (mode 755, a
+An executable is a tracked file in a `bin/`, `scripts/`, `tools/` or `hooks/` folder of a root, or anywhere below a
+folder that declares tools in its own `tools.toml` (the tools root's domain folders, HL-71) (mode 755, a
 shebang or a Python `__main__`; tests, fixtures, vendored code and library modules are not executables), or a
 binary target of a Cargo package (`[[bin]]`, `src/main.rs`, `src/bin/*.rs`). Kinds: `umbrella`, `plugin`,
 `device-binary`, `host-binary`, `script`, `hook`. Each entry carries the facts read from its source (and the
@@ -320,11 +321,17 @@ def inventory(ws, roots=None):
         files = list(modes)
         hooks = _hook_names(repo, files)
         declared = declarations(ws, root)
+        # A folder that declares tools (its own tools.toml) is a tools folder all through: its engines may sit in
+        # subfolders such as pcb/craft/ (the tools root's domain folders, HL-71).
+        tool_dirs = {str(pathlib.PurePath(f).parent) for f in files if pathlib.PurePath(f).name == "tools.toml"}
         for rel, mode in modes.items():
             if mode == "120000":
                 continue  # a link is another name for an executable listed under its own (odapkit-x → odw-x)
             parts = pathlib.PurePath(rel).parts
-            if not any(p in FOLDERS for p in parts[:-1]):
+            # The odw package's modules and an engine's __main__.py run through their plugin, never as scripts.
+            in_tool_dir = any("/".join(parts[:i]) in tool_dirs for i in range(1, len(parts))) \
+                and "odw" not in parts[:-1] and parts[-1] != "__main__.py"
+            if not any(p in FOLDERS for p in parts[:-1]) and not in_tool_dir:
                 continue
             text = audit._read(repo / rel)
             if not _is_executable(rel, mode, text):

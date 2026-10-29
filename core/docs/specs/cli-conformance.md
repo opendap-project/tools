@@ -12,7 +12,7 @@
 
 Roots are the paths of the workspace's `repos.tsv`; `--root` limits the run to some of them. An executable is:
 
-- a tracked file in a `bin/`, `scripts/`, `tools/` or `hooks/` folder, at any depth, that has mode 755, a shebang or a Python `__main__` block; tests (`test_*`, `tests/`), fixtures, `vendor/` trees, `__init__.py` and library modules are not executables;
+- a tracked file in a `bin/`, `scripts/`, `tools/` or `hooks/` folder, or anywhere below a folder that declares tools in its own `tools.toml` (the tools root's domain folders: an engine there sits in a subfolder such as `pcb/craft/`; HL-71), at any depth, that has mode 755, a shebang or a Python `__main__` block; below a folder that declares tools, the modules of the `odw` package and an engine's `__main__.py` are not executables, since their plugin runs them; tests (`test_*`, `tests/`), fixtures, `vendor/` trees, `__init__.py` and library modules are not executables;
 - a binary target of a Cargo package: each `[[bin]]`, else `src/main.rs`, and every `src/bin/*.rs`.
 
 | Kind | Which executables | §5 row |

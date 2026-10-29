@@ -1,0 +1,34 @@
+# The tools this folder adds to the maintainers' umbrella command (command standard §3).
+schema = "opendap.tools/v1"
+front = "odw"
+
+[[tool]]
+name = "craft"
+summary = "Check a KiCad board, schematic or symbol library against the OpenDAP craft standard, by level"
+entry = "bin/odw-craft"
+replaces = "odapkit-craft"
+audience = "maintainer"
+stability = "preview"
+# Each call names the script it runs, which the conformance test verifies through it (HL-105).
+probe = [
+  { call = ["check", "--json", "{root}/schematic/craft/tests/fixtures/bad.kicad_sym"], reaches = "schematic/craft/sch-craft-check.py" },
+  { call = ["rules", "render", "{root}/craft/tests/fixtures/craft-rules/pcb-craft-standard.md", "--check", "--json"], reaches = "craft/craftrules.py" },
+]
+
+[[tool]]
+name = "variant"
+summary = "Board variants (RFC 0011): validate, diff, BOM and per-variant schematic and PCB builds"
+entry = "bin/odw-variant"
+replaces = "odapkit-variant"
+audience = "maintainer"
+stability = "preview"
+probe = ["get", "--dir", "{root}/variant/tests/fixtures/variant/board/variants", "--json", "variant-b"]
+
+[[tool]]
+name = "stackup"
+summary = "Layer stack and impedance-controlled trace geometry of a PCB: a 2D quasi-static field solver"
+entry = "bin/odw-stackup"
+replaces = "odapkit-stackup"
+audience = "maintainer"
+stability = "preview"
+probe = [{ call = ["stack", "{root}/pcb/stackup/tests/fixtures/fixture.toml", "--json"], reaches = "pcb/stackup/stackup.py" }]

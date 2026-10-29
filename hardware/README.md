@@ -1,50 +1,28 @@
 # Toolkit hardware
 
-Hardware tooling for OpenDAP: fab packages, FreeCAD exports, part data sync, and the [component export contract](docs/specs/component-export.md) every component follows.
+Hardware tooling for OpenDAP that has not moved to its domain folder yet, and the [component export contract](docs/specs/component-export.md) every component follows.
 
-Part of the [OpenDAP](https://github.com/opendap-project) Developer Toolkit, which lives in the workspace under `public/toolkit/` as one repository per tool domain.
+Part of the [OpenDAP](https://github.com/opendap-project) Developer Toolkit. Its content moves into the tools root's domain folders (HL-71): the craft checks, `odw stackup` and `odw variant` are in [`electronics/`](../electronics/README.md), `odw sim` in [`sim/`](../sim/README.md), `odw parts` in [`parts/`](../parts/README.md), and `odw component`, `clihost.py` and the KiCad S-expression model in [`core/`](../core/README.md).
 
 ## Tools
 
-Reached through the Developer Toolkit's command, `odw <tool>` (`odapkit <tool>` is its alias), from `bin/`, and declared in `tools.toml`. `bin/` holds thin entry points only; the engines are under `tools/` (the craft checks, `tools/stackup/`, `tools/variant/`, `tools/render/`). The summary in `tools.toml` is the first line of each tool's `--help`. Every tool follows the [command standard](../core/docs/specs/command-standard.md): an unknown flag exits 2; errors carry a stable dotted code, a hint and a fix, from the [shared helpers](../core/docs/specs/cli-conformance.md#shared-helper) (`tools/clihost.py`, `lib/cli.sh`); `--json` documents carry a `schema`; `odw sim` and `odw parts matrix` take `--dry-run`.
-
-- `odw sim` — in [`sim/`](../sim/README.md) since HL-71.
-- `odw craft check [--json] [--target Qn] [--no-drc] BOARD.kicad_pcb` — checks a board against the parts of kicad-lib's [PCB craft standard](https://github.com/opendap-project/libs/blob/main/kicad/docs/specs/pcb-craft-standard.md) that DRC cannot check (reference designators, pin-1 marks, markings, placement grid and groups, mirrored channels, drill and via sets, zones, documentation layers), folds in the board's DRC rules tagged `[Qn]`, and reports the results by quality level (RFC 0010) with the level the board reaches. Runs [`tools/pcb-craft-check.py`](tools/pcb-craft-check.py) with KiCad's Python; configuration in `<project>.craft.toml`.
-- `odw craft check [--json] [--target Qn] [--no-erc] ROOT.kicad_sch` and `odw craft check LIBRARY.kicad_sym` — the schematic and symbol part of the standard (§9): title block and drawing sheet, one sheet per feature block and its interface, symbol rules (KLC), fields, net names and label kinds, net classes against `netclasses.toml`, grid, junctions, text and tables; folds in the project's ERC and reports by level. Runs [`tools/sch-craft-check.py`](tools/sch-craft-check.py) with python3 and kicad-cli; configuration in the `[schematic]` table of `<project>.craft.toml`.
-- `odapkit craft rules render SPEC.md [--check]` — the craft rules are data: [`tools/craft/rules.toml`](tools/craft/rules.toml) (schema [`opendap.craft-rules/v1`](schemas/craft-rules.schema.json)) holds every CRAFT rule with its section, level, rule, value, reason, source and enforcement exactly as the standard states them, plus the limits the checks read (`[rule.limits]`, each value stated in its rule's row). Both craft checks take their levels and limits from it. `render` writes the standard's rule tables from it between their `<!-- >>> odapkit craft rules §<section>: … -->` and `<!-- <<< odapkit craft rules -->` markers; `--check` reports a stale table and exits 1. `tests/fixtures/craft-rules/pcb-craft-standard.md` is the standard with its tables marked.
-- `odw stackup stack|design|check|validate|coupling|explore|pdn` — a board's layer stack and the trace geometry of its impedance classes from `hardware/stackup/stackup-<version>.toml`: a 2D quasi-static field solver (scikit-fem, pinned and hash-locked in `tools/uv.lock`, run through uv) with tolerance corners and a validation against closed forms; the zoned layer-count exploration with variant matrices, broadside and edge coupling, and a lumped PDN model for the plane pairing ([method](docs/specs/stackup-method.md)).
-- `odw parts` — in [`parts/`](../parts/README.md) since HL-71.
-- `odw dru compose|check`, which composes a board's `<project>.kicad_dru` from its `<project>.dru.toml`, is in [toolkit-hooks](../hooks), next to its engine, the `kicad-dru-composed` hook.
-- `odw variant list|get|diff|bom|apply|check` — a board's variants (RFC 0011) from schematic to PCB: each variant file (`opendap.board-variant/v1`) validated against its block catalog (`blocks/*.toml` records, or the Markdown catalog of RFC 0011), resolved part by part from the schematic (KiCad 10 variant data, or `Alt.<selector>.<Field>` field sets), its BOM, block- and BOM-level diffs, and `apply`: a separate output tree with the variant's KiCad data written into a copy of the project, plots, placement, the BOM checked against `kicad-cli --variant`, a variant ERC and DRC against the base, the absent-state check (every net a `dnp` block touches has a declared absent state; floating and single-pin nets reported), the software outputs (a capabilities fragment for the device description and a devicetree overlay fragment, `status` per block node), and a manifest of input and output hashes; `check` runs the absent-state check on every variant and builds each twice and compares them ([spec](docs/specs/variant-tool.md)). Python standard library and kicad-cli.
-- `odw component validate` — in [`core/`](../core/README.md) since HL-71: validates `export/component.yaml` against the [contract](docs/specs/component-export.md).
-
-Python dependencies: one project, [`tools/pyproject.toml`](tools/pyproject.toml), hash-locked in `tools/uv.lock`, for `odw stackup`, `odw component` (core's, until the one Python workspace) and the craft rules' schema test; the other tools use the standard library only.
-
-Tests: `python3 -m unittest discover tests` (`test_variant.py` runs its KiCad classes on `tests/fixtures/variant/board/`, a three-block KiCad 10 project with an interface table, written by `tests/fixtures/variant/make_fixture.py` (run with KiCad's Python), and skips them without kicad-cli; the others need ngspice, uv (also for `odapkit stackup`), KiCad 10). The craft-check fixtures are generated by `tests/fixtures/craft/make_fixture.py` (run with KiCad's Python); the schematic fixtures are a copy of kicad-lib's `examples/load-switch` (`tests/fixtures/craft-sch/good/`) and its broken copy written by `tests/fixtures/craft-sch/make_fixture.py`. `test_sexpr_model.py` covers the one S-expression model both craft checks read (`core/kicad/sexpr.py`: the parser, one form out of a large file, child lookups, and the configuration loader), without KiCad. `test_craft_rules.py` checks the rules data against its schema (through uv), that the marked standard renders unchanged and is byte-identical to the standard without its markers, that every limit is stated in its rule's row, and that the checks' limits and levels equal the data; pre-commit runs it and `odapkit craft rules render --check`.
+- `odw render` — a component's committed visual outputs (RFC 0021): `tools/render/`, its tests (`tests/test_render.py`) and fixtures (`tests/fixtures/render/`).
 
 ## Layout
 
-- `bin/` — the `odw-*` tools (each `odapkit-*` a link to its tool for one minor release)
-- `schemas/` — JSON Schemas (MPL-2.0)
-- `tests/` — tests and their fixtures; `test_cli_contract.py` checks every tool's command line without KiCad, ngspice or the network, and pre-commit runs it
-- `tools/fab-package.sh` — fab package from a KiCad project (runs ERC/DRC through [toolkit-hooks](../hooks), found as `$ODAP_TOOLS_DIR/hooks`, else `$ODAP_TOOLKIT_HOOKS_DIR` (deprecated), else the sibling `../hooks`); `--check` runs only the checks and writes nothing, `--json` prints `opendap.fab-package/v1`
+- `bin/` — `odw-render` (and its `odapkit-render` link)
+- `tools/render/` — the engine of `odw render`
 - `tools/freecad-export.py` — STEP and other exports from FreeCAD
-- `tools/pcb-craft-check.py`, `tools/sch-craft-check.py` — the board and the schematic craft checks behind `odw craft`: their command lines, the limits they read from the rules data and each check's ID and level
-- `tools/craft/` — the craft rules as data (`rules.toml`) and their loader and table renderer (`craftrules.py`); the checks' models and reports: `pcbmodel.py` (the board) and `pcbreport.py` (DRC fold, report), `core/kicad/sexpr.py` (since HL-71; the one KiCad S-expression model of both checks), `schmodel.py` (the schematic and the symbol rules), `schdesign.py` (the design checks) and `schreport.py` (ERC fold, report). Each takes the check script's limits through `bind()`
-- `tools/stackup/` — `odw stackup`: the command line and its reports (`stackup.py`), the stack model and its cross-sections (`stackmodel.py`), design, check, validation and coupling (`stackcheck.py`), the field solver (`fieldsolver.py`, closed forms in `analytic.py`), the layer-count exploration (`explore.py`, its zones and dielectrics in `explorezones.py`) and the PDN model (`pdn.py`)
-- `tools/variant/` — `odw variant`: the command line and its reports (`cli.py`), the block catalog readers (`catalog.py`), variant files and their validation (`variantfile.py`), part resolution, BOM and diffs (`resolve.py`), kicad-cli, the XML netlist, interface tables and KiCad variant data in S-expressions (`kicad.py`), the absent-state check (`absent.py`), the capabilities and devicetree outputs (`software.py`) and the variant build (`build.py`)
-- `lib/cli.sh` — finds the shared command-line helpers for the shell tools (the Python tools load them through core's `clihost.py`): `core/` of the same repository when this checkout is one of its folders (the merged `tools` root), else `$ODAP_TOOLS_DIR/core` (`odw` exports `ODAP_TOOLS_DIR`), else `ODAP_TOOLKIT_HOST_DIR` (deprecated until HL-71 phase 4; its sibling `core/` when it names `host/` of a tools root), else the `toolkit-host` row of `repos.tsv` (`tests/test_host_lookup.py` builds both layouts)
-- `tools.toml` — the tools this root declares to the maintainers' umbrella command
-- `docs/` — requirements, the component export contract, the stackup method and the variant tool
+- `tools/pyproject.toml`, `tools/uv.lock` — the Python dependencies of `odw stackup`, `odw component` and the craft rules' schema test (numpy, scipy, scikit-fem, pyyaml, jsonschema), hash-locked, until the one Python workspace at the root
+- `tools.toml` — the tools this folder declares to the maintainers' umbrella command
+- `docs/` — requirements and the component export contract
 
 ## License
 
-This repository follows the [REUSE](https://reuse.software) layout: license texts live in `LICENSES/` and `REUSE.toml` maps each path to its license.
+This folder follows the [REUSE](https://reuse.software) layout: license texts live in the root's `LICENSES/` and `REUSE.toml` maps each path to its license.
 
 - Default: **GNU GPL v3.0 or later** (`GPL-3.0-or-later`)
 - Markdown files and `docs/`: **Creative Commons Attribution-ShareAlike 4.0** (`CC-BY-SA-4.0`)
-- `schemas/`: **Mozilla Public License 2.0** (`MPL-2.0`)
-- `tools/craft/rules.toml`: **CC-BY-SA-4.0**, the craft standard's rule tables as data
-- `tests/fixtures/craft-sch/`: **CERN-OHL-W-2.0**, copied from kicad-lib's example and derived from it
+- `tests/fixtures/render/`'s schematic: **CERN-OHL-W-2.0**, a copy of kicad-lib's example
 
 Copyright © 2026 The OpenDAP Project.

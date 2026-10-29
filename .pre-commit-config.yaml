@@ -44,20 +44,6 @@ repos:
         language: system
         pass_filenames: false
         files: ^hardware/docs/requirements/
-      # The craft standard's rule tables are rendered from tools/craft/rules.toml; the fixture copy
-      # of the standard must stay current with it, and the checks must agree with the data.
-      - id: craft-rules-current
-        name: hardware craft rule tables rendered (odw craft rules render --check)
-        entry: sh -c 'cd hardware && bin/odw-craft rules render tests/fixtures/craft-rules/pcb-craft-standard.md --check'
-        language: system
-        pass_filenames: false
-        files: ^hardware/(tools/craft/|tests/fixtures/craft-rules/|bin/odw-craft$)
-      - id: craft-rules-tests
-        name: hardware craft rules data, golden and drift tests; the craft checks' S-expression model
-        entry: sh -c 'cd hardware && python3 -m unittest tests.test_craft_rules tests.test_sexpr_model'
-        language: system
-        pass_filenames: false
-        files: ^(?:core/kicad/|hardware/(tools/craft/|tools/(pcb|sch)-craft-check\.py$|tests/test_(craft_rules|sexpr_model)\.py$|tests/fixtures/craft-rules/|schemas/craft-rules\.schema\.json$))
       # odw render (RFC 0021): normalisation, manifests and stamps; the KiCad, FreeCAD and Blender
       # adapters when their programs are installed.
       - id: render-tests
@@ -66,13 +52,30 @@ repos:
         language: system
         pass_filenames: false
         files: ^(?:core/clihost\.py$|hardware/(tools/render/|tests/test_render\.py$|tests/fixtures/render/|bin/odw-render$))
-      # Every tool's command-line contract, without KiCad, ngspice or the network.
-      - id: cli-contract-hardware
-        name: hardware command-line contract and the toolkit-host lookup (tests/test_cli_contract.py, tests/test_host_lookup.py)
-        entry: sh -c 'cd hardware && python3 -m unittest tests.test_cli_contract tests.test_host_lookup'
+  # electronics/
+  - repo: local
+    hooks:
+      # The craft standard's rule tables are rendered from craft/rules.toml; the fixture copy
+      # of the standard must stay current with it, and the checks must agree with the data.
+      - id: craft-rules-current
+        name: electronics craft rule tables rendered (odw craft rules render --check)
+        entry: sh -c 'cd electronics && bin/odw-craft rules render craft/tests/fixtures/craft-rules/pcb-craft-standard.md --check'
         language: system
         pass_filenames: false
-        files: ^(?:core/clihost\.py$|hardware/(?:(bin|lib|tools|tests)/|tools\.toml$))
+        files: ^electronics/(craft/|bin/odw-craft$)
+      - id: craft-rules-tests
+        name: electronics craft rules data, golden and drift tests; the craft checks' S-expression model
+        entry: sh -c 'cd electronics/craft && python3 -m unittest tests.test_craft_rules tests.test_sexpr_model'
+        language: system
+        pass_filenames: false
+        files: ^(?:core/kicad/|electronics/(craft/|pcb/craft/|schematic/craft/|schemas/craft-rules\.schema\.json$))
+      # Every tool's command-line contract, without KiCad, ngspice or the network.
+      - id: cli-contract-electronics
+        name: electronics command-line contract and the helper lookup (tests/test_cli_contract.py, tests/test_host_lookup.py)
+        entry: sh -c 'cd electronics && python3 -m unittest tests.test_cli_contract tests.test_host_lookup'
+        language: system
+        pass_filenames: false
+        files: ^(?:core/clihost\.py$|core/lib/cli\.sh$|electronics/(?:(bin|lib|craft|pcb|schematic|variant|tests)/|tools\.toml$))
   # hooks/
   - repo: local
     hooks:

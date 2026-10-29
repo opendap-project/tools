@@ -98,7 +98,7 @@ def _parent_ws(tmp_path):
     return tmp_path
 
 
-@pytest.mark.skipif(not (HOST.parent / "hardware" / "tools.toml").is_file(), reason="not the merged tools root")
+@pytest.mark.skipif(not (HOST.parent / "electronics" / "tools.toml").is_file(), reason="not the merged tools root")
 def test_the_craft_scripts_are_verified_through_the_calls_that_name_them(tmp_path):
     (tmp_path / "repos.tsv").write_text("path\trepository\npublic/tools\to/t\n")
     (tmp_path / "public").mkdir()
@@ -107,11 +107,11 @@ def test_the_craft_scripts_are_verified_through_the_calls_that_name_them(tmp_pat
              if e["name"] in ("odw-craft", "sch-craft-check.py", "craftrules.py", "pcb-craft-check.py")]
     m = cli_conformance.conformance(tmp_path, items, cli_probe.probe_all(items, tmp_path, timeout=60))
     why = {(c["option"], c["criterion"]): (c["state"], c["why"]) for c in m["results"]}
-    tools = "public/tools/hardware/tools"
-    for script in ("sch-craft-check.py", "craft/craftrules.py"):
+    tools = "public/tools/electronics"  # HL-71
+    for script in ("schematic/craft/sch-craft-check.py", "craft/craftrules.py"):
         assert why[(f"{tools}/{script}", "json")][0] == "pass", why[(f"{tools}/{script}", "json")]
     # Needs KiCad: no call names it, so it is never credited by a call that ran another script.
-    assert why[(f"{tools}/pcb-craft-check.py", "json")][0] == "unverified"
+    assert why[(f"{tools}/pcb/craft/pcb-craft-check.py", "json")][0] == "unverified"
 
 
 # HL-105: a call names the script it reaches (`reaches`, from the tools.toml folder); that script, and only it, is

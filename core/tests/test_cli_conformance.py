@@ -290,6 +290,26 @@ def test_the_tool_passes_its_own_test_on_a_copy(tmp_path):
     _conforms(tmp_path)
 
 
+def test_a_folder_that_declares_tools_has_its_executables_inventoried_anywhere(tmp_path):
+    """HL-71: a domain folder of the tools root (one with a tools.toml) keeps its engines in subfolders such as
+    pcb/craft/; they are command-line surfaces as they were under tools/. Tests and fixtures still are not."""
+    (tmp_path / "repos.tsv").write_text("path\trepository\npublic/tools\to/t\n")
+    script = '#!/usr/bin/env python3\n"""a script"""\n'
+    repo(tmp_path, "public/tools", {
+        "dom/tools.toml": ('schema = "opendap.tools/v1"\nfront = "odw"\n', 0o644),
+        "dom/pcb/craft/check.py": (script, 0o755),
+        "dom/pcb/craft/tests/test_check.py": (script, 0o755),
+        "dom/odw/mod.py": ('"""odw mod"""\nif __name__ == "__main__":\n    pass\n', 0o644),
+        "dom/engine/__main__.py": ('"""python3 engine/__main__.py"""\n', 0o644),
+        "loose/deep/run.py": (script, 0o755),
+    })
+    paths = {e["path"] for e in cli_inventory.inventory(tmp_path)}
+    assert "public/tools/dom/pcb/craft/check.py" in paths
+    assert "public/tools/dom/pcb/craft/tests/test_check.py" not in paths and "public/tools/loose/deep/run.py" not in paths
+    # The odw package's modules and an engine's __main__.py run through their plugin, never as scripts.
+    assert "public/tools/dom/odw/mod.py" not in paths and "public/tools/dom/engine/__main__.py" not in paths
+
+
 def test_closure_resolves_a_module_by_its_whole_name_not_a_suffix(tmp_path):
     """HL-71: `from validate import main` is validate.py, never tests/test_validate.py, which sorts first."""
     (tmp_path / "bin").mkdir()
@@ -378,7 +398,7 @@ def test_the_tools_schema_takes_a_list_of_probe_calls():
 
 
 MIGRATED = {"core": {"cli", "component"}, "documentation": {"docs", "req", "verify"}, "host": {"audit", "noindex", "plan", "rename", "sync"},
-            "hardware": {"craft", "variant", "stackup"}, "sim": {"sim"}}
+            "electronics": {"craft", "variant", "stackup"}, "sim": {"sim"}}
 
 
 @pytest.mark.skipif(not (HOST.parent / "hardware" / "tools.toml").is_file(), reason="not the merged tools root")

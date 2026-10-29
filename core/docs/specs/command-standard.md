@@ -152,7 +152,7 @@ A test in `tools/workspace`, run in every root's `full` stage for the tools that
 6. with stdin closed and no TTY, the tool does not wait for input;
 7. an `opendap` entry: run in a clean environment without a workspace, without `odw` on `PATH` and without `ODAP_*`, `--help` still works, and the source names no maintainer tool;
 8. a `deprecated` entry names its replacement;
-9. a device binary, script or generator found by the inventory (every executable in a root's `bin/`, `scripts/` and `tools/`, and every installed `blackbird-*` binary) holds to its row of the §5 table; the inventory is generated, so a new executable is checked from its first commit.
+9. a device binary, script or generator found by the inventory (every executable in a root's `bin/`, `scripts/` and `tools/`, or below a folder that declares tools, and every installed `blackbird-*` binary) holds to its row of the §5 table; the inventory is generated, so a new executable is checked from its first commit.
 
 ## 9. Audiences, the dependency rule and graduation
 
