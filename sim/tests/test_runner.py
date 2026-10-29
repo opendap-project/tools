@@ -1,4 +1,4 @@
-"""Tests for odw sim (its engine, tools/sim/simchecks.py) on the RC fixture in tests/fixtures/sim (needs ngspice on PATH).
+"""Tests for odw sim (its engine, sim/simchecks.py) on the RC fixture in tests/fixtures/sim (needs ngspice on PATH).
 
 Run from the repository root: python3 -m unittest discover tests
 """
@@ -18,7 +18,7 @@ for _k in [k for k in os.environ if k.startswith("GIT_")]:
     del os.environ[_k]
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TOOL = os.path.join(HERE, "..", "tools", "sim", "__main__.py")
+TOOL = os.path.join(HERE, "..", "__main__.py")
 FIXTURE = os.path.join(HERE, "fixtures", "sim")
 MODEL = b"* fake vendor model\n.subckt FAKE a b\nR1 a b 1k\n.ends\n"
 

@@ -378,7 +378,7 @@ def test_the_tools_schema_takes_a_list_of_probe_calls():
 
 
 MIGRATED = {"core": {"cli", "component"}, "documentation": {"docs", "req", "verify"}, "host": {"audit", "noindex", "plan", "rename", "sync"},
-            "hardware": {"craft", "sim", "variant", "stackup"}}
+            "hardware": {"craft", "variant", "stackup"}, "sim": {"sim"}}
 
 
 @pytest.mark.skipif(not (HOST.parent / "hardware" / "tools.toml").is_file(), reason="not the merged tools root")

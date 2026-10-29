@@ -1,5 +1,6 @@
 """core/clihost.py (HL-71): an engine of any domain folder gets odw.clikit from core/, beside it, and its --help
 summary from the tools.toml of the folder that declares the tool."""
+import glob
 import os
 import subprocess
 import sys
@@ -23,6 +24,6 @@ def test_load_returns_clikit_from_core_beside_it():
 def test_summary_reads_the_declaring_folders_tools_toml():
     r = run("import clihost; c = clihost.load('t'); print(clihost.summary(c, 'sim')); print(clihost.summary(c, 'component'))")
     assert r.returncode == 0, r.stderr
-    declared = {t["name"]: t["summary"] for d in ("hardware", "core")
-                for t in tomllib.loads(open(os.path.join(CORE, "..", d, "tools.toml")).read())["tool"]}
+    declared = {t["name"]: t["summary"] for f in sorted(glob.glob(os.path.join(CORE, "..", "*", "tools.toml")))
+                for t in tomllib.loads(open(f).read())["tool"]}
     assert r.stdout.splitlines() == [declared["sim"], declared["component"]]

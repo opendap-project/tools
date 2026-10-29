@@ -72,15 +72,14 @@ if sys.version_info < (3, 11):
     sys.exit("odw sim: Python 3.11 or later is needed (tomllib)")
 import tomllib
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
-sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "core"))  # core/: clihost (HL-71); last: core/kicad never shadows
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "core"))  # core/: clihost (HL-71); last: core/kicad never shadows
 from clihost import load, summary  # noqa: E402
 
 TOOL = "odw sim"
 clikit = load(TOOL)
 
 HERE = os.path.dirname(os.path.realpath(__file__))
-PARTS_SYNC = os.path.join(HERE, "..", "parts-sync.py")
+PARTS_SYNC = os.path.join(HERE, "..", "hardware", "tools", "parts-sync.py")  # until the parts domain moves (HL-71)
 NGSPICE = os.environ.get("NGSPICE", "ngspice")
 NUMBER = r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?"
 REDUCE = ("first", "last", "min", "max", "all")

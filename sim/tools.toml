@@ -1,0 +1,12 @@
+# The tools this folder adds to the maintainers' umbrella command (command standard §3).
+schema = "opendap.tools/v1"
+front = "odw"
+
+[[tool]]
+name = "sim"
+summary = "Run a board's simulation regression checks (ngspice) against limits from its constraints and ADRs"
+entry = "bin/odw-sim"
+replaces = "odapkit-sim"
+audience = "maintainer"
+stability = "preview"
+probe = ["list", "--json", "{root}/tests/fixtures/sim"]

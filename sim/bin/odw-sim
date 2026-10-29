@@ -1,0 +1,5 @@
+#!/bin/sh
+# odw sim: a thin entry point; the engine, and its --help, is __main__.py and simchecks.py in this folder.
+self="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+here="$(cd "$(dirname "$self")/.." && pwd)"
+exec python3 "$here/__main__.py" "$@"

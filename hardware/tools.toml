@@ -33,15 +33,6 @@ stability = "preview"
 probe = ["get", "--dir", "{root}/tests/fixtures/variant/board/variants", "--json", "variant-b"]
 
 [[tool]]
-name = "sim"
-summary = "Run a board's simulation regression checks (ngspice) against limits from its constraints and ADRs"
-entry = "bin/odw-sim"
-replaces = "odapkit-sim"
-audience = "maintainer"
-stability = "preview"
-probe = ["list", "--json", "{root}/tests/fixtures/sim"]
-
-[[tool]]
 name = "stackup"
 summary = "Layer stack and impedance-controlled trace geometry of a PCB: a 2D quasi-static field solver"
 entry = "bin/odw-stackup"

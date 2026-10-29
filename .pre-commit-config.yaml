@@ -123,6 +123,16 @@ repos:
         language: system
         pass_filenames: false
         files: ^image/(?:(bin|lib|tests)/|tools\.toml$)
+  # sim/
+  - repo: local
+    hooks:
+      # odw sim: the runner on its RC fixture (ngspice) and the command-line contract.
+      - id: sim-tests
+        name: sim odw sim tests (tests/test_runner.py, tests/test_cli.py)
+        entry: sh -c 'cd sim && python3 -m unittest discover tests'
+        language: system
+        pass_filenames: false
+        files: ^(?:core/clihost\.py$|sim/)
   # measure/
   - repo: local
     hooks:

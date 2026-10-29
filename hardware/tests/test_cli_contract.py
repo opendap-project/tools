@@ -58,20 +58,12 @@ class Plugins(unittest.TestCase):
             self.assertEqual(r.stdout.splitlines()[0], f"odw {name}: {TOOLS[name]}", name)
 
     def test_unknown_flag_exits_2_with_a_code_a_hint_and_a_fix(self):
-        for name in ["craft", "parts", "sim", "variant"]:
+        for name in ["craft", "parts", "variant"]:
             if name not in PLUGINS:
                 continue
             r = run(tool(name), "--odw-no-such-flag")
             self.assertEqual(r.returncode, 2, name)
             self.assertRegex(r.stderr, r"error input\.invalid: .*\n  hint: .*\n  fix: ", name)
-
-    def test_sim_dry_run_runs_and_writes_nothing(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            shutil.copytree(os.path.join(ROOT, "tests", "fixtures", "sim"), os.path.join(tmp, "sim"))
-            r = run(tool("sim"), os.path.join(tmp, "sim"), "--dry-run")
-            self.assertEqual(r.returncode, 0, r.stderr)
-            self.assertIn("would run rc/tau", r.stderr)
-            self.assertFalse(any("results" in d for d, _, _ in os.walk(tmp)))
 
     def test_parts_matrix_dry_run_names_the_files(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -85,8 +77,7 @@ class Plugins(unittest.TestCase):
             self.assertFalse(os.path.exists(os.path.join(tmp, "out")))
 
     def test_json_documents_carry_a_schema(self):
-        cases = [("sim", "list", "--json", "tests/fixtures/sim"),
-                 ("craft", "check", "--json", "tests/fixtures/craft-sch/bad.kicad_sym"),
+        cases = [("craft", "check", "--json", "tests/fixtures/craft-sch/bad.kicad_sym"),
                  ("variant", "list", "--json", "--dir", "tests/fixtures/variant/board/variants")]
         if shutil.which("uv"):
             cases.append(("stackup", "stack", "tests/fixtures/stackup/fixture.toml", "--json"))
@@ -95,7 +86,7 @@ class Plugins(unittest.TestCase):
             self.assertTrue(json.loads(r.stdout)["schema"].startswith("opendap."), (name, r.stderr))
 
     def test_errors_with_json_are_error_documents(self):
-        r = run(tool("sim"), "--json", "--odw-no-such-flag")
+        r = run(tool("variant"), "--json", "--odw-no-such-flag")
         self.assertEqual(json.loads(r.stdout)["schema"], "opendap.error/v1")
 
 
