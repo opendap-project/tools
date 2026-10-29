@@ -208,7 +208,6 @@ def message(root, srcs, engine):
             f"{rows}\n{trailers}")
 
 
-LANDING_LINE = re.compile(r"^- (\S+) → (\S+?)/: \d+ commits, head ", re.M)
 
 
 def recorded(checkout):
@@ -216,9 +215,7 @@ def recorded(checkout):
     (`- <name> → <folder>/: …`); (None, {}) when there is no checkout."""
     if not (checkout / ".git").exists():
         return None, {}
-    log = g.git(checkout, "log", "--format=%B", "--grep=^Source-Head: ", check=False)
-    landings = {n: "" if f == "." else f for n, f in LANDING_LINE.findall(log)}
-    return set(audit.tracked(checkout)), landings
+    return set(audit.tracked(checkout)), rename_map.recorded_landings(checkout)
 
 
 def document(root, into, branch, engine, srcs, mode, head=None, problems=(), into_dir=None):

@@ -7,6 +7,9 @@ Rows are classified once: repository rows (`repo:` → where each source reposit
 import dataclasses
 import pathlib
 import re
+import subprocess
+
+from odw import audit
 
 ORDER = ["libs", "tools", "hats", "host", "t1", "blackbird"]
 MOVE_ACTIONS = {"move", "rename", "keep"}
@@ -102,6 +105,35 @@ def read_tsv(path):
     return head, out
 
 
+# A merge commit's record of where each source landed: `- <name> → <folder>/: N commits, head <sha>` (rename merge).
+LANDING_LINE = re.compile(r"^- (\S+) → (\S+?)/: \d+ commits, head ", re.M)
+
+
+def recorded_landings(checkout):
+    """{source name: folder} as a cut root's merge commits recorded them; {} without a checkout."""
+    checkout = pathlib.Path(checkout)
+    if not (checkout / ".git").exists():
+        return {}
+    log = subprocess.run(["git", "-C", str(checkout), "log", "--format=%B", "--grep=^Source-Head: "],
+                         capture_output=True, text=True, env=audit.git_env()).stdout
+    return {n: "" if f == "." else f for n, f in LANDING_LINE.findall(log)}
+
+
+def former_paths(ws):
+    """{repository name: workspace path} of the rows repos.tsv once had and dropped at a cut (its git history); {}
+    when the workspace is not a git checkout."""
+    if not (pathlib.Path(ws) / ".git").exists():
+        return {}
+    diff = subprocess.run(["git", "-C", str(ws), "log", "-p", "--format=", "--", "repos.tsv"], capture_output=True,
+                          text=True, env=audit.git_env()).stdout
+    out = {}
+    for line in diff.splitlines():
+        if line.startswith("-") and not line.startswith("---") and "\t" in line:
+            path, repo = line[1:].split("\t")[:2]
+            out.setdefault(repo.strip().rsplit("/", 1)[-1], path.strip())
+    return out
+
+
 def repositories(ws):
     """Every repos.tsv entry: workspace path → GitHub name (the public list and any overlay two levels below)."""
     ws = pathlib.Path(ws)
@@ -163,6 +195,16 @@ def load(ws, map_path, landings=None):
     for s in sources.values():
         if not s.root and s.name in roots and s.path == f"public/{s.name}":
             s.root, s.landing, s.kind = s.name, "", "root"  # a root already cut: its paths are root paths
+    # A source that left repos.tsv at its root's cut (HL-71): its old path from the manifest's history, its landing
+    # from the root's merge commit, so the map's rows for it still resolve inside the root.
+    former, cuts = former_paths(ws), {}
+    for s in sources.values():
+        if s.kind != "archived" or not s.root:
+            continue
+        if s.root not in cuts:
+            cuts[s.root] = recorded_landings(pathlib.Path(ws) / "public" / s.root)
+        if s.name in cuts[s.root]:
+            s.path, s.landing = s.path or former.get(s.name, ""), cuts[s.root][s.name]
     for name, sub in (landings or {}).items():
         if name in sources:
             sources[name].landing = sub

@@ -30,6 +30,8 @@ A TSV file with a header row. Columns: `old`, `new`, `kind`, `action` (required)
 
 A repository's landing folder is the single folder its repository row names (`(kicad/)`, `(folder board/)`, `env/`). When the row names none or several, the landing is unknown and the repository's path rows stay pending; `--landing <name>=<folder>` sets it.
 
+**After a structure-only cut.** A source that left `repos.tsv` at its root's cut is found again (HL-71): its old workspace path from the manifest's git history (the row the cut removed, `public/toolkit/host`), and its landing from the root's merge commit (`- toolkit-host → host/: …`), which wins over the folder its repository row names. So `plan` and `apply` move the root's content by the map's rows after the cut, as `tools` does with its domain folders.
+
 ## Verbs
 
 | Verb | Does | Exit status |
