@@ -27,6 +27,8 @@ pub struct Entry {
     pub audience: Audience,
     pub stability: Stability,
     pub replaces: Option<String>,
+    /// The conformance test's read-only `--json` call (arguments after the entry); dispatch ignores it.
+    pub probe: Option<Vec<String>>,
 }
 
 /// Parse and check what the schema says (the JSON Schema is the reference; this mirrors it).
@@ -172,6 +174,20 @@ stability = "preview"
         assert_eq!(f.front, "odw");
         assert_eq!(f.tool[0].stability, Stability::Preview);
         assert!(entry_problems(&f.tool[0], "odw", &["help", "check"]).is_empty());
+    }
+
+    #[test]
+    fn a_probe_is_read_and_not_needed() {
+        // HL-63: the conformance test's read-only --json call, declared with the tool.
+        let f = parse_tools(&format!(
+            "{GOOD}probe = [\"list\", \"--json\", \"{{root}}/x\"]\n"
+        ))
+        .unwrap();
+        assert_eq!(
+            f.tool[0].probe.as_deref(),
+            Some(&["list".to_string(), "--json".into(), "{root}/x".into()][..])
+        );
+        assert_eq!(parse_tools(GOOD).unwrap().tool[0].probe, None);
     }
 
     #[test]
