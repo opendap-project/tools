@@ -22,12 +22,16 @@ run() { out="$("$@" 2>"$tmp/err")"; rc=$?; err="$(cat "$tmp/err")"; }
 json_schema() { printf '%s' "$1" | python3 -c 'import json,sys; print(json.load(sys.stdin)["schema"])' 2>/dev/null; }
 
 for t in cross deploy dev-key image security-check sysroot; do
-  exe="$root/bin/odapkit-$t"
+  exe="$root/bin/odw-$t"
   summary="$(awk -F'"' -v n="$t" '/^name *=/ { name = $2 } /^summary *=/ && name == n { print $2; exit }' "$root/tools.toml")"
   [ -n "$summary" ] || fail "$t: not declared in tools.toml"
   run "$exe" --help
   [ "$rc" = 0 ] || fail "$t --help: exit $rc"
-  [ "$(printf '%s\n' "$out" | head -1)" = "odapkit $t: $summary" ] || fail "$t --help: first line '$(printf '%s\n' "$out" | head -1)'"
+  [ "$(printf '%s\n' "$out" | head -1)" = "odw $t: $summary" ] || fail "$t --help: first line '$(printf '%s\n' "$out" | head -1)'"
+  # The old name is a link to the plugin for one minor release (HL-72): it runs the same tool.
+  [ "$(readlink "$root/bin/odapkit-$t")" = "odw-$t" ] || fail "$t: bin/odapkit-$t is not a link to odw-$t"
+  run "$root/bin/odapkit-$t" --help
+  [ "$rc" = 0 ] && [ "$(printf '%s\n' "$out" | head -1)" = "odw $t: $summary" ] || fail "odapkit-$t --help: exit $rc"
   run "$exe" --odw-no-such-flag
   [ "$rc" = 2 ] || fail "$t unknown flag: exit $rc"
   case "$err" in *"error input.invalid:"*"hint: "*"fix: "*) ;; *) fail "$t unknown flag: stderr '$err'" ;; esac
@@ -38,35 +42,35 @@ done
 # Other repositories' checkouts, merged into the blackbird root or not (HL-84).
 (cd "$root" && python3 -m unittest -q tests.test_repo_lookup 2>"$tmp/err") || fail "repo lookup: $(cat "$tmp/err")"
 
-run "$root/bin/odapkit-dev-key" create --dry-run
+run "$root/bin/odw-dev-key" create --dry-run
 [ "$rc" = 0 ] && [ ! -e "$tmp/data/opendap" ] || fail "dev-key create --dry-run: exit $rc or wrote $tmp/data"
-run "$root/bin/odapkit-dev-key" path --json
+run "$root/bin/odw-dev-key" path --json
 [ "$(json_schema "$out")" = opendap.dev-key/v1 ] || fail "dev-key path --json: $out"
 
-run "$root/bin/odapkit-sysroot" path --json
+run "$root/bin/odw-sysroot" path --json
 [ "$(json_schema "$out")" = opendap.sysroot/v1 ] || fail "sysroot path --json: $out"
-run "$root/bin/odapkit-sysroot" install --no-build --dry-run
+run "$root/bin/odw-sysroot" install --no-build --dry-run
 [ "$rc" = 1 ] && [ ! -e "$tmp/sysroot" ] || fail "sysroot install --dry-run without a build: exit $rc"
 case "$err" in *"would fail"*) ;; *) fail "sysroot install --dry-run: stderr '$err'" ;; esac
 
-run "$root/bin/odapkit-image" path qemu --json
+run "$root/bin/odw-image" path qemu --json
 [ "$(json_schema "$out")" = opendap.image-output/v1 ] || fail "image path --json: $out"
-run "$root/bin/odapkit-image" build qemu --dry-run
+run "$root/bin/odw-image" build qemu --dry-run
 [ "$rc" = 0 ] && [ ! -e "$tmp/data/opendap" ] && [ ! -e "$tmp/cache/opendap" ] || fail "image build --dry-run: exit $rc, $err"
 case "$err" in *"would build qemu"*) ;; *) fail "image build --dry-run: stderr '$err'" ;; esac
-run "$root/bin/odapkit-image" build nope --dry-run --json
+run "$root/bin/odw-image" build nope --dry-run --json
 [ "$rc" = 2 ] && [ "$(json_schema "$out")" = opendap.error/v1 ] || fail "image build nope: exit $rc, $out"
 
 mkdir -p "$tmp/ws"
 printf '[workspace]\n\n[workspace.metadata.odap]\ndeploy = ["odap-a", "odap-b"]\nrestart = ["odap-a.service"]\n' > "$tmp/ws/Cargo.toml"
-out="$(cd "$tmp/ws" && "$root/bin/odapkit-deploy" --dry-run --json 2>"$tmp/err")"; rc=$?
+out="$(cd "$tmp/ws" && "$root/bin/odw-deploy" --dry-run --json 2>"$tmp/err")"; rc=$?
 [ "$rc" = 0 ] && [ "$(json_schema "$out")" = opendap.deploy/v1 ] || fail "deploy --dry-run --json: exit $rc, $out $(cat "$tmp/err")"
 [ ! -e "$tmp/ws/target" ] || fail "deploy --dry-run built"
 
-out="$(cd "$tmp/ws" && "$root/bin/odapkit-cross" --dry-run --json build -p odap-a 2>"$tmp/err")"; rc=$?
+out="$(cd "$tmp/ws" && "$root/bin/odw-cross" --dry-run --json build -p odap-a 2>"$tmp/err")"; rc=$?
 [ "$(json_schema "$out")" = opendap.cross-command/v1 ] || fail "cross --dry-run --json: exit $rc, $out $(cat "$tmp/err")"
 
-run "$root/bin/odapkit-security-check" --json
+run "$root/bin/odw-security-check" --json
 [ "$rc" = 2 ] && [ "$(json_schema "$out")" = opendap.error/v1 ] || fail "security-check without manifests: exit $rc, $out"
 
 [ "$fails" = 0 ] && echo "tests/cli.sh: every case passes" >&2

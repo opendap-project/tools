@@ -1,0 +1,229 @@
+#!/usr/bin/env python3
+"""Check the built Blackbird OS images against Debian's security, updates and backports archives.
+
+Reads every built image's package manifest (blackbird os/image/mkosi.output/*.manifest, found
+through ODAP_BLACKBIRD_DIR or the workspace's blackbird row), downloads the current
+package indexes and lists every package with a newer version available. Records the run in
+<workspace>/.state/security-check so the weekly reminder knows when it last ran.
+
+Usage: odw security-check [--json] [--dry-run] [--help]
+  --json     opendap.check-result/v1: one `fail` per package with a newer version, or one `pass`
+  --dry-run  checks as usual but does not record the run in .state/security-check
+
+Errors carry a dotted code, a hint and a fix (odw.clikit from toolkit-host; with --json, also an
+opendap.error/v1 document on stdout).
+
+Examples:
+  odw security-check
+  odw security-check --json --dry-run
+
+Exit code: 0 = up to date, 1 = updates available, 2 = error.
+"""
+import datetime, glob, json, lzma, os, re, sys, time, tomllib, urllib.error, urllib.request
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def find_workspace():
+    d = HERE
+    while d != os.path.dirname(d):
+        # Only a workspace this user owns: a repos.tsv someone else wrote never names code to import.
+        if os.path.isfile(os.path.join(d, "repos.tsv")):
+            return d if os.stat(os.path.join(d, "repos.tsv")).st_uid == os.getuid() else None
+        d = os.path.dirname(d)
+    return None
+
+
+# Repositories merged into a root (RFC 0017 §7): name → (root, folder).
+MERGED = {"blackbird-os": ("blackbird", "os"), "blackbird-ui": ("blackbird", "ui"),
+          "system": ("blackbird", "system"), "virtual-devices": ("blackbird", "emulator")}
+
+
+def _row(ws, name):
+    for line in open(os.path.join(ws, "repos.tsv")).read().splitlines()[1:]:
+        path, _, slug = line.partition("\t")
+        full = os.path.realpath(os.path.join(ws, path))  # only a folder inside the workspace
+        if slug.split("/")[-1] == name and full.startswith(os.path.realpath(ws) + os.sep) and os.path.isdir(full):
+            return full
+    return None
+
+
+def repo_dir(name):
+    """A repository's checkout: ODAP_<NAME>_DIR, else its repos.tsv row; one merged into a root is only its
+    folder under ODAP_<ROOT>_DIR or the root's row (the old variable and row are not read any more, HL-91)."""
+    root, folder = MERGED.get(name, (None, None))
+    if root:
+        base = os.environ.get("ODAP_" + root.upper() + "_DIR")
+        if base:
+            return os.path.join(base, folder) if os.path.isdir(os.path.join(base, folder)) else None
+        ws = find_workspace()
+        row = _row(ws, root) if ws else None
+        return os.path.join(row, folder) if row and os.path.isdir(os.path.join(row, folder)) else None
+    var = "ODAP_" + name.upper().replace("-", "_") + "_DIR"
+    if os.environ.get(var):
+        return os.environ[var]
+    ws = find_workspace()
+    return _row(ws, name) if ws else None
+
+
+def sibling_host(start):
+    """host/ of the same repository when `start` is one of its folders (the merged tools root): the nearest
+    folder at or above `start` with a .git is the repository's top, and its host/ holds odw.clikit."""
+    d = start = os.path.realpath(start)
+    while not os.path.exists(os.path.join(d, ".git")):
+        if d == os.path.dirname(d):
+            return None
+        d = os.path.dirname(d)
+    helper = os.path.join(d, "host", "src", "odw", "clikit.py")
+    mine = d != start and os.lstat(os.path.join(d, ".git")).st_uid == os.getuid()  # this user's repository only
+    if mine and os.path.isfile(helper) and os.stat(helper).st_uid == os.getuid():
+        return os.path.join(d, "host")
+    return None
+
+
+def _clikit():
+    """odw.clikit, the command-line helpers of toolkit-host: host/ of this repository (the merged tools root),
+    else ODAP_TOOLKIT_HOST_DIR, else the workspace."""
+    host = sibling_host(os.path.join(HERE, "..")) or repo_dir("toolkit-host")
+    if not host:
+        print(f"{TOOL}: error repo.not_found: no toolkit-host checkout\n  hint: its odw.clikit runs this tool's "
+              "command line\n  fix: export ODAP_TOOLKIT_HOST_DIR=<toolkit-host checkout>", file=sys.stderr)
+        sys.exit(2)
+    sys.path.insert(0, os.path.join(host, "src"))
+    from odw import clikit
+    return clikit
+
+
+TOOL = "odw security-check"
+WORKSPACE = find_workspace() or os.path.expanduser("~/.local/state/opendap")
+ARCH = "arm64"
+INDEXES = [  # (label, base URL, suite)
+    ("security", "https://security.debian.org/debian-security", "trixie-security"),
+    ("updates", "https://mirrors.edge.kernel.org/debian", "trixie-updates"),
+    ("backports", "https://mirrors.edge.kernel.org/debian", "trixie-backports"),
+]
+
+def _order(c):
+    return 0 if c.isdigit() else (-1 if c == "~" else (ord(c) if c.isalpha() else ord(c) + 256)) if c else 0
+
+def _cmp_part(a, b):
+    while a or b:
+        na = re.match(r"^[^0-9]*", a).group(); nb = re.match(r"^[^0-9]*", b).group()
+        a, b = a[len(na):], b[len(nb):]
+        for i in range(max(len(na), len(nb))):
+            ca = _order(na[i]) if i < len(na) else 0; cb = _order(nb[i]) if i < len(nb) else 0
+            if ca != cb:
+                return (ca > cb) - (ca < cb)
+        da = re.match(r"^[0-9]*", a).group(); db = re.match(r"^[0-9]*", b).group()
+        a, b = a[len(da):], b[len(db):]
+        if int(da or 0) != int(db or 0):
+            return (int(da or 0) > int(db or 0)) - (int(da or 0) < int(db or 0))
+    return 0
+
+def vercmp(a, b):
+    """Debian version comparison (epoch:upstream-revision), as dpkg does it."""
+    def split(v):
+        e, _, rest = v.rpartition(":") if ":" in v else ("0", "", v)
+        u, _, r = rest.rpartition("-") if "-" in rest else (rest, "", "0")
+        return int(e or 0), u, r
+    ea, ua, ra = split(a); eb, ub, rb = split(b)
+    if ea != eb:
+        return (ea > eb) - (ea < eb)
+    return _cmp_part(ua, ub) or _cmp_part(ra, rb)
+
+def fetch(url):
+    with urllib.request.urlopen(url, timeout=60) as r:
+        return r.read()
+
+def index(base, suite):
+    path = f"main/binary-{ARCH}/Packages.xz"
+    try:
+        data = fetch(f"{base}/dists/{suite}/{path}")
+    except urllib.error.HTTPError:
+        # Some mirrors serve indexes only by hash, as apt fetches them (Acquire-By-Hash).
+        release = fetch(f"{base}/dists/{suite}/Release").decode()
+        sha = re.search(r"^ ([0-9a-f]{64}) +\d+ " + re.escape(path) + "$", release, re.M).group(1)
+        data = fetch(f"{base}/dists/{suite}/main/binary-{ARCH}/by-hash/SHA256/{sha}")
+    text = lzma.decompress(data).decode()
+    pkgs = {}
+    for stanza in text.split("\n\n"):
+        f = dict(re.findall(r"^(Package|Version): (.+)$", stanza, re.M))
+        if "Package" in f and (f["Package"] not in pkgs or vercmp(f["Version"], pkgs[f["Package"]]) > 0):
+            pkgs[f["Package"]] = f["Version"]
+    return pkgs
+
+def _summary():
+    tools = tomllib.loads(open(os.path.join(HERE, "..", "tools.toml")).read()).get("tool", [])
+    return next(t["summary"] for t in tools if t["name"] == "security-check")
+
+
+def check_result(newer):
+    results = [{"id": f"{label}/{name}", "rule": f"trixie-{label}", "verdict": "fail",
+                "message": f"{name}: {have} -> {new}", "value": new} for label, name, have, new in sorted(newer)]
+    results = results or [{"id": "images", "verdict": "pass",
+                           "message": "up to date with trixie-security, trixie-updates and the pinned backports"}]
+    return {"schema": "opendap.check-result/v1", "tool": {"name": TOOL},
+            "subject": {"repo": "blackbird-os", "path": "image/mkosi.output"},
+            "generated": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "results": results}
+
+
+def run(argv, clikit):
+    ap = clikit.Parser(prog=TOOL, summary=_summary(), description=__doc__.split("\n\n")[1],
+                       examples=["odw security-check", "odw security-check --json --dry-run"])
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--dry-run", action="store_true", help="do not record the run in .state/security-check")
+    args = ap.parse_args(argv)
+    repo = repo_dir("blackbird-os")
+    if not repo:
+        raise clikit.CliError("repo.not_found", "no blackbird-os checkout", "the images are built from blackbird-os",
+                              "export ODAP_BLACKBIRD_DIR=<blackbird checkout>", status=2)
+    manifests = sorted(glob.glob(os.path.join(repo, "image", "mkosi.output", "*.manifest")), key=os.path.getmtime)
+    if not manifests:
+        raise clikit.CliError("manifest.not_found", "no image manifest in blackbird-os image/mkosi.output",
+                              "build an image first", "odw image build", status=2)
+    installed = {}  # union of every built output (qemu, oci, t1, …)
+    for m in manifests:
+        for p in json.load(open(m)).get("packages", []):
+            if p.get("type") == "deb":
+                installed[p["name"]] = p["version"]
+    pinned_backports = {n for n in installed if n.startswith("linux-") or "+bpo" in installed[n] or "~bpo" in installed[n]}
+    newer = []
+    for label, base, suite in INDEXES:
+        try:
+            avail = index(base, suite)
+        except (OSError, AttributeError, lzma.LZMAError) as e:
+            raise clikit.CliError("download.failed", f"{suite} index from {base}: {e}",
+                                  "the Debian archive or the network did not answer",
+                                  f"curl -I {base}/dists/{suite}/Release", status=2) from e
+        for name, have in installed.items():
+            if label == "backports" and name not in pinned_backports:
+                continue
+            if name in avail and vercmp(avail[name], have) > 0:
+                newer.append((label, name, have, avail[name]))
+    record = os.path.join(WORKSPACE, ".state", "security-check")
+    if args.dry_run:
+        print(f"{TOOL}: would record the run in {record}", file=sys.stderr)
+    else:
+        os.makedirs(os.path.dirname(record), exist_ok=True)
+        with open(record, "w") as f:
+            f.write(f"{int(time.time())}\n{len(newer)} updates\n{' '.join(os.path.basename(m) for m in manifests)}\n")
+    if args.json:
+        print(json.dumps(check_result(newer)))
+        return 1 if newer else 0
+    print(f"Image manifests: {', '.join(os.path.basename(m) for m in manifests)} ({len(installed)} packages)")
+    if not newer:
+        print("Up to date with trixie-security, trixie-updates and the pinned backports."); return 0
+    print(f"{len(newer)} package(s) with newer versions:")
+    for label, name, have, new in sorted(newer):
+        print(f"  [{label}] {name}: {have} -> {new}")
+    return 1
+
+
+def main(argv=None):
+    clikit = _clikit()
+    return clikit.main(TOOL, lambda a: run(a, clikit), argv)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -2,7 +2,7 @@
 
 | Folder | Contents |
 |---|---|
-| [`requirements/`](requirements/) | What this project must achieve. Each requirement has an ID, a priority (**must** / **should**) and a status. Their source is [`requirements.toml`](requirements/requirements.toml); the README is rendered from it with `odapkit req render`. |
+| [`requirements/`](requirements/) | What this project must achieve. Each requirement has an ID, a priority (**must** / **should**) and a status. Their source is [`requirements.toml`](requirements/requirements.toml); the README is rendered from it with `odw req render`. |
 | [`specs/`](specs/) | Specifications: [verification](specs/verification.md). |
 
 Architecture Decision Records go in `adr/` once decisions are taken.

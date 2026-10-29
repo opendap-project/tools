@@ -7,7 +7,7 @@ edition = "2024"
 rust-version = "1.99"
 license = "GPL-3.0-or-later"
 
-# What toolkit-image odapkit-deploy puts on a running device by default (test instrumentation, in
+# What toolkit-image odw-deploy puts on a running device by default (test instrumentation, in
 # the development extension only).
 [workspace.metadata.odap]
 deploy = ["odap-inject"]

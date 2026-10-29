@@ -1,5 +1,5 @@
 #!/bin/sh
-# The command-line contract of odapkit motion (command standard §6), without a screen, a VM or a
+# The command-line contract of odw motion (command standard §6), without a screen, a VM or a
 # recording: --help, an unknown flag, error codes and --dry-run.
 # Usage: tests/cli.sh   (exit 0 when every case passes; each failure is printed)
 set -u
@@ -11,11 +11,11 @@ tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 fails=0
 fail() { echo "FAIL: $*" >&2; fails=$((fails + 1)); }
 run() { out="$("$@" 2>"$tmp/err")"; rc=$?; err="$(cat "$tmp/err")"; }
-exe="$root/bin/odapkit-motion"
+exe="$root/bin/odw-motion"
 
 summary="$(awk -F'"' '/^summary *=/ { print $2; exit }' "$root/tools.toml")"
 run "$exe" --help
-[ "$rc" = 0 ] && [ "$(printf '%s\n' "$out" | head -1)" = "odapkit motion: $summary" ] || fail "--help: exit $rc, '$(printf '%s\n' "$out" | head -1)'"
+[ "$rc" = 0 ] && [ "$(printf '%s\n' "$out" | head -1)" = "odw motion: $summary" ] || fail "--help: exit $rc, '$(printf '%s\n' "$out" | head -1)'"
 run "$exe" --odw-no-such-flag
 [ "$rc" = 2 ] || fail "unknown flag: exit $rc"
 case "$err" in *"error input.invalid:"*"hint: "*"fix: "*) ;; *) fail "unknown flag: stderr '$err'" ;; esac

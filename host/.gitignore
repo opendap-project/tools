@@ -1,7 +1,7 @@
 # >>> odapkit sync: managed block from the workspace templates; edit them, not this block
 .DS_Store
 .claude/settings.local.json
-# Generated trees kept out of indexers (odw noindex): the renamed trees and their symlinks
+# Generated trees kept out of indexers (odapkit noindex): the renamed trees and their symlinks
 *.noindex
 
 # Python

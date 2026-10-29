@@ -70,7 +70,7 @@ def run(argv, cwd, env=None):
                           stdin=subprocess.DEVNULL, timeout=60)
 
 FOLDER = "image"
-FILES = ['lib/odapkit.sh', 'bin/odapkit-security-check']
+FILES = ['lib/odapkit.sh', 'bin/odw-security-check']
 
 
 def probe_sh(mine, env):
@@ -85,8 +85,8 @@ def probe_sh(mine, env):
 
 
 def probe_py(mine, env):
-    """The odw.clikit bin/odapkit-security-check loads; None when it stops with repo.not_found."""
-    p = run([sys.executable, "-c", "import importlib.machinery as m; mod = m.SourceFileLoader('sc', 'bin/odapkit-security-check').load_module(); print(mod._clikit().MARK)"], mine, env)
+    """The odw.clikit bin/odw-security-check loads; None when it stops with repo.not_found."""
+    p = run([sys.executable, "-c", "import importlib.machinery as m; mod = m.SourceFileLoader('sc', 'bin/odw-security-check').load_module(); print(mod._clikit().MARK)"], mine, env)
     return p.stdout.strip() if p.returncode == 0 else None
 
 
@@ -120,7 +120,7 @@ class ShellHelpers(unittest.TestCase):
 
 
 class SecurityCheck(unittest.TestCase):
-    """bin/odapkit-security-check: host/ of the same repository first (the merged tools root), then ODAP_TOOLKIT_HOST_DIR, then
+    """bin/odw-security-check: host/ of the same repository first (the merged tools root), then ODAP_TOOLKIT_HOST_DIR, then
     the toolkit-host row of repos.tsv. Built in both toolkit layouts."""
 
     def found(self, layout, env=False, host=True):

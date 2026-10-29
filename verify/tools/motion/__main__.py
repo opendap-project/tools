@@ -1,4 +1,4 @@
-"""Run odapkit motion's engine, tools/motion/motioncli.py: `python3 tools/motion ARGS...`, as bin/odapkit-motion does."""
+"""Run odw motion's engine, tools/motion/motioncli.py: `python3 tools/motion ARGS...`, as bin/odw-motion does."""
 import sys
 
 from motioncli import main

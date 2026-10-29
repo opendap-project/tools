@@ -1,0 +1,60 @@
+#!/bin/sh
+# Cross-build the Cargo workspace in the current directory for Blackbird OS on aarch64.
+# Usage: odw cross [--dry-run [--json]] <cargo subcommand args…>
+#        e.g. odw cross build --release -p blackbird-composer
+# Subcommands that link (build, test, run, rustc) link with zig (cargo-zigbuild) against the
+# image's own glibc and libraries, the sysroot of odw sysroot; the others (check, clippy, doc…)
+# need no linker and run as plain cargo for the same target and sysroot. Environment: ODAP_SYSROOT_DIR, ODAP_GLIBC (default 2.41, Debian trixie's libc6).
+# Tests for aarch64 do not run on the host: `odw cross test --no-run -p CRATE` builds them
+# (their paths with --message-format json), and they run on a device or the virtual T1.
+# Its own flags come before the cargo subcommand; everything after it goes to cargo. --dry-run
+# prints the cargo command it would run and whether the sysroot and cargo-zigbuild are there
+# (--json: opendap.cross-command/v1: argv, sysroot, ready), and runs nothing.
+# Examples:
+#   odw cross build --release -p blackbird-composer
+#   odw cross --dry-run --json build -p blackbird-composer
+set -eu
+here="$(cd "$(dirname "$0")" && pwd)"
+. "$here/../lib/odapkit.sh"
+while [ $# -gt 0 ]; do
+  case "$1" in -*) cli_flag "$1"; shift ;; *) break ;; esac
+done
+[ $# -ge 1 ] || cli_usage "no cargo subcommand (odw cross build …)"
+sysroot="$("$here/odw-sysroot" path)"
+glibc="${ODAP_GLIBC:-2.41}"
+target=aarch64-unknown-linux-gnu
+lib="$sysroot/usr/lib/aarch64-linux-gnu"
+case "$1" in
+  build) argv="cargo zigbuild --target $target.$glibc" ;;
+  test|run|rustc) argv="cargo-zigbuild $1 --target $target.$glibc" ;;
+  *) argv="cargo $1 --target $target" ;;
+esac
+if [ "$DRY_RUN" = 1 ]; then
+  ready=true; [ -d "$lib" ] && command -v cargo-zigbuild >/dev/null || ready=false
+  shift; full="$argv $*"
+  if [ "$CLI_JSON" = 1 ]; then
+    printf '{"schema": "opendap.cross-command/v1", "argv": %s, "sysroot": %s, "ready": %s}\n' \
+      "$(cli_json_str "$full")" "$(cli_json_str "$sysroot")" "$ready"
+  else echo "$CLI_TOOL: would run $full" >&2; fi
+  [ "$ready" = true ] || { echo "$CLI_TOOL: would fail: no sysroot at $sysroot or no cargo-zigbuild" >&2; exit 1; }
+  exit 0
+fi
+[ -d "$lib" ] || cli_fail "sysroot.missing" "no sysroot at $sysroot" "cross builds link against the image's sysroot" \
+  "odw sysroot install"
+command -v cargo-zigbuild >/dev/null || cli_fail "tool.missing" "cargo-zigbuild not found" \
+  "the toolkit-host setup installs it" "\"\$ODAP_TOOLKIT_HOST_DIR/setup.sh\""
+
+export PKG_CONFIG_ALLOW_CROSS=1
+export PKG_CONFIG_SYSROOT_DIR="$sysroot"
+export PKG_CONFIG_LIBDIR="$lib/pkgconfig:$sysroot/usr/share/pkgconfig"
+export PKG_CONFIG_PATH=""
+# The sysroot's libraries; glibc itself comes from zig's stubs for that version.
+export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS="-L native=$lib ${RUSTFLAGS:-}"
+
+cmd="$1"; shift
+case "$cmd" in
+  # cargo-zigbuild builds as `cargo zigbuild`; test, run and rustc are its own subcommands.
+  build) exec cargo zigbuild --target "$target.$glibc" "$@";;
+  test|run|rustc) exec cargo-zigbuild "$cmd" --target "$target.$glibc" "$@";;
+  *) exec cargo "$cmd" --target "$target" "$@";;
+esac

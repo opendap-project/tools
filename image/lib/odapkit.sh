@@ -17,8 +17,9 @@
 #   odap_cache      host-wide caches (~/.cache/opendap): the sysroot volume
 #   die MSG [CODE]  cli_fail with the tool's generic code `<tool>.failed`
 
-# The tool's name as people type it: `odapkit image` for bin/odapkit-image.
-tool_name() { n="${0##*/}"; echo "odapkit ${n#odapkit-}"; }
+# The tool's name as people type it: `odw image` for bin/odw-image.
+# The plugin is odw-<tool>; odapkit-<tool>, its old name, is a link to it (HL-72).
+tool_name() { n="${0##*/}"; n="${n#odw-}"; echo "odw ${n#odapkit-}"; }
 CLI_TOOL="$(tool_name)"
 CLI_JSON=0
 DRY_RUN=0
@@ -68,7 +69,7 @@ else
   cli_interactive() { [ -t 0 ] && [ -t 1 ] && [ -z "${CI:-}" ] && [ -z "${ODAP_NONINTERACTIVE:-}" ]; }
 fi
 
-die() { cli_fail "${CLI_TOOL#odapkit }.failed" "$1" "the message says what is missing" "$CLI_TOOL --help" "${2:-1}"; }
+die() { cli_fail "${CLI_TOOL#* }.failed" "$1" "the message says what is missing" "$CLI_TOOL --help" "${2:-1}"; }
 
 # CLI_JSON and DRY_RUN are read by the tools that source this file.
 # shellcheck disable=SC2034
@@ -83,7 +84,7 @@ cli_flag() {
 
 case "${1:-}" in
   -h|--help)
-    s="$(awk -F'"' -v n="${CLI_TOOL#odapkit }" '/^name *=/ { name = $2 } /^summary *=/ && name == n { print $2; exit }' \
+    s="$(awk -F'"' -v n="${CLI_TOOL#* }" '/^name *=/ { name = $2 } /^summary *=/ && name == n { print $2; exit }' \
       "$(dirname "$0")/../tools.toml" 2>/dev/null || true)"
     [ -n "$s" ] || s="$(sed -n '2s/^# \{0,1\}//p' "$0")"
     printf '%s: %s\n' "$CLI_TOOL" "$s"

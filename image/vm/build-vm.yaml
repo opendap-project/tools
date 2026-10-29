@@ -1,5 +1,5 @@
-# The image build VM (odapkit-image): Debian 13 (trixie) arm64, the distribution Blackbird OS is built
-# from, running mkosi. odapkit-image fills __WORKSPACE__ and __DATA__ when it creates the VM.
+# The image build VM (odw-image): Debian 13 (trixie) arm64, the distribution Blackbird OS is built
+# from, running mkosi. odw-image fills __WORKSPACE__ and __DATA__ when it creates the VM.
 minimumLimaVersion: 2.0.0
 base:
 - template:_images/debian-13

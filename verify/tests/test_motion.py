@@ -1,4 +1,4 @@
-"""Tests for odapkit motion's engine (tools/motion/motioncli.py): its argument parsers and, on a synthetic recording
+"""Tests for odw motion's engine (tools/motion/motioncli.py): its argument parsers and, on a synthetic recording
 made with ffmpeg (a 16-pixel red square moving 40 pixels in 200 ms), the analysis and the frames it picks.
 tests/cli.sh covers the command-line contract.
 
@@ -16,7 +16,7 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 ENGINE = os.path.join(ROOT, "tools", "motion", "motioncli.py")
-EXE = os.path.join(ROOT, "bin", "odapkit-motion")
+EXE = os.path.join(ROOT, "bin", "odw-motion")
 FFMPEG = shutil.which("ffmpeg") and shutil.which("ffprobe")
 for _k in [k for k in os.environ if k.startswith("GIT_")]:
     del os.environ[_k]

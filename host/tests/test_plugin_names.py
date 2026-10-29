@@ -12,8 +12,7 @@ from odw import audit, cli_inventory
 
 HOST = pathlib.Path(__file__).resolve().parents[1]
 TOP = HOST.parent
-# The folders renamed so far; image and verify follow once their open identifier work has landed (HL-72).
-FOLDERS = ["hardware", "hooks", "host"]
+FOLDERS = sorted(p.parent.name for p in TOP.glob("*/tools.toml"))
 merged = pytest.mark.skipif(not (TOP / "hardware" / "tools.toml").is_file(), reason="not the merged tools root")
 
 
@@ -64,3 +63,16 @@ def test_the_inventory_skips_links(tmp_path):
     subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "link"], cwd=top, check=True,
                    env=audit.git_env())
     assert set(by_name(cli_inventory.inventory(tmp_path))) == {"odw-x"}
+
+
+@merged
+def test_what_other_roots_compare_keeps_the_old_name():
+    """Output other roots check byte for byte keeps `odapkit` until their own cuts (HL-72): the CODEOWNERS banner this
+    repository carries, the sync markers and the gitignore template line its folders carry."""
+    from odw import owners, sync
+    assert (TOP / ".github/CODEOWNERS").read_text().startswith(owners.BANNER)
+    assert sync.BLOCK_MARKERS[0].startswith("# >>> odapkit sync") and sync.BLOCK_MARKERS[1] == "# <<< odapkit sync"
+    for folder in FOLDERS:
+        ignore = TOP / folder / ".gitignore"
+        if ignore.is_file() and "indexers (" in ignore.read_text():
+            assert "indexers (odapkit noindex)" in ignore.read_text(), folder

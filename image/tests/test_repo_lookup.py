@@ -1,4 +1,4 @@
-"""repo_dir of lib/odapkit.sh and bin/odapkit-security-check: a repository merged into the blackbird root (RFC 0017)
+"""repo_dir of lib/odapkit.sh and bin/odw-security-check: a repository merged into the blackbird root (RFC 0017)
 is only its folder there, under ODAP_BLACKBIRD_DIR or the root's repos.tsv row (HL-84); the old variable and row
 are not read any more (HL-91).
 
@@ -20,7 +20,7 @@ def workspace(tmp, rows, folders):
     """public/tools/image with this checkout's lookups, a fake host/ beside it, and the given rows and folders."""
     ws = os.path.join(tmp, "ws")
     mine = os.path.join(ws, "public", "tools", "image")
-    for rel in ("lib/odapkit.sh", "bin/odapkit-security-check"):
+    for rel in ("lib/odapkit.sh", "bin/odw-security-check"):
         os.makedirs(os.path.dirname(os.path.join(mine, rel)), exist_ok=True)
         with open(os.path.join(ROOT, rel)) as src, open(os.path.join(mine, rel), "w") as dst:
             dst.write(src.read())
@@ -43,7 +43,7 @@ def found(tmp, rows, folders, name="blackbird-os", env=None):
     sh = subprocess.run([os.path.join(mine, "bin", "odapkit-probe"), name], capture_output=True, text=True, cwd=mine,
                         env=env, stdin=subprocess.DEVNULL, timeout=60)
     py = subprocess.run([sys.executable, "-c", "import importlib.machinery as m, sys; mod = m.SourceFileLoader('sc', "
-                         "'bin/odapkit-security-check').load_module(); print(mod.repo_dir(sys.argv[1]) or '')", name],
+                         "'bin/odw-security-check').load_module(); print(mod.repo_dir(sys.argv[1]) or '')", name],
                         capture_output=True, text=True, cwd=mine, env=env, stdin=subprocess.DEVNULL, timeout=60)
     out = [p.stdout.strip() if p.returncode == 0 and p.stdout.strip().startswith("/") else None for p in (sh, py)]
     return [os.path.relpath(os.path.realpath(o), os.path.realpath(ws)) if o else None for o in out]

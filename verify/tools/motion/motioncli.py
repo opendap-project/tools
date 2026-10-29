@@ -1,9 +1,9 @@
-"""odapkit motion: record motion on screen and measure it (transitions, animations, scrolling).
+"""odw motion: record motion on screen and measure it (transitions, animations, scrolling).
 
-Usage: odapkit motion record (--region X,Y,W,H [--screen N] | --qmp SOCKET [--keys QCODE@S,…]) [--seconds S] [--fps F] [--run CMD] [--out FILE] [--dry-run]
-       odapkit motion analyze FILE [--roi X,Y,W,H] [--track RRGGBB[/TOL]] [--threshold T] [--json]
-       odapkit motion frames FILE (--at T,T,… | --segment K [--count N]) [--roi X,Y,W,H] [--width PX] [--out PNG] [--dry-run]
-       odapkit motion --help
+Usage: odw motion record (--region X,Y,W,H [--screen N] | --qmp SOCKET [--keys QCODE@S,…]) [--seconds S] [--fps F] [--run CMD] [--out FILE] [--dry-run]
+       odw motion analyze FILE [--roi X,Y,W,H] [--track RRGGBB[/TOL]] [--threshold T] [--json]
+       odw motion frames FILE (--at T,T,… | --segment K [--count N]) [--roi X,Y,W,H] [--width PX] [--out PNG] [--dry-run]
+       odw motion --help
 
   record   records a region of a screen (points from its top-left corner, as a screenshot shows
            them; scaled to the screen's pixels) at its full frame rate, lossless enough to
@@ -55,7 +55,7 @@ TOKENS = {"fast": 0.120, "standard": 0.200, "slow": 0.320}
 ANALYSIS_WIDTH = 160
 
 
-TOOL = "odapkit motion"
+TOOL = "odw motion"
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -109,7 +109,7 @@ def _clikit():
 clikit = _clikit()
 
 
-def die(msg, code=2, err="input.invalid", hint="the usage is in odapkit motion --help", fix=f"{TOOL} --help"):
+def die(msg, code=2, err="input.invalid", hint="the usage is in odw motion --help", fix=f"{TOOL} --help"):
     """An error with a stable code, a hint and a fix (odw.clikit); exit status `code`."""
     raise clikit.CliError(err, msg, hint, fix, status=code)
 
@@ -269,7 +269,7 @@ def record_qmp(a):
     if enc.returncode != 0:
         die("ffmpeg failed to encode the frames", 1, err="ffmpeg.failed", hint="the encoder's message is above", fix="ffmpeg -version")
     if late:
-        print(f"odapkit motion: {late} of {n} samples late by more than a frame: lower --fps", file=sys.stderr)
+        print(f"odw motion: {late} of {n} samples late by more than a frame: lower --fps", file=sys.stderr)
     print(out)
 
 
@@ -277,7 +277,7 @@ def record_qmp(a):
 
 def probe(path):
     if not os.path.exists(path):
-        die(f"no recording at {path}", err="recording.not_found", hint="FILE is a recording made by odapkit motion record", fix=f"{TOOL} record --help")
+        die(f"no recording at {path}", err="recording.not_found", hint="FILE is a recording made by odw motion record", fix=f"{TOOL} record --help")
     check = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
                            capture_output=True, text=True)
     if check.returncode != 0:
@@ -468,8 +468,8 @@ def _main(argv):
     tools = tomllib.loads(open(os.path.join(HERE, "..", "..", "tools.toml")).read())["tool"]
     p = clikit.Parser(prog=TOOL, summary=next(t["summary"] for t in tools if t["name"] == "motion"), description=__doc__.split("\n\n", 1)[1],
                       formatter_class=argparse.RawDescriptionHelpFormatter,
-                      examples=["odapkit motion record --region 0,0,400,300 --seconds 2 --dry-run",
-                                "odapkit motion analyze /tmp/motion.mp4 --json"])
+                      examples=["odw motion record --region 0,0,400,300 --seconds 2 --dry-run",
+                                "odw motion analyze /tmp/motion.mp4 --json"])
     sub = p.add_subparsers(dest="cmd", required=True, parser_class=clikit.Parser)
     r = sub.add_parser("record")
     r.add_argument("--region", type=box)

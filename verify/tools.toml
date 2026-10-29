@@ -5,6 +5,7 @@ front = "odw"
 [[tool]]
 name = "motion"
 summary = "Record motion on screen and measure it (transitions, animations, scrolling)"
-entry = "bin/odapkit-motion"
+entry = "bin/odw-motion"
+replaces = "odapkit-motion"
 audience = "maintainer"
 stability = "preview"
