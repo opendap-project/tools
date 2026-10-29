@@ -5,7 +5,9 @@
 #   crate   binaries to deploy (default: [workspace.metadata.odap] deploy in Cargo.toml). Naming
 #           crates updates only those in the extension and keeps the others; the default list
 #           replaces the extension, so a crate dropped from the list leaves the device too.
-# The extension is /var/lib/extensions/odap-dev-<workspace>/usr/bin/…, merged with
+# Each crate's binaries go to /usr/lib/blackbird/<binary> (RFC 0017 §3: Blackbird OS's internal programs
+# carry no prefix; a crate names its binary with [[bin]]). The extension is
+# /var/lib/extensions/odap-dev-<workspace>/usr/lib/blackbird/…, merged with
 # `systemd-sysext refresh`; the units in [workspace.metadata.odap] restart are restarted.
 # `systemd-sysext unmerge` and removing the directory return the device to its image.
 # Target: the running virtual device (odap-vdev ssh); ODAP_DEVICE_SSH="ssh …" for another one.
@@ -13,7 +15,7 @@
 # sends nothing. --json prints opendap.deploy/v1 (extension, crates, profile, restart, target, done).
 # Examples:
 #   odapkit deploy --dry-run
-#   odapkit deploy --json odap-composer
+#   odapkit deploy --json blackbird-composer
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/../lib/odapkit.sh"
@@ -60,8 +62,17 @@ pkgs=""; for c in $crates; do pkgs="$pkgs -p $c"; done
 "$here/odapkit-cross" build $flag $pkgs >&2
 
 stage="$(mktemp -d)"; trap 'rm -rf "$stage"' EXIT
-mkdir -p "$stage/usr/bin" "$stage/usr/lib/extension-release.d"
-for c in $crates; do cp "target/aarch64-unknown-linux-gnu/$profile/$c" "$stage/usr/bin/"; done
+mkdir -p "$stage/usr/lib/blackbird" "$stage/usr/lib/extension-release.d"
+# The binaries of the named crates, by their [[bin]] names (cargo metadata).
+# shellcheck disable=SC2086
+bins="$(cargo metadata --no-deps --format-version 1 | python3 -c 'import json, sys
+crates = set(sys.argv[1:])
+for p in json.load(sys.stdin)["packages"]:
+    if p["name"] in crates:
+        print(" ".join(t["name"] for t in p["targets"] if "bin" in t["kind"]))' $crates)" ||
+  cli_fail "cargo.metadata" "cargo metadata failed in $PWD" "deploy reads each crate's binaries from it" "cargo metadata --no-deps" 1
+[ -n "$bins" ] || cli_fail "deploy.no_binaries" "the crates $crates have no binaries" "name crates that build a binary" "odapkit deploy <crate>" 2
+for b in $bins; do cp "target/aarch64-unknown-linux-gnu/$profile/$b" "$stage/usr/lib/blackbird/"; done
 # ID=_any: a development extension applies to whichever Blackbird OS image the device runs.
 printf 'ID=_any\nARCHITECTURE=arm64\n' > "$stage/usr/lib/extension-release.d/extension-release.$name"
 

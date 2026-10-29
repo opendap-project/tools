@@ -1,7 +1,7 @@
 #!/bin/sh
 # Cross-build the Cargo workspace in the current directory for Blackbird OS on aarch64.
 # Usage: odapkit cross [--dry-run [--json]] <cargo subcommand args…>
-#        e.g. odapkit cross build --release -p odap-composer
+#        e.g. odapkit cross build --release -p blackbird-composer
 # Subcommands that link (build, test, run, rustc) link with zig (cargo-zigbuild) against the
 # image's own glibc and libraries, the sysroot of odapkit sysroot; the others (check, clippy, doc…)
 # need no linker and run as plain cargo for the same target and sysroot. Environment: ODAP_SYSROOT_DIR, ODAP_GLIBC (default 2.41, Debian trixie's libc6).
@@ -11,8 +11,8 @@
 # prints the cargo command it would run and whether the sysroot and cargo-zigbuild are there
 # (--json: opendap.cross-command/v1: argv, sysroot, ready), and runs nothing.
 # Examples:
-#   odapkit cross build --release -p odap-composer
-#   odapkit cross --dry-run --json build -p odap-composer
+#   odapkit cross build --release -p blackbird-composer
+#   odapkit cross --dry-run --json build -p blackbird-composer
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/../lib/odapkit.sh"

@@ -51,8 +51,8 @@ On a Linux host the build VM is optional: mkosi can run on the host itself. Only
 | Loop | Command | For | Takes |
 |---|---|---|---|
 | **Host tests** | `cargo test -p <crate>` | Domain and core crates, which are platform-agnostic (Rust crate architecture §4); adapters with fakes | Seconds |
-| **UI on the host** | `cargo run -p odap-product` | Product UI: layout, tokens, type, icons, touch with the pointer, with Blackbird UI's published outputs | Seconds |
-| **Virtual device** | `odapkit deploy` in the Cargo workspace, then `odap-vdev screen capture / input press ROLE / input tap`, the `--window`, and `odap-vdev ssh journalctl -u odap-composer` | The composer, the boot UI, and anything that needs DRM, libinput, logind, systemd, ALSA or a board's description | Seconds to deploy; a cross-build is incremental |
+| **UI on the host** | `cargo run -p blackbird-apps-player` | Product UI: layout, tokens, type, icons, touch with the pointer, with Blackbird UI's published outputs | Seconds |
+| **Virtual device** | `odapkit deploy` in the Cargo workspace, then `odap-vdev screen capture / input press ROLE / input tap`, the `--window`, and `odap-vdev ssh journalctl -u blackbird-composer` | The composer, the boot UI, and anything that needs DRM, libinput, logind, systemd, ALSA or a board's description | Seconds to deploy; a cross-build is incremental |
 | **T1** | The same extensions over SSH on the USB network link (`ODAP_DEVICE_SSH`), once the hardware exists | Timing, power, audio quality, the real panel, buttons and LED | — |
 | **Image** | `odapkit image build qemu`, then `odap-vdev start` | Changes to the image definition: packages, units, configuration | Minutes |
 
@@ -83,11 +83,11 @@ Build outputs, virtual environments and test caches (`target/`, `.venv/`, `.pyte
 
 | Decision | In the bring-up |
 |---|---|
-| ADR 0002 and ADR 0012: own compositor on Smithay, session of a dedicated user | `odap-composer` on Smithay (a pinned revision of master, ADR 0008 O2), started by `blackbird-composer.service` as `odap` in a logind session through PAM; libseat on logind. No third-party compositor |
+| ADR 0002 and ADR 0012: own compositor on Smithay, session of a dedicated user | `blackbird-composer` (`/usr/lib/blackbird/composer`) on Smithay (a pinned revision of master, ADR 0008 O2), started by `blackbird-composer.service` as `odap` in a logind session through PAM; libseat on logind. No third-party compositor |
 | Composer spec §2: DRM/KMS, GBM, GLES, libinput | `DrmCompositor`, `GbmAllocator`, `GlesRenderer`, libinput through the session |
 | Composer spec §5: no damage, no frame | A frame only after a client commit or while the splash screen fades; one per refresh; a timer, not frames, waits out the splash screen's minimum |
-| Composer spec §9, OS-035: boot | The boot UI (`odap-boot`) shows the splash screen from the first display; the composer takes over without a blank frame; consoles only in the debug boot mode |
-| ADR 0006: Slint behind the renderer interface | `odap-product` in Slint with FemtoVG and the software renderer compiled in, selected at run time |
+| Composer spec §9, OS-035: boot | The boot UI (`/usr/lib/blackbird/boot`) shows the splash screen from the first display; the composer takes over without a blank frame; consoles only in the debug boot mode |
+| ADR 0006: Slint behind the renderer interface | `/usr/lib/blackbird/player` in Slint with FemtoVG and the software renderer compiled in, selected at run time |
 | ADR 0013: hardware described by data | Buttons are roles from the device description, which comes from the hardware (fw_cfg on virtual boards); no board in code |
 | ADR 0008: `tracing` to journald | `tracing-journald` when started by systemd, stderr otherwise |
 | Design system §18.1: tokens as the single source | Slint globals generated from `opendap.tokens.json`, read from `export/` |
