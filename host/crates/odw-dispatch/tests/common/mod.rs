@@ -55,7 +55,13 @@ impl Fixture {
     }
 
     pub fn odw(&self, args: &[&str], env: &[(&str, &str)]) -> Output {
+        self.odw_in(&self.dir, args, env)
+    }
+
+    /// `odw` run from `cwd` (the current directory chooses the root for `odw check`, never the workspace).
+    pub fn odw_in(&self, cwd: &std::path::Path, args: &[&str], env: &[(&str, &str)]) -> Output {
         let mut c = command(ODW);
+        c.current_dir(cwd);
         c.args(args)
             .env("ODAP_WORKSPACE_DIR", self.dir.join("ws"))
             .env(

@@ -16,8 +16,8 @@ pub enum Command {
     List { json: bool, all: bool },
     /// `<front> help TOOL`: the tool's `--help`.
     ToolHelp(String),
-    /// A built-in that is specified but not implemented yet (`odw check`, §7).
-    Unavailable(String),
+    /// `<front> check …`: a root's `check.toml` stage (§7).
+    Check(crate::check::Args),
     /// `<front> doctor [--json]`: the tools' problems (§3); `help` prints its usage.
     Doctor { json: bool, help: bool },
     /// `<front> TOOL ARGS…`.
@@ -110,8 +110,10 @@ pub fn parse(front: &Front, args: &[String]) -> Result<Command, (DispatchError, 
         }
         return Ok(Command::Doctor { json, help });
     }
-    if front.builtins.contains(&first.as_str()) {
-        return Ok(Command::Unavailable(first.clone()));
+    if first == "check" && front.builtins.contains(&"check") {
+        return crate::check::parse_args(front.name, &args[1..])
+            .map(Command::Check)
+            .or_else(fail);
     }
     Ok(Command::Run {
         name: first.clone(),
@@ -148,18 +150,12 @@ pub fn run(front: &Front, host: &dyn Host, search: &Search, args: &[String]) -> 
             Outcome::Print { stdout, warnings }
         }
         Command::ToolHelp(name) => exec(front, host, search, &name, vec!["--help".into()]),
-        Command::Unavailable(name) => Outcome::Fail {
-            error: DispatchError {
-                code: "command.unavailable",
-                message: format!(
-                    "{} {name} is specified (command standard §7) but not implemented yet",
-                    front.name
-                ),
-                hint: "run the root's checks through pre-commit until it exists".into(),
-                fix: "pre-commit run --all-files".into(),
-                status: 1,
+        Command::Check(a) => match crate::check::check(front.name, host, &a) {
+            Ok((stdout, status)) => Outcome::Report { stdout, status },
+            Err(error) => Outcome::Fail {
+                error,
+                json: a.json,
             },
-            json: false,
         },
         Command::Doctor { help: true, .. } => Outcome::Print {
             stdout: crate::doctor::usage(front.name),
@@ -276,8 +272,18 @@ mod tests {
             })
         );
         assert_eq!(
-            p(&["check", "--stage", "fast"]),
-            Ok(Command::Unavailable("check".into()))
+            p(&["check", "--stage", "full", "a.rs"]),
+            Ok(Command::Check(crate::check::Args {
+                stage: "full".into(),
+                json: false,
+                dry_run: false,
+                help: false,
+                paths: vec!["a.rs".into()]
+            }))
+        );
+        assert_eq!(
+            usage(&["check", "--stage", "nightly"]).0,
+            "unknown stage nightly (fast, full or release)"
         );
     }
 

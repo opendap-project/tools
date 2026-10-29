@@ -33,6 +33,12 @@ pub trait Host {
     ) -> Option<Ran> {
         None
     }
+    /// The current directory (`odw check` finds its root from it, never the workspace).
+    fn current_dir(&self) -> Option<PathBuf> {
+        None
+    }
+    /// A progress or diagnostic line for the person running the command (stderr).
+    fn log(&self, _line: &str) {}
 }
 
 /// What a program run through [`Host::run`] did.

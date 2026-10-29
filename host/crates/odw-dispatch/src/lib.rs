@@ -5,10 +5,12 @@
 //! Layers: [`model`] (domain), [`manifest`] (the `tools.toml` format), [`workspace`] (where the
 //! workspace is and its `repos.tsv` roots), [`discovery`]
 //! (the core, behind the [`discovery::Host`] port), [`help`] and [`cli`] (the interface), [`fs`] (the
-//! machine adapter), [`doctor`] and [`report`] (`odw doctor`, `opendap.check-result/v1`). A front is
+//! machine adapter), [`check`], [`doctor`] and [`report`] (`odw check`, `odw doctor`,
+//! `opendap.check-result/v1`). A front is
 //! data ([`model::Front`]), so the `opendap` CLI can reuse the crate with
 //! its own built-ins.
 
+pub mod check;
 pub mod cli;
 pub mod discovery;
 pub mod doctor;

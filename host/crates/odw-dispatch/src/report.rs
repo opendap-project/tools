@@ -10,6 +10,9 @@ pub enum Verdict {
     Pass,
     Fail,
     Skip,
+    Warn,
+    Error,
+    Info,
 }
 
 impl Verdict {
@@ -18,7 +21,23 @@ impl Verdict {
             Verdict::Pass => "pass",
             Verdict::Fail => "fail",
             Verdict::Skip => "skip",
+            Verdict::Warn => "warn",
+            Verdict::Error => "error",
+            Verdict::Info => "info",
         }
+    }
+
+    pub fn parse(s: &str) -> Option<Verdict> {
+        [
+            Verdict::Pass,
+            Verdict::Fail,
+            Verdict::Skip,
+            Verdict::Warn,
+            Verdict::Error,
+            Verdict::Info,
+        ]
+        .into_iter()
+        .find(|v| v.as_str() == s)
     }
 }
 
@@ -42,7 +61,9 @@ pub struct CheckResult {
 
 impl CheckResult {
     pub fn failed(&self) -> bool {
-        self.findings.iter().any(|f| f.verdict == Verdict::Fail)
+        self.findings
+            .iter()
+            .any(|f| matches!(f.verdict, Verdict::Fail | Verdict::Error))
     }
 
     pub fn json(&self, generated: &str) -> String {
@@ -83,6 +104,27 @@ impl CheckResult {
             })
             .collect()
     }
+}
+
+/// The results of a check-result document a step printed, or `None` when it is not one.
+pub fn parse_results(text: &str) -> Option<Vec<Finding>> {
+    let doc: Value = serde_json::from_str(text.trim()).ok()?;
+    if doc["schema"] != CHECK_RESULT_SCHEMA {
+        return None;
+    }
+    doc["results"]
+        .as_array()?
+        .iter()
+        .map(|r| {
+            Some(Finding {
+                id: r["id"].as_str()?.into(),
+                rule: r["rule"].as_str().unwrap_or("check.result").into(),
+                verdict: Verdict::parse(r["verdict"].as_str()?)?,
+                message: r["message"].as_str()?.into(),
+                path: r["location"]["path"].as_str().map(String::from),
+            })
+        })
+        .collect()
 }
 
 /// `YYYY-MM-DDTHH:MM:SSZ` for seconds since the epoch (UTC; days to civil date, Howard Hinnant's method).

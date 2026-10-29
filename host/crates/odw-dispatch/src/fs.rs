@@ -40,6 +40,14 @@ impl Host for FsHost {
         std::env::var(name).ok()
     }
 
+    fn current_dir(&self) -> Option<std::path::PathBuf> {
+        std::env::current_dir().ok()
+    }
+
+    fn log(&self, line: &str) {
+        eprintln!("{line}");
+    }
+
     fn read_head(&self, path: &Path) -> Option<String> {
         let mut buf = Vec::new();
         std::fs::File::open(path)

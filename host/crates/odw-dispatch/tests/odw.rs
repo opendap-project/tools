@@ -213,8 +213,9 @@ fn a_builtin_is_never_shadowed() {
     assert!(stdout(&o).starts_with("Usage: odw TOOL"));
     assert!(stderr(&o).contains("would shadow the built-in command odw help"));
     let o = f.odw(&["check"], &[]);
-    assert_eq!(o.status.code(), Some(1));
-    assert!(stderr(&o).contains("error command.unavailable:") && o.stdout.is_empty());
+    // The built-in runs (no check.toml in the fixture folder), never the plugin.
+    assert_eq!(o.status.code(), Some(2));
+    assert!(stderr(&o).contains("error check.not_found:") && !stdout(&o).contains("evil-check"));
 }
 
 #[test]
