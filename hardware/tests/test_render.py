@@ -79,6 +79,16 @@ class Normalize(unittest.TestCase):
         self.assertFalse(normalize.png_close(base, strong))   # one pixel, by 40
         self.assertFalse(normalize.png_close(base, png_bytes(50, 100, lambda x, y: (50, 60, 70))))
 
+    def test_png_close_channel_limit_is_32(self):
+        base = png_bytes(100, 100, lambda x, y: (50, 60, 70))
+
+        def by(d):
+            return png_bytes(100, 100, lambda x, y: (50 + d, 60, 70) if (x, y) == (3, 3) else (50, 60, 70))
+        self.assertEqual(normalize.PNG_CHANNEL, 32)            # RFC 0021 §5.4
+        self.assertTrue(normalize.png_close(base, by(17)))     # the largest difference measured on KiCad 10.0.7
+        self.assertTrue(normalize.png_close(base, by(32)))
+        self.assertFalse(normalize.png_close(base, by(33)))
+
 
 class Stub:
     """An adapter without a program: one text output and one PNG, made from the source's bytes."""
