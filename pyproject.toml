@@ -17,18 +17,18 @@ build-backend = "hatchling.build"
 
 # One odw package from the domain folders (HL-71): each folder's odw/ joins the package (core/odw/__init__.py).
 [tool.hatch.build.targets.wheel]
-only-include = ["core/odw", "documentation/odw", "env/odw", "host/src/odw", "schemas"]
+only-include = ["core/odw", "documentation/odw", "env/odw", "workspace/odw", "schemas"]
 exclude = ["schemas/tests", "schemas/*.md", "schemas/REUSE.toml"]
-sources = {"core" = "", "documentation" = "", "env" = "", "host/src" = "", "schemas" = "odw/schemas"}
-dev-mode-dirs = ["core", "documentation", "env", "host/src"]
+sources = {"core" = "", "documentation" = "", "env" = "", "workspace" = "", "schemas" = "odw/schemas"}
+dev-mode-dirs = ["core", "documentation", "env", "workspace"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "core/tools.toml" = "odw/tools/core.toml"
 "documentation/tools.toml" = "odw/tools/documentation.toml"
 "env/tools.toml" = "odw/tools/env.toml"
-"host/tools.toml" = "odw/tools/host.toml"
+"workspace/tools.toml" = "odw/tools/workspace.toml"
 
 [tool.pytest.ini_options]
-testpaths = ["core/tests", "core/component/tests", "documentation/tests", "env/tests", "host/tests", "schemas/tests"]
+testpaths = ["core/tests", "core/component/tests", "documentation/tests", "env/tests", "schemas/tests", "workspace/tests"]
 pythonpath = ["core/tests"]  # clifixtures, the helpers several domains' tests share
 markers = ["slow: builds the package"]

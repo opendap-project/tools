@@ -35,16 +35,9 @@ Every command-line surface, from the `opendap` and `odw` umbrellas and their plu
 ## Layout
 
 - `setup.sh` — installs and checks everything; safe to run again
-- `crates/odw-dispatch` — `odw`, the maintainers' umbrella command ([command standard](../core/docs/specs/command-standard.md) §1–§4): `odw <tool>` runs the tool a workspace root's `tools.toml` declares (then `odw-<tool>` or `odapkit-<tool>` on `PATH`); `odw help [--json] [--all]` lists them with summary, audience and stability; `odw check [--stage fast|full|release] [PATHS…]` runs a root's `check.toml` stage on the changed paths and reports `opendap.check-result/v1`; `odw doctor [--json]` reports duplicate names, unsafe or invalid `tools.toml` entries, summaries over 100 characters and tools whose `--help` fails. The dispatch is a library the `opendap` CLI can reuse. `setup.sh` builds it and links it into `~/.local/bin`
-- `bin/odapkit` — the same command under its earlier name (RFC 0009): an alias that runs `odw`, so every `odapkit <tool>` keeps working until the `tools` cut. `setup.sh` links it into `~/.local/bin`
-- `bin/odw-plan` — a maintainers' programme as data (tasks, decisions, claims, generated index, and `mirror`: its public tasks as one tracking issue per accepted RFC): [programme plan](docs/specs/programme-plan.md)
-- `bin/odw-audit` — workspace metrics from every repository's tracked files, with dated snapshots: [workspace audit](docs/specs/workspace-audit.md)
-- `bin/odw-sync` — shared boilerplate from the workspace templates: `--check` reports drift, `--apply` repairs it; it also generates each repository's `.github/CODEOWNERS` from the workspace's `owners.tsv`: [workspace sync](docs/specs/workspace-sync.md)
-- `bin/odw-rename` — one root's cut from the rename map ([RFC 0017](https://github.com/opendap-project/rfcs/blob/main/text/0017-naming-and-topology.md) §7): `merge` builds the root repository from its sources with their history, `plan` lists every move and link, URL and identifier rewrite, `apply` performs them with `git mv` and local commits, `check` lists the old names left, `links` the old and broken repository URLs left across the workspace after the cuts: [rename](docs/specs/rename.md)
-- `tools.toml` — the tools this root declares to the maintainers' umbrella command (command standard §3); `odapkit help --json` lists them
+- `bin/odapkit` — `odw` (in [`workspace/`](../workspace/README.md) since HL-71) under its earlier name (RFC 0009): an alias that runs `odw`, so every `odapkit <tool>` keeps working until the `tools` cut. `setup.sh` links it into `~/.local/bin`
 - `Brewfile` — Homebrew packages
-- `src/odw/` — this folder's modules of the `odw` package, whose shared core (`clikit`, the schema validator, the CLI conformance test, the evaluation engine) is in [`core/`](../core/README.md) and whose schemas are in [`schemas/`](../schemas/README.md) (HL-71). Tests: `uv run pytest` from the tools root, whose `pyproject.toml` and `uv.lock` build `odw` from the domain folders
-- `docs/` — requirements and specs (development workflow, workspace schemas)
+- `docs/` — requirements and the development workflow
 
 ## License
 

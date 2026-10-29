@@ -6,7 +6,7 @@
 #
 # odw discovers the tools from each workspace root's tools.toml, then PATH (command standard §3). This
 # alias keeps every `odapkit <tool>` call working until the tools cut renames the call sites. It runs
-# the odw this checkout built (target/release/odw, built by setup.sh), else the odw on PATH, and sets
+# the odw this checkout built (workspace/target/release/odw, built by setup.sh), else the odw on PATH, and sets
 # ODAP_TOOLS_DIR to the tools root this checkout is a folder of, and ODAP_TOOLKIT_HOST_DIR (deprecated) to this
 # checkout, when unset, so odw lists every domain's tools and the tools find the shared helpers (core/).
 #
@@ -22,7 +22,7 @@ export ODAP_TOOLKIT_HOST_DIR="${ODAP_TOOLKIT_HOST_DIR:-$host}"
 root="$(dirname "$host")"
 [ -f "$root/core/tools.toml" ] && export ODAP_TOOLS_DIR="${ODAP_TOOLS_DIR:-$root}"
 
-odw="$host/target/release/odw"
+odw="$root/workspace/target/release/odw"
 [ -x "$odw" ] || odw="$(command -v odw 2>/dev/null || true)"
 if [ -z "$odw" ]; then
   case "${1:-}" in
@@ -32,13 +32,13 @@ if [ -z "$odw" ]; then
         "Usage: odapkit TOOL [ARGS…]     the same as odw TOOL [ARGS…]" \
         "       odapkit [help] [--json]  the same as odw help [--json] (opendap.tools-list/v1)" "" \
         "Example: odapkit help --json" "" \
-        "Build odw first: cargo build --release --locked --manifest-path \"$host/crates/odw-dispatch/Cargo.toml\" --target-dir \"$host/target\""
+        "Build odw first: cd \"$root/workspace\" && cargo build --release --locked --manifest-path crates/odw-dispatch/Cargo.toml --target-dir target"
       exit 0 ;;
   esac
   code='tool.not_found'
   printf '%s\n' "odapkit: error $code: odw is not built" \
     "  hint: odapkit runs odw, which setup.sh builds and links next to it" \
-    "  fix: cargo build --release --locked --manifest-path \"$host/crates/odw-dispatch/Cargo.toml\" --target-dir \"$host/target\"" >&2
+    "  fix: cd \"$root/workspace\" && cargo build --release --locked --manifest-path crates/odw-dispatch/Cargo.toml --target-dir target" >&2
   exit 1
 fi
 exec "$odw" "$@"

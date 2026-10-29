@@ -41,13 +41,15 @@ for app in FreeCAD Blender; do
 done
 
 echo "== odw and odapkit"
-# The maintainers' umbrella command (command standard §1): odw, built from crates/odw-dispatch into this
-# checkout's target/, and odapkit, its earlier name, which runs it. Both are linked onto PATH; they find
-# every tool through the workspace roots' tools.toml, then PATH.
-CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-4}" cargo build --release --locked \
-  --manifest-path "$here/crates/odw-dispatch/Cargo.toml" --target-dir "$here/target"
+# The maintainers' umbrella command (command standard §1): odw, built from the workspace domain's
+# crates/odw-dispatch into its target/ (in that folder, so its rust-toolchain.toml applies), and odapkit,
+# its earlier name, which runs it. Both are linked onto PATH; they find every tool through the workspace
+# roots' tools.toml, then PATH.
+odw_dir="$(cd "$here/../workspace" && pwd)"
+(cd "$odw_dir" && CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-4}" cargo build --release --locked \
+  --manifest-path crates/odw-dispatch/Cargo.toml --target-dir target)
 mkdir -p "$HOME/.local/bin"
-ln -sf "$here/target/release/odw" "$HOME/.local/bin/odw"
+ln -sf "$odw_dir/target/release/odw" "$HOME/.local/bin/odw"
 ln -sf "$here/bin/odapkit" "$HOME/.local/bin/odapkit"
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) echo "Add ~/.local/bin to PATH to run odw and odapkit" >&2 ;; esac
 echo "linked ~/.local/bin/odw and ~/.local/bin/odapkit; odw help lists the tools"

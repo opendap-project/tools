@@ -85,7 +85,7 @@ repos:
         language: system
         pass_filenames: false
         files: ^hooks/(?:(bin|hooks|lib|tests)/|tools\.toml$|\.pre-commit-hooks\.yaml$)
-  # host/
+  # The root's Python project, workspace/ (odw itself) and host/'s requirements
   - repo: local
     hooks:
       # The root's Python project (pyproject.toml, uv.lock, conftest.py) runs every pytest suite from the root.
@@ -94,14 +94,14 @@ repos:
         entry: uv run --quiet pytest -q
         language: system
         pass_filenames: false
-        files: ^(?:(?:core|documentation|env|host)/(?:odw|src|tests|bin|lib|component)/|core/clihost\.py$|(?:core|documentation|env|host)/tools\.toml$|schemas/|pyproject\.toml$|uv\.lock$|conftest\.py$)
+        files: ^(?:(?:core|documentation|env|workspace)/(?:odw|tests|bin|lib|component)/|core/clihost\.py$|(?:core|documentation|env|workspace)/tools\.toml$|schemas/|pyproject\.toml$|uv\.lock$|conftest\.py$)
       # The odw dispatch crate: its unit and fixture-workspace tests, built into this checkout's target/.
       - id: odw-dispatch-tests
-        name: host odw dispatch tests (cargo test)
-        entry: sh -c 'cd host && CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-4}" cargo test --quiet --locked --manifest-path crates/odw-dispatch/Cargo.toml --target-dir target'
+        name: workspace odw dispatch tests (cargo test)
+        entry: sh -c 'cd workspace && CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-4}" cargo test --quiet --locked --manifest-path crates/odw-dispatch/Cargo.toml --target-dir target'
         language: system
         pass_filenames: false
-        files: ^host/(?:crates/odw-dispatch/|rust-toolchain\.toml$)
+        files: ^workspace/(?:crates/odw-dispatch/|rust-toolchain\.toml$)
       # The requirements README is rendered from requirements.toml and checked.
       - id: requirements-current-host
         name: host requirements README rendered (odw req render --check)

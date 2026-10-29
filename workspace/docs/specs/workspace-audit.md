@@ -1,7 +1,7 @@
 # Workspace audit
 
 - **Status:** draft
-- **Tool:** `odw audit` (`host/src/odw/audit.py`)
+- **Tool:** `odw audit` (`workspace/odw/audit.py`)
 
 Workspace health is measured, never estimated: `odw audit` reads every repository's tracked files (`git ls-files`) and reports metrics with stable keys, so dated snapshots compare over time and programmes state exit criteria as thresholds on them.
 

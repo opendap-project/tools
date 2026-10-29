@@ -253,7 +253,7 @@ def _cargo_bins(repo, files):
 
 def built_binary(repo, crate, name):
     """The release build of a Cargo binary: target/release/NAME in its crate folder or a folder above it, up to
-    the repository (setup.sh builds odw into host/target); None when there is none."""
+    the repository (setup.sh builds odw into workspace/target); None when there is none."""
     folder = repo / crate if crate else repo
     for d in [folder, *folder.parents]:
         exe = d / "target" / "release" / name

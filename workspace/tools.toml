@@ -1,4 +1,4 @@
-# The tools this root adds to the maintainers' umbrella command (command standard §3).
+# The tools this folder adds to the maintainers' umbrella command (command standard §3).
 schema = "opendap.tools/v1"
 front = "odw"
 

@@ -18,10 +18,10 @@ OpenDAP has two umbrella commands, one per side of the audience boundary. Both d
 | Grammar | `opendap <noun> <verb> [subject] [--flags]`, the CLI spec's closed verb set (§A.1) | `odw <tool> <verb> [subject] [--flags]` |
 | Built-in commands | the CLI's own (device, exec, file, log, screen, input, image, vm, doctor, self, …) | `help`, `check`, `doctor`; everything else is a plugin |
 | Needs a workspace checkout | never | yes, for discovery through the manifest; `PATH` otherwise |
-| Implementation | Rust (`host/cli`), reusing the dispatch crate | Rust: the dispatch crate `odw-dispatch` and its `odw` binary (toolkit-host `crates/odw-dispatch`) |
+| Implementation | Rust (`host/cli`), reusing the dispatch crate | Rust: the dispatch crate `odw-dispatch` and its `odw` binary (`workspace/crates/odw-dispatch`) |
 | Environment prefix | `OPENDAP_*` | `ODAP_*` (`ODAP_<ROOT>_DIR`) |
 
-`odw` is built from `crates/odw-dispatch` (development workflow §3). `odapkit` (`bin/odapkit`) is its earlier name: an alias that runs `odw`, kept until the other roots' cuts rename their call sites. The plugins are `odw-<tool>` since tools v0.2.0; each `odapkit-<tool>` is a link to its plugin, declared as the entry's `replaces`, for one minor release (§10).
+`odw` is built from `workspace/crates/odw-dispatch` (development workflow §3). `odapkit` (`bin/odapkit`) is its earlier name: an alias that runs `odw`, kept until the other roots' cuts rename their call sites. The plugins are `odw-<tool>` since tools v0.2.0; each `odapkit-<tool>` is a link to its plugin, declared as the entry's `replaces`, for one minor release (§10).
 
 **Reuse by `opendap`.** The crate holds no front of its own: a front is data (`Front`: its name, its plugin prefixes on `PATH`, its built-in commands, the roots it exports to plugins), discovery runs behind a `Host` port (files, folders, environment), and the interface returns what to do (print, `exec`, fail) instead of doing it. The CLI depends on the crate (MPL-2.0), declares `Front { name: "opendap", path_prefixes: ["opendap-"], builtins: <its nouns>, export_roots: [] }`, and calls it when its own subcommand parser does not know a noun; outside a workspace discovery reads `PATH` only (§3).
 
@@ -134,7 +134,7 @@ emits = "check-result"
 verifies = ["TK-009"]
 ```
 
-`odw check [--stage fast|full|release] [--json] [--dry-run] [PATHS…]` finds the root from the current directory (the nearest folder at or above it that holds `check.toml`, inside its git repository: the search stops at the folder holding `.git`, so a `check.toml` above the repository never runs, and outside a repository there is none), selects the steps whose `paths` match the changed paths (all steps when none are given or a step has no `paths`), runs them, collects each `check-result`, and exits 0 when every step passes, 1 when one fails, 2 on a usage or `check.toml` error. Pre-commit calls `odw check --stage fast` on the staged paths; a pre-push hook calls `--stage full`. Those hooks are rendered from each root's `check.toml` by `odw sync` (generator `odw-check`, [workspace sync](../../../host/docs/specs/workspace-sync.md#odw-check-hooks)) and by `odw rename config` for a cut root, never written by hand.
+`odw check [--stage fast|full|release] [--json] [--dry-run] [PATHS…]` finds the root from the current directory (the nearest folder at or above it that holds `check.toml`, inside its git repository: the search stops at the folder holding `.git`, so a `check.toml` above the repository never runs, and outside a repository there is none), selects the steps whose `paths` match the changed paths (all steps when none are given or a step has no `paths`), runs them, collects each `check-result`, and exits 0 when every step passes, 1 when one fails, 2 on a usage or `check.toml` error. Pre-commit calls `odw check --stage fast` on the staged paths; a pre-push hook calls `--stage full`. Those hooks are rendered from each root's `check.toml` by `odw sync` (generator `odw-check`, [workspace sync](../../../workspace/docs/specs/workspace-sync.md#odw-check-hooks)) and by `odw rename config` for a cut root, never written by hand.
 
 - The stage is `fast` by default; `release` runs the `full` steps, then its own. Changed paths are taken relative to the current directory; those outside the root are ignored. In `paths`, `*` and `?` stay within one folder and `**` crosses folders (`src/**/*.rs` also matches `src/a.rs`).
 - Each step runs in the root with stdin closed; its output goes to stderr, so stdout carries only the report. A step fails when it exits non-zero or, with `emits = "check-result"`, when it prints no `opendap.check-result/v1` document or one with a `fail` or `error` result; its results are collected as `<step>/<id>`.
@@ -168,7 +168,7 @@ A test in `tools/workspace`, run in every root's `full` stage for the tools that
 
 | Item | Today | This standard |
 | --- | --- | --- |
-| Maintainers' command | `odw` (Rust, `crates/odw-dispatch`) since 2026-10-27, with `odapkit` an alias that runs it; plugins `odw-<tool>` since tools v0.2.0, each old `odapkit-<tool>` a link to it for one minor release | `odw`, plugins `odw-<tool>`, Rust, shared dispatch crate |
+| Maintainers' command | `odw` (Rust, `workspace/crates/odw-dispatch`) since 2026-10-27, with `odapkit` an alias that runs it; plugins `odw-<tool>` since tools v0.2.0, each old `odapkit-<tool>` a link to it for one minor release | `odw`, plugins `odw-<tool>`, Rust, shared dispatch crate |
 | Discovery | `tools.toml` per root, then `PATH` (since 2026-10-27; before, `bin/` of the repositories whose `repos.tsv` entry matched `/toolkit-/`) | `tools.toml` per root, then `PATH` |
 | Help listing | name, summary, audience, stability, grouped by stability; `--json` (since 2026-10-27) | name, summary, audience, stability; `--json` |
 | `odw doctor` | built in (since 2026-10-28): discovery's problems and each tool's `--help`, `opendap.check-result/v1` | unchanged |

@@ -14,7 +14,7 @@ from odw import (audit, cli_conformance, clikit, docs, noindex, plan, rename, re
 TOP = pathlib.Path(__file__).resolve().parents[2]
 HOST = TOP / "host"
 # The folders whose tools.toml declares the odw package's tools (HL-71: core, then each domain as it moves).
-FOLDERS = ["core", "documentation", "env", "host"]
+FOLDERS = ["core", "documentation", "env", "workspace"]
 TOOLS = {t["name"]: {**t, "folder": d} for d in FOLDERS
          for t in tomllib.loads((TOP / d / "tools.toml").read_text())["tool"]}
 PYTHON = {"audit": audit, "cli": cli_conformance, "docs": docs, "noindex": noindex, "plan": plan,
@@ -106,7 +106,7 @@ def _umbrella(*args, env=None):
 
 def _odw():
     """The odw the alias runs: this checkout's build, else the one on PATH."""
-    built = HOST / "target" / "release" / "odw"
+    built = TOP / "workspace" / "target" / "release" / "odw"
     return str(built) if built.is_file() else shutil.which("odw")
 
 
@@ -120,7 +120,7 @@ def test_umbrella_help_json_lists_the_tools_with_a_schema(tmp_path):
     doc = json.loads(r.stdout)
     assert schemas.errors(doc, "tools-list") == []
     by_name = {t["name"]: t for t in doc["items"]}
-    assert by_name["plan"]["entry"] == f"{HOST}/bin/odw-plan"
+    assert by_name["plan"]["entry"] == f"{TOP}/workspace/bin/odw-plan"
     for name, tool in TOOLS.items():  # every tool of this checkout, as its tools.toml declares it
         item = by_name[name]
         assert (item["summary"], item["audience"], item["stability"]) == (
@@ -156,4 +156,4 @@ def test_umbrella_alias_without_odw_says_how_to_build_it(tmp_path):
     alias.chmod(0o755)
     r = subprocess.run([str(alias), "help"], capture_output=True, text=True, env={"PATH": "/usr/bin:/bin"})
     assert r.returncode == 1
-    assert "error tool.not_found: odw is not built" in r.stderr and "fix: cargo build --release" in r.stderr
+    assert "error tool.not_found: odw is not built" in r.stderr and "cargo build --release" in r.stderr.split("fix: ")[1]
