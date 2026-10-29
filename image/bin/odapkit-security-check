@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Check the built Blackbird OS images against Debian's security, updates and backports archives.
 
-Reads every built image's package manifest (blackbird-os image/mkosi.output/*.manifest, found
-through ODAP_BLACKBIRD_OS_DIR or the workspace's repos.tsv), downloads the current
+Reads every built image's package manifest (blackbird os/image/mkosi.output/*.manifest, found
+through ODAP_BLACKBIRD_DIR or the workspace's blackbird row), downloads the current
 package indexes and lists every package with a newer version available. Records the run in
 <workspace>/.state/security-check so the weekly reminder knows when it last ran.
 
@@ -49,22 +49,21 @@ def _row(ws, name):
 
 
 def repo_dir(name):
-    """A repository's checkout: ODAP_<NAME>_DIR, else its repos.tsv row; one merged into a root is its folder
-    under ODAP_<ROOT>_DIR or the root's row."""
+    """A repository's checkout: ODAP_<NAME>_DIR, else its repos.tsv row; one merged into a root is only its
+    folder under ODAP_<ROOT>_DIR or the root's row (the old variable and row are not read any more, HL-91)."""
+    root, folder = MERGED.get(name, (None, None))
+    if root:
+        base = os.environ.get("ODAP_" + root.upper() + "_DIR")
+        if base:
+            return os.path.join(base, folder) if os.path.isdir(os.path.join(base, folder)) else None
+        ws = find_workspace()
+        row = _row(ws, root) if ws else None
+        return os.path.join(row, folder) if row and os.path.isdir(os.path.join(row, folder)) else None
     var = "ODAP_" + name.upper().replace("-", "_") + "_DIR"
     if os.environ.get(var):
         return os.environ[var]
-    root, folder = MERGED.get(name, (None, None))
-    base = os.environ.get("ODAP_" + root.upper() + "_DIR") if root else None
-    if base and os.path.isdir(os.path.join(base, folder)):
-        return os.path.join(base, folder)
     ws = find_workspace()
-    if not ws:
-        return None
-    found = _row(ws, name)
-    if found is None and root and _row(ws, root) and os.path.isdir(os.path.join(_row(ws, root), folder)):
-        found = os.path.join(_row(ws, root), folder)
-    return found
+    return _row(ws, name) if ws else None
 
 
 def sibling_host(start):
@@ -178,7 +177,7 @@ def run(argv, clikit):
     repo = repo_dir("blackbird-os")
     if not repo:
         raise clikit.CliError("repo.not_found", "no blackbird-os checkout", "the images are built from blackbird-os",
-                              "export ODAP_BLACKBIRD_OS_DIR=<blackbird-os checkout>", status=2)
+                              "export ODAP_BLACKBIRD_DIR=<blackbird checkout>", status=2)
     manifests = sorted(glob.glob(os.path.join(repo, "image", "mkosi.output", "*.manifest")), key=os.path.getmtime)
     if not manifests:
         raise clikit.CliError("manifest.not_found", "no image manifest in blackbird-os image/mkosi.output",

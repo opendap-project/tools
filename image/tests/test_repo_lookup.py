@@ -1,5 +1,6 @@
 """repo_dir of lib/odapkit.sh and bin/odapkit-security-check: a repository merged into the blackbird root (RFC 0017)
-is its folder there, under ODAP_BLACKBIRD_DIR or the root's repos.tsv row (HL-84).
+is only its folder there, under ODAP_BLACKBIRD_DIR or the root's repos.tsv row (HL-84); the old variable and row
+are not read any more (HL-91).
 
 Run from the repository root: python3 -m unittest tests.test_repo_lookup
 """
@@ -51,8 +52,13 @@ def found(tmp, rows, folders, name="blackbird-os", env=None):
 class RepoDir(unittest.TestCase):
     def test_a_repository_row(self):
         with tempfile.TemporaryDirectory() as tmp:
+            got = found(tmp, [("public/hats", "hats")], ["public/hats"], "hats")
+            self.assertEqual(got, ["public/hats"] * 2)
+
+    def test_a_merged_repository_ignores_its_old_row(self):
+        with tempfile.TemporaryDirectory() as tmp:
             got = found(tmp, [("public/blackbird-os", "blackbird-os")], ["public/blackbird-os"])
-            self.assertEqual(got, ["public/blackbird-os"] * 2)
+            self.assertEqual(got, [None, None])
 
     def test_a_merged_repository_through_its_root_row(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -64,11 +70,11 @@ class RepoDir(unittest.TestCase):
             got = found(tmp, [], ["other/os"], env={"ODAP_BLACKBIRD_DIR": os.path.join(tmp, "ws", "other")})
             self.assertEqual(got, ["other/os"] * 2)
 
-    def test_the_repository_variable_comes_first(self):
+    def test_a_merged_repository_ignores_its_old_variable(self):
         with tempfile.TemporaryDirectory() as tmp:
             got = found(tmp, [("public/blackbird", "blackbird")], ["public/blackbird/os", "mine"],
                         env={"ODAP_BLACKBIRD_OS_DIR": os.path.join(tmp, "ws", "mine")})
-            self.assertEqual(got, ["mine"] * 2)
+            self.assertEqual(got, ["public/blackbird/os"] * 2)
 
     def test_an_unknown_repository_is_not_guessed(self):
         with tempfile.TemporaryDirectory() as tmp:

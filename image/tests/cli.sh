@@ -13,9 +13,10 @@ fail() { echo "FAIL: $*" >&2; fails=$((fails + 1)); }
 
 # Isolated host folders: no key, no sysroot, no cache of the person running the tests.
 export XDG_DATA_HOME="$tmp/data" XDG_CACHE_HOME="$tmp/cache" ODAP_SYSROOT_DIR="$tmp/sysroot"
-export ODAP_BLACKBIRD_OS_DIR="$tmp/os" ODAP_VIRTUAL_DEVICES_DIR="$tmp/vd" ODAP_BLACKBIRD_UI_DIR="$tmp/ui"
-mkdir -p "$tmp/os/image/mkosi.profiles/qemu" "$tmp/os/image/mkosi.profiles/sysroot" "$tmp/vd/export/bsp" "$tmp/ui/export/fonts"
-printf 'OTTO' > "$tmp/ui/export/fonts/Test.otf"
+export ODAP_BLACKBIRD_DIR="$tmp/bb"
+mkdir -p "$tmp/bb/os/image/mkosi.profiles/qemu" "$tmp/bb/os/image/mkosi.profiles/sysroot" "$tmp/bb/emulator/export/bsp" \
+  "$tmp/bb/ui/export/fonts"
+printf 'OTTO' > "$tmp/bb/ui/export/fonts/Test.otf"
 
 run() { out="$("$@" 2>"$tmp/err")"; rc=$?; err="$(cat "$tmp/err")"; }
 json_schema() { printf '%s' "$1" | python3 -c 'import json,sys; print(json.load(sys.stdin)["schema"])' 2>/dev/null; }

@@ -105,23 +105,33 @@ _merged() {
 _row() { awk -F'\t' -v n="$2" 'NR > 1 { split($2, a, "/"); if (a[2] == n) print $1 }' "$1/repos.tsv"; }
 
 repo_dir() {
-  var="ODAP_$(echo "$1" | tr 'a-z-' 'A-Z_')_DIR"
-  eval "v=\${$var:-}"
-  if [ -n "$v" ]; then
-    [ -d "$v" ] || cli_fail "repo.not_found" "$var=$v is not a directory" "point $var at a checkout of $1" \
-      "unset $var" 2
-    echo "$v"; return 0
-  fi
-  # Merged into a root: its folder, under ODAP_<ROOT>_DIR or the root's row.
+  # Merged into a root (RFC 0017): only its folder, under ODAP_<ROOT>_DIR or the root's row; the old
+  # variable and row are not read any more (HL-91).
   m="$(_merged "$1")"; mroot="${m% *}"; mfolder="${m#* }"
   if [ -n "$m" ]; then
-    eval "v=\${ODAP_$(echo "$mroot" | tr 'a-z-' 'A-Z_')_DIR:-}"
-    [ -n "$v" ] && [ -d "$v/$mfolder" ] && { echo "$v/$mfolder"; return 0; }
+    var="ODAP_$(echo "$mroot" | tr 'a-z-' 'A-Z_')_DIR"
+    eval "v=\${$var:-}"
+    if [ -n "$v" ]; then
+      [ -d "$v/$mfolder" ] || cli_fail "repo.not_found" "$var=$v has no $mfolder/ folder" \
+        "point $var at a checkout of $mroot" "unset $var" 2
+      echo "$v/$mfolder"; return 0
+    fi
+  else
+    var="ODAP_$(echo "$1" | tr 'a-z-' 'A-Z_')_DIR"
+    eval "v=\${$var:-}"
+    if [ -n "$v" ]; then
+      [ -d "$v" ] || cli_fail "repo.not_found" "$var=$v is not a directory" "point $var at a checkout of $1" \
+        "unset $var" 2
+      echo "$v"; return 0
+    fi
   fi
   ws="$(workspace_root)" || cli_fail "workspace.not_found" "no workspace (repos.tsv) above this checkout" \
-    "run it from a workspace checkout, or point $var at a checkout of $1" "export $var=DIR" 2
-  path="$(_row "$ws" "$1")"
-  [ -z "$path" ] && [ -n "$m" ] && path="$(_row "$ws" "$mroot")" && [ -n "$path" ] && path="$path/$mfolder"
+    "run it from a workspace checkout, or set $var" "export $var=DIR" 2
+  if [ -n "$m" ]; then
+    path="$(_row "$ws" "$mroot")"; [ -n "$path" ] && path="$path/$mfolder"
+  else
+    path="$(_row "$ws" "$1")"
+  fi
   [ -n "$path" ] && [ -d "$ws/$path" ] || cli_fail "repo.not_found" "no $1 checkout in $ws" \
     "the workspace bootstrap clones every repository you can reach" "$ws/scripts/bootstrap.sh" 2
   echo "$ws/$path"
