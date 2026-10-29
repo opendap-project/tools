@@ -16,7 +16,7 @@ OpenDAP has two umbrella commands, one per side of the audience boundary. Both d
 | Aliases | `odap`, `dap`, created by the installer only when free on the host (TK-003) | none |
 | Plugins | `opendap-<tool>` | `odw-<tool>` |
 | Grammar | `opendap <noun> <verb> [subject] [--flags]`, the CLI spec's closed verb set (§A.1) | `odw <tool> <verb> [subject] [--flags]` |
-| Built-in commands | the CLI's own (device, exec, file, log, screen, input, image, vm, doctor, self, …) | `help`, `check`; everything else is a plugin |
+| Built-in commands | the CLI's own (device, exec, file, log, screen, input, image, vm, doctor, self, …) | `help`, `check`, `doctor`; everything else is a plugin |
 | Needs a workspace checkout | never | yes, for discovery through the manifest; `PATH` otherwise |
 | Implementation | Rust (`host/cli`), reusing the dispatch crate | Rust: the dispatch crate `odw-dispatch` and its `odw` binary (toolkit-host `crates/odw-dispatch`) |
 | Environment prefix | `OPENDAP_*` | `ODAP_*` (`ODAP_<ROOT>_DIR`) |
@@ -59,8 +59,9 @@ Rules:
 
 - Discovery never matches repository or folder names (today's `/toolkit-/` pattern goes).
 - The workspace is `ODAP_WORKSPACE_DIR`, else the folder above the umbrella's own executable that holds the manifest; never the current folder, so a checkout made by someone else cannot choose what runs. A root's path in the manifest stays inside the workspace (no absolute path, no `..`). Every root of the manifest is trusted as the workspace is: its `tools.toml` entries run as the maintainer.
-- Two entries with the same `name` for one front are an error reported by `odw doctor`; dispatch takes the first in manifest order. Until `odw doctor` exists, `<front> help` reports it on stderr.
+- Two entries with the same `name` for one front are an error reported by `odw doctor`; dispatch takes the first in manifest order, and `<front> help` also names it on stderr.
 - An entry is not dispatched when its name breaks the pattern, it names a built-in, its `entry` leaves the root or is not an executable file; `<front> help` reports why on stderr. Other schema problems (a summary over 100 characters, an `audience` that does not fit the front) are reported the same way and the tool still runs. A `tools.toml` that does not parse is reported and skipped; the other roots still work. Running a tool prints no such report.
+- `odw doctor [--json]` reports every one of these problems at once, with each tool's `--help` (exit 0, usage on stdout, stdin closed, within `ODAP_DOCTOR_TIMEOUT` seconds, 10 by default), as `opendap.check-result/v1` with `--json` (rules `tools.invalid`, `tools.entry`, `tools.summary`, `tools.audience`, `tools.duplicate`, `tool.help`) or one line per problem; it is quiet and exits 0 when everything passes, 1 on a problem, 2 on a usage error.
 - Until the `tools` cut, `odw` also accepts `odapkit-<tool>` on `PATH`, after `odw-<tool>` in the same folder.
 - `odw` sets `ODAP_TOOLKIT_<NAME>_DIR` (`HOST`, `HARDWARE`, `HOOKS`, `IMAGE`, `VERIFY`) for the tool it runs, when unset: to the `toolkit-<name>` root, or to the `<name>` folder of a root whose folders hold their `tools.toml`, which is exported as `ODAP_<ROOT>_DIR` too (`ODAP_TOOLS_DIR`). Tools in other roots find the shared helpers (host) the same way in either layout.
 - `audience` follows the front: `odw` entries are `maintainer`; `opendap` entries are `developer` or `user`.
@@ -163,6 +164,7 @@ A test in `tools/workspace`, run in every root's `full` stage for the tools that
 | Maintainers' command | `odw` (Rust, `crates/odw-dispatch`) since 2026-10-27, with `odapkit` an alias that runs it; plugins `odapkit-<tool>` | `odw`, plugins `odw-<tool>`, Rust, shared dispatch crate |
 | Discovery | `tools.toml` per root, then `PATH` (since 2026-10-27; before, `bin/` of the repositories whose `repos.tsv` entry matched `/toolkit-/`) | `tools.toml` per root, then `PATH` |
 | Help listing | name, summary, audience, stability, grouped by stability; `--json` (since 2026-10-27) | name, summary, audience, stability; `--json` |
+| `odw doctor` | built in (since 2026-10-28): discovery's problems and each tool's `--help`, `opendap.check-result/v1` | unchanged |
 | Unknown tool | exit 2 | unchanged |
 | `opendap` plugins | specified (CLI spec §3), not implemented: the CLI has no external-subcommand dispatch yet | §2–§5 |
 | `opendap help` and plugins | RFC 0008 left open whether the CLI lists toolkit tools | `opendap help` lists `opendap` plugins only; maintainer tools are never listed |

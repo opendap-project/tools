@@ -19,6 +19,11 @@ fn main() -> ExitCode {
             let _ = out.write_all(stdout.as_bytes()).and_then(|()| out.flush());
             ExitCode::SUCCESS
         }
+        Outcome::Report { stdout, status } => {
+            let mut out = std::io::stdout().lock();
+            let _ = out.write_all(stdout.as_bytes()).and_then(|()| out.flush());
+            ExitCode::from(status)
+        }
         Outcome::Exec { entry, args, env } => {
             let err = std::process::Command::new(&entry)
                 .args(&args)

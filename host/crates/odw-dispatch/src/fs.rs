@@ -3,9 +3,13 @@
 
 use std::io::Read;
 use std::os::unix::fs::PermissionsExt;
+use std::os::unix::process::CommandExt;
 use std::path::Path;
+use std::process::{Command, Stdio};
+use std::sync::mpsc;
+use std::time::Duration;
 
-use crate::discovery::{Host, Search};
+use crate::discovery::{Host, Ran, Search};
 
 /// How much of a plugin's header is read for its summary.
 const HEAD_BYTES: u64 = 8 * 1024;
@@ -54,6 +58,51 @@ impl Host for FsHost {
                 String::from_utf8_lossy(&e.into_bytes()[..valid]).into_owned()
             }
         })
+    }
+    fn run(
+        &self,
+        program: &Path,
+        args: &[String],
+        env: &[(String, String)],
+        cwd: Option<&Path>,
+        timeout: Duration,
+    ) -> Option<Ran> {
+        let mut cmd = Command::new(program);
+        cmd.args(args)
+            .envs(env.iter().map(|(k, v)| (k, v)))
+            .stdin(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            // Its own process group, so a timeout ends what it started too.
+            .process_group(0);
+        if let Some(dir) = cwd {
+            cmd.current_dir(dir);
+        }
+        let child = cmd.spawn().ok()?;
+        let pid = child.id();
+        let (tx, rx) = mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = tx.send(child.wait_with_output());
+        });
+        match rx.recv_timeout(timeout) {
+            Ok(Ok(out)) => Some(Ran {
+                status: out.status.code(),
+                stdout: String::from_utf8_lossy(&out.stdout).into_owned(),
+                stderr: String::from_utf8_lossy(&out.stderr).into_owned(),
+                timed_out: false,
+            }),
+            Ok(Err(_)) => None,
+            Err(_) => {
+                let _ = Command::new("kill")
+                    .args(["-KILL", &format!("-{pid}")])
+                    .stderr(Stdio::null())
+                    .status();
+                Some(Ran {
+                    timed_out: true,
+                    ..Ran::default()
+                })
+            }
+        }
     }
 }
 

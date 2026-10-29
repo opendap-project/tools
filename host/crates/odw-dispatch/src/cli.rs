@@ -18,6 +18,8 @@ pub enum Command {
     ToolHelp(String),
     /// A built-in that is specified but not implemented yet (`odw check`, §7).
     Unavailable(String),
+    /// `<front> doctor [--json]`: the tools' problems (§3); `help` prints its usage.
+    Doctor { json: bool, help: bool },
     /// `<front> TOOL ARGS…`.
     Run { name: String, args: Vec<String> },
 }
@@ -36,6 +38,8 @@ pub enum Outcome {
         args: Vec<String>,
         env: Vec<(String, String)>,
     },
+    /// Print a report on stdout and exit with `status` (0 clean, 1 a problem).
+    Report { stdout: String, status: u8 },
     /// Print the error (stderr; with `json`, also the document on stdout) and exit with its status.
     Fail { error: DispatchError, json: bool },
 }
@@ -84,6 +88,27 @@ pub fn parse(front: &Front, args: &[String]) -> Result<Command, (DispatchError, 
             )),
             Some(t) => Ok(Command::ToolHelp(t.clone())),
         };
+    }
+    if first == "doctor" && front.builtins.contains(&"doctor") {
+        let (mut json, mut help) = (false, false);
+        for a in &args[1..] {
+            match a.as_str() {
+                "--json" => json = true,
+                "-h" | "--help" => help = true,
+                other => {
+                    let what = if other.starts_with('-') {
+                        "unknown flag"
+                    } else {
+                        "unexpected argument"
+                    };
+                    let mut e = DispatchError::usage(front.name, format!("{what} {other}"));
+                    e.hint = format!("the usage is in {} doctor --help", front.name);
+                    e.fix = format!("{} doctor --help", front.name);
+                    return fail(e);
+                }
+            }
+        }
+        return Ok(Command::Doctor { json, help });
     }
     if front.builtins.contains(&first.as_str()) {
         return Ok(Command::Unavailable(first.clone()));
@@ -136,6 +161,23 @@ pub fn run(front: &Front, host: &dyn Host, search: &Search, args: &[String]) -> 
             },
             json: false,
         },
+        Command::Doctor { help: true, .. } => Outcome::Print {
+            stdout: crate::doctor::usage(front.name),
+            warnings: vec![],
+        },
+        Command::Doctor { json, .. } => {
+            let env = exported_roots(front, host, search);
+            let report = crate::doctor::doctor(front, host, search, &env);
+            let stdout = if json {
+                report.json(&crate::report::now()) + "\n"
+            } else {
+                report.text()
+            };
+            Outcome::Report {
+                stdout,
+                status: u8::from(report.failed()),
+            }
+        }
         Command::Run { name, args } => exec(front, host, search, &name, args),
     }
 }

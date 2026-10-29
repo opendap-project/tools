@@ -44,7 +44,7 @@ impl Front {
     pub const ODW: Front = Front {
         name: "odw",
         path_prefixes: &["odw-", "odapkit-"],
-        builtins: &["help", "check"],
+        builtins: &["help", "check", "doctor"],
         export_roots: &[
             ExportRoot {
                 name: "toolkit-host",
@@ -135,6 +135,9 @@ pub struct Tool {
 /// A problem found while reading the roots; dispatch goes on without the offending entry.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Warning {
+    /// The `odw doctor` rule it breaks: `tools.invalid`, `tools.entry`, `tools.summary`, `tools.audience`,
+    /// `tools.duplicate`.
+    pub rule: &'static str,
     pub path: PathBuf,
     pub message: String,
 }

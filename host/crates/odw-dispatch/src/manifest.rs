@@ -53,6 +53,8 @@ pub fn parse_tools(text: &str) -> Result<ToolsFile, String> {
 /// A problem with one entry (conformance §8 item 1, the parts that need no execution).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Problem {
+    /// The `odw doctor` rule: `tools.entry` (a blocking problem), `tools.summary`, `tools.audience`.
+    pub rule: &'static str,
     pub message: String,
     /// The entry is not dispatched: its name is not a tool name, it would shadow a built-in, or its
     /// entry leaves the root. Other problems are reported and the tool still runs.
@@ -62,7 +64,18 @@ pub struct Problem {
 /// Every problem of one entry for this front, blocking ones first.
 pub fn entry_problems(e: &Entry, front: &str, builtins: &[&str]) -> Vec<Problem> {
     let mut out = Vec::new();
-    let mut add = |blocking, message: String| out.push(Problem { message, blocking });
+    let mut add = |blocking, message: String| {
+        let rule = if blocking {
+            "tools.entry"
+        } else {
+            "tools.summary"
+        };
+        out.push(Problem {
+            rule,
+            message,
+            blocking,
+        })
+    };
     if !crate::model::valid_name(&e.name) {
         add(
             true,
@@ -115,6 +128,9 @@ pub fn entry_problems(e: &Entry, front: &str, builtins: &[&str]) -> Vec<Problem>
                 e.audience.as_str()
             ),
         );
+        if let Some(p) = out.last_mut() {
+            p.rule = "tools.audience";
+        }
     }
     out
 }

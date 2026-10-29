@@ -3,6 +3,7 @@
 
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 
 use crate::manifest;
 use crate::model::{Catalog, Declared, Front, Tool, Warning, valid_name};
@@ -20,6 +21,28 @@ pub trait Host {
     fn read_head(&self, path: &Path) -> Option<String> {
         self.read_to_string(path)
     }
+    /// Run `program` with `args` and `env` added (stdin closed), in `cwd` when given, killed after `timeout`; `None`
+    /// when this host cannot run programs (a test double) or the program does not start.
+    fn run(
+        &self,
+        _program: &Path,
+        _args: &[String],
+        _env: &[(String, String)],
+        _cwd: Option<&Path>,
+        _timeout: Duration,
+    ) -> Option<Ran> {
+        None
+    }
+}
+
+/// What a program run through [`Host::run`] did.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Ran {
+    /// The exit status; `None` when a signal ended it or it was killed at the timeout.
+    pub status: Option<i32>,
+    pub stdout: String,
+    pub stderr: String,
+    pub timed_out: bool,
 }
 
 /// Where to look: the workspace (when there is one) and the `PATH` folders, in order.
@@ -98,8 +121,9 @@ fn read_manifest(
     let Some(text) = host.read_to_string(file) else {
         return;
     };
-    let warn = |catalog: &mut Catalog, message: String| {
+    let warn = |catalog: &mut Catalog, rule: &'static str, message: String| {
         catalog.warnings.push(Warning {
+            rule,
             path: file.to_path_buf(),
             message,
         })
@@ -109,6 +133,7 @@ fn read_manifest(
         Err(e) => {
             return warn(
                 catalog,
+                "tools.invalid",
                 format!("not a valid {}: {e}", manifest::TOOLS_SCHEMA),
             );
         }
@@ -119,7 +144,7 @@ fn read_manifest(
     for e in parsed.tool {
         let problems = manifest::entry_problems(&e, front.name, front.builtins);
         for p in &problems {
-            warn(catalog, p.message.clone());
+            warn(catalog, p.rule, p.message.clone());
         }
         if manifest::blocking_problem(&problems).is_some() {
             continue;
@@ -128,6 +153,7 @@ fn read_manifest(
         if !host.is_executable(&entry) {
             warn(
                 catalog,
+                "tools.entry",
                 format!(
                     "tool {}: entry {} is not an executable file",
                     e.name, e.entry
@@ -138,6 +164,7 @@ fn read_manifest(
         if catalog.get(&e.name).is_some() {
             warn(
                 catalog,
+                "tools.duplicate",
                 format!(
                     "tool {} is declared twice for {}; the first one is used",
                     e.name, front.name
