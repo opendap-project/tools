@@ -7,7 +7,7 @@ import subprocess
 import pytest
 import test_rename_config as trc
 
-from odw import check_hooks, rename_precommit as rp, sync
+from odw import check_hooks, clikit, rename_precommit as rp, sync
 
 FAST_FULL = 'schema = "opendap.check/v1"\n[[stage.fast]]\nname = "fmt"\nrun = ["true"]\n' \
             '[[stage.full]]\nname = "test"\nrun = ["true"]\n'
@@ -63,6 +63,30 @@ def test_a_folder_hook_gives_the_paths_back_relative_to_the_folder(tmp_path, fol
     lines = out.read_text().splitlines()
     assert os.path.realpath(lines[0]) == os.path.realpath(tmp_path / folder)
     assert lines[1:] == ["check", "--stage", "fast", f"{up}{folder}/src/a b.rs", f"{up}README.md"]
+
+
+@pytest.mark.parametrize("folder", ["a$(touch pwned)", "a'; touch pwned; '", "a b", "a\n        entry: touch pwned",
+                                    "a#b", "-a", "a/../b", "a//b"])
+def test_a_folder_name_that_is_not_a_plain_path_is_refused(tmp_path, folder):
+    """HL-112: the folder of a tracked check.toml goes into a `sh -c` entry and into YAML; a name that could run a
+    command or add a key there is refused, never rendered (repository content never becomes code)."""
+    with pytest.raises(clikit.CliError) as e:
+        check_hooks.hook(folder, "fast")
+    assert e.value.code == "sync.unsafe-root"
+    with pytest.raises(clikit.CliError):
+        check_hooks.body({folder: ["fast"]})
+
+
+def test_sync_refuses_a_tracked_check_toml_in_a_folder_named_like_a_command(tmp_path):
+    files = write(tmp_path, {"a$(touch pwned)/check.toml": FAST_FULL})
+    with pytest.raises(clikit.CliError) as e:
+        check_hooks.render(tmp_path, files)
+    assert e.value.code == "sync.unsafe-root" and not (tmp_path / "pwned").exists()
+
+
+def test_a_plain_folder_name_is_rendered(tmp_path):
+    for folder in ("system", "a/b", "my-root_2", "v1.2"):
+        assert check_hooks.hook(folder, "fast")[0].startswith("      - id: odw-check-fast-")
 
 
 SYNC = """schema = "opendap.sync/v1"

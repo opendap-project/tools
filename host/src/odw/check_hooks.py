@@ -12,10 +12,15 @@ import pathlib
 import re
 import tomllib
 
+from odw import clikit
+
 FILE = "check.toml"
 # The stages a hook runs, with the git hook each runs in (None: pre-commit, the default).
 STAGES = {"fast": None, "full": "pre-push"}
 NOT_ROOTS = re.compile(r"(^|/)(tests?|fixtures)/")
+# A root's folder goes into a `sh -c` entry and into YAML unquoted, so only plain path segments are rendered (HL-112):
+# a tracked folder named `a$(cmd)` or holding a newline would otherwise run a command or add a key in every hook.
+SAFE_FOLDER = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]*(/[A-Za-z0-9_][A-Za-z0-9._-]*)*")
 
 
 def stages(text):
@@ -40,6 +45,14 @@ def roots(top, files):
     return out
 
 
+def _safe(folder):
+    if folder and (not SAFE_FOLDER.fullmatch(folder) or ".." in folder.split("/")):
+        raise clikit.CliError("sync.unsafe-root", f"check root {folder!r} is not a plain path",
+                              "a folder holding a check.toml is rendered into a shell hook; its segments may use "
+                              "letters, digits, '.', '_' and '-' only", "rename the folder, or move its check.toml")
+    return folder
+
+
 def _entry(folder, stage):
     command = f"odw check --stage {stage}"
     if not folder:
@@ -50,7 +63,8 @@ def _entry(folder, stage):
 
 
 def hook(folder, stage):
-    """The YAML lines of one hook (six spaces in, as a `- repo: local` block's)."""
+    """The YAML lines of one hook (six spaces in, as a `- repo: local` block's); an unsafe folder is refused."""
+    folder = _safe(folder)
     suffix = f"-{folder.replace('/', '-')}" if folder else ""
     name = f"{folder + ' ' if folder else ''}odw check --stage {stage}" + (" (before push)" if STAGES[stage] else "")
     lines = [f"      - id: odw-check-{stage}{suffix}", f"        name: {name}", f"        entry: {_entry(folder, stage)}",
