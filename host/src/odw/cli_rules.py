@@ -88,6 +88,9 @@ def json_(e, p, ctx):
             return "fail", "no --json, and --help does not say the tool has no machine output"
         return "warning", "no --json (required where it reports state or results)"
     if not p or "json" not in p:
+        via = ctx.get("reached", {}).get(e["path"])
+        if via:
+            return _through(*via)
         return "unverified", "--json declared; no read-only --json invocation is listed to probe it"
     j = p["json"]
     doc = _document(j["stdout"])
@@ -96,6 +99,16 @@ def json_(e, p, ctx):
     if not isinstance(doc, dict) or "schema" not in doc:
         return "fail", "--json document has no schema field"
     return "pass", f"--json parses, schema {doc['schema']}"
+
+
+def _through(parent, j):
+    """The json cell of a script its parent's tools.toml probe ran (HL-100)."""
+    doc = _document(j["stdout"])
+    if doc is None:
+        return "fail", f"--json through {parent}'s probe ({_probe_word(j)}): stdout is not JSON; stderr: {_tail(j['stderr'], 100)}"
+    if not isinstance(doc, dict) or "schema" not in doc:
+        return "fail", f"--json through {parent}'s probe: the document has no schema field"
+    return "pass", f"--json parses through {parent}'s probe, schema {doc['schema']}"
 
 
 def no_prompt(e, p, ctx):
