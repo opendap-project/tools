@@ -13,6 +13,7 @@ Every row is a whole token by default (rename_rewrite.identifiers); a kind adds 
   SocketGroup=, SupplementaryGroups=, sysusers.d and tmpfiles.d columns, `~user`, `/home/user`, `chown user:group`.
 Spec: docs/specs/rename.md.
 """
+import os
 import re
 
 from odw import rename_keys as rk, rename_map, rename_rewrite as rw
@@ -81,7 +82,7 @@ class Rewriter:
 
     def __init__(self, rows):
         by = {}
-        for kind, old, new in rows:
+        for kind, old, new, *_ in rows:
             by.setdefault(kind, {})[old] = new
         self.crates, self.binaries = by.pop("crate", {}), by.pop("binary", {})
         self.users = by.get("identifier:user", {})
@@ -150,7 +151,7 @@ class Rewriter:
 
 
 def collect(m, cut, kinds=None):
-    """The identifier rows of a cut: (kind, old, new) rows to apply, the maker keys (old, new, row line) and the scan
+    """The identifier rows of a cut: (kind, old, new, map line) rows to apply, the maker keys (old, new, row line) and the scan
     (each identifier with its status: apply, later or manual)."""
     apply, keys, scan = [], [], []
     for r in rename_map.identifier_rows(m):
@@ -167,7 +168,93 @@ def collect(m, cut, kinds=None):
             keys.extend((o, n, r.line) for o, n in zip(i.old, i.new))
         elif status == "apply":
             kind = rename_map.kind_of(r.old)
-            apply.extend((kind, o, n) for o, n in zip(i.old, i.new))
+            apply.extend((kind, o, n, r.line) for o, n in zip(i.old, i.new))
         if not (i.reason or "").startswith("action-") and i.reason not in {"unparsed", "not-a-token"}:
             scan.append((i, status))
     return apply, keys, scan
+
+
+# Kinds a file is named after (case 12): a unit file and its drop-in folder or wants link, a PAM service, a udev rule,
+# an installed binary. A crate's folder is not (its path rows move it), nor a binary whose new value is a path.
+# The folder a name must sit in, by kind (None: anywhere, its suffix makes it specific: `.service`, `.rules`), so a
+# PAM service or a binary named like a crate folder never moves that folder.
+NAMED = {"unit": None, "identifier:udev": None, "identifier:pam": {"pam.d"}, "binary": {"bin", "sbin", "libexec"}}
+
+
+def _names(rows):
+    """{old: (new, line, kind)} for the rows a file name can carry, and the pattern of their tokens in a segment."""
+    table = {o: (n, line, kind) for kind, o, n, line in rows if kind in NAMED and "/" not in o + n}
+    if not table:
+        return table, None
+    alt = "|".join(re.escape(o) for o in sorted(table, key=len, reverse=True))
+    return table, re.compile(rf"(?<![\w-])(?:{alt})(?![\w-])")
+
+
+def renamed(path, table, pattern):
+    """The path with every token a segment holds renamed (`x.service.d/`, `70-x.rules`), and the first row's line."""
+    lines, segs = [], path.split("/")
+
+    def at(parent):
+        def sub(m):
+            new, line, kind = table[m.group(0)]
+            if NAMED[kind] is not None and parent not in NAMED[kind]:
+                return m.group(0)
+            lines.append(line)
+            return new
+        return sub
+    new = "/".join(pattern.sub(at(segs[i - 1] if i else ""), seg) for i, seg in enumerate(segs))
+    return new, (lines[0] if lines else None)
+
+
+def plan_name_moves(plan, files, moves, rows):
+    """Add a move for every file whose path holds a named token (HL-109 case 12), then the clashes: two files that
+    end at one path, or a move onto a file that exists and stays."""
+    table, pattern = _names(rows)
+    if pattern is None:
+        return
+    deleted = {d["path"] for d in plan.deletes}
+    added = []
+    for src in sorted(files):
+        if src in deleted:
+            continue
+        dst = moves.get(src, src)
+        new, line = renamed(dst, table, pattern)
+        if new == dst:
+            continue
+        for mv in plan.moves:
+            if mv["from"] == src:
+                mv["to"] = new
+                break
+        else:
+            plan.moves.append({"row": line, "from": src, "to": new})
+        moves[src], _ = new, added.append(new)
+    leaving = set(moves) | deleted
+    targets = {}
+    for mv in plan.moves:
+        targets.setdefault(mv["to"], []).append(mv)
+    lower = {p.lower(): p for p in files}
+    for t in sorted(set(added)):
+        mvs, clash = targets[t], lower.get(t.lower())
+        if len(mvs) > 1:
+            plan.conflicts.append({"path": t, "rows": sorted({m["row"] for m in mvs}),
+                                   "reason": "name clash: " + " and ".join(m["from"] for m in mvs) + " both become this path"})
+        elif clash is not None and clash not in leaving:
+            plan.conflicts.append({"path": t, "rows": [mvs[0]["row"]], "reason": f"name clash: {clash} exists and stays"})
+
+
+def link_target(file, rows):
+    """A tracked link's new target, or None when its target names no token (a link is never read as text)."""
+    table, pattern = _names(rows)
+    target = os.readlink(file)
+    new = renamed(target, table, pattern)[0] if pattern is not None else target
+    return new if new != target else None
+
+
+def relink(top, links):
+    """Write each link (path inside `top` -> new target) as a link."""
+    for rel, target in links.items():
+        p = top / rel
+        if p.is_symlink() or p.exists():
+            p.unlink()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.symlink_to(target)

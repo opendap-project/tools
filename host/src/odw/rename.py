@@ -51,6 +51,7 @@ class Plan:
     generated: list = dataclasses.field(default_factory=list)
     structure_only: bool = False
     texts: dict = dataclasses.field(default_factory=dict)  # new path -> new content (not reported)
+    links: list = dataclasses.field(default_factory=list)  # a tracked link's new target (HL-109)
 
 
 def _git(cwd, *args, check=True):
@@ -189,6 +190,7 @@ def build(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
         pairs, keys, scan = ri.collect(m, cut, kinds)
     moves = {mv["from"]: mv["to"] for mv in plan.moves}
     key_table = {o: n for o, n, _ in keys}
+    ri.plan_name_moves(plan, files, moves, pairs)
     rk.plan_moves(plan, files, moves, key_table, {o: line for o, _, line in keys})
     key_patterns = rk.patterns(key_table)
     own = rw.Paths(moves, deleted=[d["path"] for d in plan.deletes], prefixes=prefixes)
@@ -211,6 +213,10 @@ def build(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
     generated = rename_generated.outputs(files)
     for src in sorted(files):
         if src in deleted or src in generated or ri.untouched(src):
+            continue
+        if files[src].is_symlink():
+            target = ri.link_target(files[src], pairs)
+            plan.links += [{"path": moves.get(src, src), "target": target}] if target else []
             continue
         text = _read_text(files[src])
         if text is None or ri.immutable(src, text):
@@ -254,7 +260,7 @@ def build(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
 
 def document(plan, mode="plan", **extra):
     keys = ["moves", "deletes", "done", "missing", "pending", "cross_root", "conflicts", "identifiers", "edits",
-            "generated"]
+            "generated", "links"]
     summary = {k: len(getattr(plan, k)) for k in keys}
     for k in ("link", "url", "identifier"):
         summary[f"edits_{k}"] = sum(1 for e in plan.edits if e["kind"] == k)
@@ -323,10 +329,11 @@ def apply(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
         _git(root_dir, "commit", "-q", "-m", f"{root}: moves and deletes from the rename map\n\n"
              f"{len(plan.moves)} moves, {len(plan.deletes)} deletes (odapkit rename apply {root}).")
         commits.append(_git(root_dir, "rev-parse", "HEAD").strip())
-    if plan.texts:
+    if plan.texts or plan.links:
         for rel, text in plan.texts.items():
             _inside(root_dir, rel).write_text(text)
-        _git(root_dir, "add", "--", *plan.texts)
+        ri.relink(root_dir, {lk["path"]: lk["target"] for lk in plan.links})
+        _git(root_dir, "add", "--", *plan.texts, *[lk["path"] for lk in plan.links])
         _git(root_dir, "commit", "-q", "-m", f"{root}: references from the rename map\n\n"
              f"{len(plan.edits)} link, URL and identifier rewrites and {len(plan.generated)} generated files "
              f"rendered again, in {len(plan.texts)} files "

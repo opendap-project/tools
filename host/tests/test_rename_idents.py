@@ -85,7 +85,7 @@ def test_the_plan_applies_each_row_by_its_kind(ws, capsys):
     (ws.parent / "map.tsv").write_text("\n".join(lines) + "\n")  # the crate row names its owner
     m = rename_map.load(ws, ws.parent / "map.tsv")
     rows, _, _ = ri.collect(m, {"libs"})
-    assert ("crate", "odap-composer", "blackbird-composer") in rows
+    assert ("crate", "odap-composer", "blackbird-composer") in [r[:3] for r in rows]
     code, out, _ = run(capsys, "plan", "libs", *args(ws), "--json")
     edits = {(e["path"], e["old"], e["new"]) for e in json.loads(out)["edits"] if e["kind"] == "identifier"}
     assert ("kicad/Cargo.toml", "odap-composer", "blackbird-composer") in edits
@@ -152,3 +152,75 @@ def test_a_new_value_without_the_kind_takes_the_old_ones(ws):  # case 10
     i = _identifier(ws, "crate:odap-composer", "blackbird-composer")
     assert (i.reason, i.new) == (None, ["blackbird-composer"])
     assert _identifier(ws, "crate:odap-composer", "binary:blackbird-composer").reason == "kind-mismatch"
+
+
+NAMED = [("unit:odap-composer.service", "unit:blackbird-composer.service", "unit"),
+         ("identifier:pam:odap-composer", "identifier:pam:blackbird-composer", "identifier"),
+         ("identifier:udev:70-opendap-boot.rules", "identifier:udev:70-blackbird-boot.rules", "identifier"),
+         ("binary:odap-vdev-view", "binary:blackbird-emulator-viewer", "binary"),
+         ("binary:odap-boot", "binary:/usr/lib/blackbird/boot", "binary"),
+         ("crate:odap-composer", "crate:blackbird-composer", "crate")]
+UNITS = "tree/usr/lib/systemd/system"
+
+
+def _named_plan(ws, capsys):
+    lines = ["old\tnew\tkind\taction\tnotes\tscope\troot"]
+    lines += ["\t".join([*r, "test", ""]) for r in MAP if r[0].startswith("repo:")]
+    lines += ["\t".join([o, n, k, "rename", "", "test", "libs"]) for o, n, k in NAMED]
+    (ws.parent / "map.tsv").write_text("\n".join(lines) + "\n")
+    top = ws / "public/libs/kicad"
+    files = {f"{UNITS}/odap-composer.service": "[Service]\nPAMName=odap-composer\n",
+             f"{UNITS}/odap-composer.service.d/override.conf": "[Service]\nNice=-5\n",
+             "tree/etc/pam.d/odap-composer": "auth required pam_permit.so\n",
+             "tree/usr/lib/udev/rules.d/70-opendap-boot.rules": 'TAG+="systemd"\n',
+             "tree/usr/bin/odap-vdev-view": "#!/bin/sh\n", "tree/usr/bin/odap-boot": "#!/bin/sh\n",
+             "crates/odap-composer/Cargo.toml": '[package]\nname = "odap-composer"\n'}
+    for name, text in files.items():
+        (top / name).parent.mkdir(parents=True, exist_ok=True)
+        (top / name).write_text(text)
+    (top / f"{UNITS}/graphical.target.wants").mkdir(parents=True)
+    (top / f"{UNITS}/graphical.target.wants/odap-composer.service").symlink_to("../odap-composer.service")
+    git(top, "add", "-A")
+    git(top, "commit", "-qm", "named files")
+    code, out, _ = run(capsys, "plan", "libs", *args(ws), "--json")
+    assert code == 0, out
+    return json.loads(out)
+
+
+def test_files_named_by_a_token_move_with_it(ws, capsys):  # case 12
+    doc = _named_plan(ws, capsys)
+    moves = {mv["from"]: mv["to"] for mv in doc["moves"]}
+    k = "kicad/" + UNITS
+    assert moves[f"{k}/odap-composer.service"] == f"{k}/blackbird-composer.service"
+    assert moves[f"{k}/odap-composer.service.d/override.conf"] == f"{k}/blackbird-composer.service.d/override.conf"
+    assert moves[f"{k}/graphical.target.wants/odap-composer.service"] == \
+        f"{k}/graphical.target.wants/blackbird-composer.service"
+    assert moves["kicad/tree/etc/pam.d/odap-composer"] == "kicad/tree/etc/pam.d/blackbird-composer"
+    assert moves["kicad/tree/usr/lib/udev/rules.d/70-opendap-boot.rules"] == \
+        "kicad/tree/usr/lib/udev/rules.d/70-blackbird-boot.rules"
+    assert moves["kicad/tree/usr/bin/odap-vdev-view"] == "kicad/tree/usr/bin/blackbird-emulator-viewer"
+    # A binary whose new value is a path, and a crate folder, keep their files where they are.
+    assert "kicad/tree/usr/bin/odap-boot" not in moves and "kicad/crates/odap-composer/Cargo.toml" not in moves
+
+
+def test_a_link_gets_its_target_rewritten_never_its_targets_text(ws, capsys):  # case 12
+    doc = _named_plan(ws, capsys)
+    link = f"kicad/{UNITS}/graphical.target.wants/blackbird-composer.service"
+    assert doc["links"] == [{"path": link, "target": "../blackbird-composer.service"}]
+    assert not any(e["path"] == link and e["kind"] != "link" for e in doc["edits"])
+
+
+def test_apply_writes_a_link_as_a_link(tmp_path):
+    top = tmp_path / "r"
+    top.mkdir()
+    (top / "a.service").write_text("x\n")
+    (top / "w").mkdir()
+    (top / "w/a.service").symlink_to("../a.service")
+    ri.relink(top, {"w/a.service": "../b.service"})
+    assert (top / "w/a.service").is_symlink() and (top / "w/a.service").readlink().as_posix() == "../b.service"
+    assert (top / "a.service").read_text() == "x\n"
+
+
+def test_a_plan_with_links_validates(ws, capsys):
+    from odw import schemas
+    assert schemas.errors(_named_plan(ws, capsys), "rename-plan") == []

@@ -93,6 +93,14 @@
         "properties": {"path": {"$ref": "#/$defs/path"}, "source": {"$ref": "#/$defs/path"}}
       }
     },
+    "links": {
+      "type": "array",
+      "description": "Tracked links whose target names a renamed token (a unit's wants link), with the new target; a link is never read as text",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["path", "target"],
+        "properties": {"path": {"$ref": "#/$defs/path"}, "target": {"type": "string", "minLength": 1}}
+      }
+    },
     "base": {"type": "string", "pattern": "^[0-9a-f]{40}$", "description": "apply: HEAD before the cut; git reset --keep <base> undoes it"},
     "commits": {"type": "array", "items": {"type": "string", "pattern": "^[0-9a-f]{40}$"}}
   }
