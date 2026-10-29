@@ -19,7 +19,7 @@ Run them as `odapkit <tool>` (toolkit-host `setup.sh` links `odapkit` into `~/.l
 ## Layout
 
 - `bin/` — the tools
-- `lib/odapkit.sh` — what they share: `--help`, the error and flag helpers (toolkit-host's `lib/cli.sh`: `host/` of the same repository when this checkout is one of its folders, the merged `tools` root, else `ODAP_TOOLKIT_HOST_DIR`, else `repos.tsv`; `odw security-check` finds odw.clikit the same way, and `tests/test_host_lookup.py` builds both layouts), finding repositories, host-wide paths
+- `lib/odapkit.sh` — what they share: `--help`, the error and flag helpers (toolkit-host's `lib/cli.sh`: `host/` of the same repository when this checkout is one of its folders, the merged `tools` root, else `$ODAP_TOOLS_DIR/host` (`odw` exports `ODAP_TOOLS_DIR`), else `ODAP_TOOLKIT_HOST_DIR` (deprecated until HL-71 phase 4), else `repos.tsv`; `odw security-check` finds odw.clikit the same way, and `tests/test_host_lookup.py` builds both layouts), finding repositories, host-wide paths
 - `tools.toml` — the tools this root declares to the maintainers' umbrella command
 - `tests/cli.sh` — every tool's command-line contract (`--help`, an unknown flag, `--json`, `--dry-run`), on temporary folders; run by pre-commit
 - `vm/` — the image build VM's definition

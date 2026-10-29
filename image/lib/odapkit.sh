@@ -37,7 +37,8 @@ workspace_root() {
 _mine() { [ -n "$(find "$1" -prune -user "$(id -u)" 2>/dev/null)" ]; }
 
 # toolkit-host: host/ of this repository when this checkout is one of its folders (the merged tools root: the
-# nearest folder with a .git above it), else $ODAP_TOOLKIT_HOST_DIR (odapkit sets it), else the workspace's
+# nearest folder with a .git above it), else $ODAP_TOOLS_DIR/host (odw sets ODAP_TOOLS_DIR), else
+# $ODAP_TOOLKIT_HOST_DIR (deprecated; odapkit sets it), else the workspace's
 # repos.tsv: only a workspace this user owns, and a folder inside it, so a repos.tsv someone else wrote never
 # names code to source.
 _host_sibling() {
@@ -51,6 +52,9 @@ _host_sibling() {
 }
 _host_dir() {
   _host_sibling && return 0
+  # The tools root (ODAP_TOOLS_DIR, which odw exports): its host/ holds the helpers (HL-71).
+  [ -n "${ODAP_TOOLS_DIR:-}" ] && [ -f "$ODAP_TOOLS_DIR/host/lib/cli.sh" ] && { echo "$ODAP_TOOLS_DIR/host"; return 0; }
+  # Deprecated alias, until the old variables go (HL-71 phase 4).
   [ -n "${ODAP_TOOLKIT_HOST_DIR:-}" ] && { echo "$ODAP_TOOLKIT_HOST_DIR"; return 0; }
   ws="$(workspace_root)" || return 1
   _mine "$ws/repos.tsv" || return 1

@@ -2,7 +2,8 @@
 # toolkit-host's command-line helpers (lib/cli.sh) for this repository's shell tools, sourced (POSIX sh):
 # cli_fail CODE MSG HINT FIX [STATUS], cli_usage MSG, cli_json_str, cli_summary NAME FILE (command standard §6).
 # toolkit-host is host/ of this repository when this checkout is one of its folders (the merged tools root), else
-# ODAP_TOOLKIT_HOST_DIR (odapkit sets it), else the workspace's repos.tsv; without it,
+# $ODAP_TOOLS_DIR/host (odw sets ODAP_TOOLS_DIR), else ODAP_TOOLKIT_HOST_DIR (deprecated; odapkit sets it), else the
+# workspace's repos.tsv; without it,
 # the same error format in its smallest form. cli_root is this checkout.
 cli_root="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/.." && pwd)"
 cli_name="${0##*/}"; cli_name="${cli_name#odw-}"; cli_name="${cli_name#odapkit-}"
@@ -27,6 +28,9 @@ _cli_sibling() {
 
 _cli_host() {
   _cli_sibling && return 0
+  # The tools root (ODAP_TOOLS_DIR, which odw exports): its host/ holds the helpers (HL-71).
+  [ -n "${ODAP_TOOLS_DIR:-}" ] && [ -f "$ODAP_TOOLS_DIR/host/lib/cli.sh" ] && { echo "$ODAP_TOOLS_DIR/host"; return 0; }
+  # Deprecated alias, until the old variables go (HL-71 phase 4).
   [ -n "${ODAP_TOOLKIT_HOST_DIR:-}" ] && { echo "$ODAP_TOOLKIT_HOST_DIR"; return 0; }
   d="$cli_root"
   while [ "$d" != / ]; do

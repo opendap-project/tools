@@ -28,5 +28,5 @@ case "${1:-}" in
   "") cli_header "$self" 20; exit 2 ;;
 esac
 command -v uv >/dev/null 2>&1 || cli_fail "tool.missing" "uv not found" "toolkit-host's setup installs it" \
-  "\"\${ODAP_TOOLKIT_HOST_DIR:-<toolkit-host>}/setup.sh\""
+  "\"\${ODAP_TOOLS_DIR:-<tools>}/host/setup.sh\""
 exec uv run --quiet --locked --project "$here/tools" python "$here/tools/stackup/stackup.py" "$@"

@@ -5,7 +5,7 @@
 # Output (default): <project dir>/fab/<name>-<git describe>/  (fab/ is never committed)
 # --check runs only the checks the package needs (the project's files, ERC and DRC) and writes
 # nothing. --json prints opendap.fab-package/v1 (name, revision, out, files) on stdout and the
-# progress on stderr. toolkit-hooks is the sibling ../hooks, or $ODAP_TOOLKIT_HOOKS_DIR.
+# progress on stderr. toolkit-hooks is $ODAP_TOOLS_DIR/hooks, else the sibling ../hooks.
 # Example: fab-package.sh hardware/board.kicad_pro --check
 # Exit status: 0 package written (or checks pass), 1 a check or an export failed, 2 usage error.
 set -eu
@@ -27,9 +27,11 @@ while [ $# -gt 0 ]; do
 done
 [ -f "$pro" ] || usage "no project file ${pro:-given} (PROJECT.kicad_pro)"
 here="$(cd "$(dirname "$0")/.." && pwd)"
-hooks="${ODAP_TOOLKIT_HOOKS_DIR:-$here/../hooks}"   # toolkit-hooks (sibling in the workspace)
+# toolkit-hooks: $ODAP_TOOLS_DIR/hooks (HL-71), else ODAP_TOOLKIT_HOOKS_DIR (deprecated), else the sibling ../hooks
+hooks="${ODAP_TOOLS_DIR:+$ODAP_TOOLS_DIR/hooks}"
+hooks="${hooks:-${ODAP_TOOLKIT_HOOKS_DIR:-$here/../hooks}}"
 [ -x "$hooks/hooks/kicad-check.sh" ] || {
-  printf 'fab-package.sh: error repo.not_found: toolkit-hooks not found at %s\n  hint: ERC and DRC run through its hooks/kicad-check.sh\n  fix: export ODAP_TOOLKIT_HOOKS_DIR=<toolkit-hooks checkout>\n' "$hooks" >&2
+  printf 'fab-package.sh: error repo.not_found: toolkit-hooks not found at %s\n  hint: ERC and DRC run through its hooks/kicad-check.sh\n  fix: export ODAP_TOOLS_DIR=<tools checkout>\n' "$hooks" >&2
   exit 2
 }
 # With --json, stdout carries only the document: the progress goes to stderr.

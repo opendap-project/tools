@@ -81,13 +81,21 @@ def sibling_host(start):
     return None
 
 
+def tools_host():
+    """host/ of the tools root ODAP_TOOLS_DIR names (odw exports it), when it holds odw.clikit (HL-71)."""
+    tools = os.environ.get("ODAP_TOOLS_DIR")
+    if tools and os.path.isfile(os.path.join(tools, "host", "src", "odw", "clikit.py")):
+        return os.path.join(tools, "host")
+    return None
+
+
 def _clikit():
     """odw.clikit, the command-line helpers of toolkit-host: host/ of this repository (the merged tools root),
-    else ODAP_TOOLKIT_HOST_DIR, else the workspace."""
-    host = sibling_host(os.path.join(HERE, "..")) or repo_dir("toolkit-host")
+    else $ODAP_TOOLS_DIR/host, else ODAP_TOOLKIT_HOST_DIR (deprecated), else the workspace."""
+    host = sibling_host(os.path.join(HERE, "..")) or tools_host() or repo_dir("toolkit-host")
     if not host:
         print(f"{TOOL}: error repo.not_found: no toolkit-host checkout\n  hint: its odw.clikit runs this tool's "
-              "command line\n  fix: export ODAP_TOOLKIT_HOST_DIR=<toolkit-host checkout>", file=sys.stderr)
+              "command line\n  fix: export ODAP_TOOLS_DIR=<tools checkout>", file=sys.stderr)
         sys.exit(2)
     sys.path.insert(0, os.path.join(host, "src"))
     from odw import clikit

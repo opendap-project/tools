@@ -16,9 +16,8 @@ for _k in [k for k in os.environ if k.startswith("GIT_")]:
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Under a pre-commit hook git exports GIT_DIR and others; neither git nor the tools may see them.
-ENV = {k: v for k, v in os.environ.items() if not k.startswith("GIT_") and k != "ODAP_TOOLKIT_HOST_DIR"}
+ENV = {k: v for k, v in os.environ.items() if not k.startswith("GIT_") and k not in ("ODAP_TOOLKIT_HOST_DIR", "ODAP_TOOLS_DIR")}
 FAKE_SH = 'cli_fail() { echo "helpers of $FAKE_HOST"; exit 0; }\n'
-FAKE_PY = 'import os\nMARK = os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))\n'
 
 
 def fake_host(d, name):
@@ -28,7 +27,7 @@ def fake_host(d, name):
     with open(os.path.join(d, "lib", "cli.sh"), "w") as f:
         f.write(f"FAKE_HOST={name}\n" + FAKE_SH)
     with open(os.path.join(d, "src", "odw", "clikit.py"), "w") as f:
-        f.write(FAKE_PY)
+        f.write(f"MARK = {name!r}\n")
 
 
 def git_init(d):
@@ -85,13 +84,17 @@ def probe_sh(mine, env):
 
 
 class ShellHelpers(unittest.TestCase):
-    """lib/cli.sh: host/ of the same repository first (the merged tools root), then ODAP_TOOLKIT_HOST_DIR, then
+    """lib/cli.sh: host/ of the same repository first (the merged tools root), then
+    $ODAP_TOOLS_DIR/host, then ODAP_TOOLKIT_HOST_DIR (deprecated), then
     the toolkit-host row of repos.tsv. Built in both toolkit layouts."""
 
-    def found(self, layout, env=False, host=True):
+    def found(self, layout, env=False, host=True, tools=False):
         with tempfile.TemporaryDirectory() as tmp:
             mine = build(tmp, layout, FOLDER, FILES, host)
             extra = {"ODAP_TOOLKIT_HOST_DIR": os.path.join(tmp, "elsewhere")} if env else {}
+            if tools:  # ODAP_TOOLS_DIR: the tools root, whose host/ holds the helpers (HL-71)
+                fake_host(os.path.join(tmp, "troot", "host"), "troot")
+                extra["ODAP_TOOLS_DIR"] = os.path.join(tmp, "troot")
             return probe_sh(mine, extra)
 
     def test_today_reads_the_toolkit_host_row(self):
@@ -111,6 +114,15 @@ class ShellHelpers(unittest.TestCase):
 
     def test_merged_without_host_or_variable_finds_none(self):
         self.assertIsNone(self.found("merged", host=False))
+
+    def test_merged_without_host_takes_the_tools_root(self):
+        self.assertEqual(self.found("merged", host=False, tools=True), "troot")
+
+    def test_the_tools_root_comes_before_the_deprecated_variable(self):
+        self.assertEqual(self.found("merged", env=True, host=False, tools=True), "troot")
+
+    def test_merged_host_beside_it_comes_before_the_tools_root(self):
+        self.assertEqual(self.found("merged", host=True, tools=True), "host")
 
 
 if __name__ == "__main__":

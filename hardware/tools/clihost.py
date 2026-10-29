@@ -1,7 +1,8 @@
 """toolkit-host's command-line helpers (odw.clikit) for this repository's Python tools (command standard §6).
 
 `load()` returns odw.clikit from toolkit-host: host/ of this repository when this checkout is one of its folders
-(the merged tools root), else ODAP_TOOLKIT_HOST_DIR (odapkit sets it), else the workspace's repos.tsv (a folder
+(the merged tools root), else $ODAP_TOOLS_DIR/host (odw sets ODAP_TOOLS_DIR), else ODAP_TOOLKIT_HOST_DIR
+(deprecated; odapkit sets it), else the workspace's repos.tsv (a folder
 inside the workspace only); without it, the tool stops with the error
 `repo.not_found`, its hint and its fix. `summary(name)` is the tool's summary in this root's tools.toml.
 Works on Python 3.9 (KiCad's).
@@ -32,7 +33,10 @@ def host_dir():
     sibling = sibling_host(ROOT)
     if sibling:
         return sibling
-    if os.environ.get("ODAP_TOOLKIT_HOST_DIR"):
+    tools = os.environ.get("ODAP_TOOLS_DIR")  # the tools root, which odw exports: its host/ holds the helpers (HL-71)
+    if tools and os.path.isfile(os.path.join(tools, "host", "src", "odw", "clikit.py")):
+        return os.path.join(tools, "host")
+    if os.environ.get("ODAP_TOOLKIT_HOST_DIR"):  # deprecated alias, until HL-71 phase 4
         return os.environ["ODAP_TOOLKIT_HOST_DIR"]
     d = ROOT
     while d != os.path.dirname(d):
@@ -56,7 +60,7 @@ def load(tool):
     if not host or not os.path.isfile(helper) or os.stat(helper).st_uid != os.getuid():
         sys.stderr.write(f"{tool}: error repo.not_found: no toolkit-host checkout\n"
                          "  hint: toolkit-host's odw.clikit runs this tool's command line\n"
-                         "  fix: export ODAP_TOOLKIT_HOST_DIR=<toolkit-host checkout>\n")
+                         "  fix: export ODAP_TOOLS_DIR=<tools checkout>\n")
         sys.exit(2)
     sys.path.insert(0, os.path.join(host, "src"))
     from odw import clikit

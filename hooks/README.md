@@ -49,7 +49,7 @@ The same engine is the maintainers' `odw dru compose|check` (`bin/odw-dru`, decl
 - `.pre-commit-hooks.yaml` — hook definitions
 - `hooks/` — the hook scripts and their engines
 - `bin/` — the tools this repository adds to `odw` (`tools.toml`; `odw-*`, each `odapkit-*` a link for one minor release), thin wrappers over the engines in `hooks/`
-- `lib/cli.sh` — the command-line helpers of the shell wrappers (toolkit-host's, with a minimal fallback): `host/` of the same repository when this checkout is one of its folders (the merged `tools` root), else `ODAP_TOOLKIT_HOST_DIR`, else the `toolkit-host` row of `repos.tsv` (`tests/test_host_lookup.py` builds both layouts)
+- `lib/cli.sh` — the command-line helpers of the shell wrappers (toolkit-host's, with a minimal fallback): `host/` of the same repository when this checkout is one of its folders (the merged `tools` root), else `$ODAP_TOOLS_DIR/host` (`odw` exports `ODAP_TOOLS_DIR`), else `ODAP_TOOLKIT_HOST_DIR` (deprecated until HL-71 phase 4), else the `toolkit-host` row of `repos.tsv` (`tests/test_host_lookup.py` builds both layouts)
 - `tests/` — tests and their fixtures: `python3 -m unittest discover tests` (pre-commit runs them). They pass in both toolkit layouts: this repository, and `hooks/` of the merged `tools` root, where `.pre-commit-hooks.yaml` sits at the root with entries under `hooks/hooks/`
 
 ## License
