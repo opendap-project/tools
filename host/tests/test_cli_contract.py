@@ -1,6 +1,8 @@
 """Every odapkit tool of this root holds to the plugin contract (command standard §6), through odw.clikit."""
 import json
+import os
 import pathlib
+import shutil
 import subprocess
 import tomllib
 
@@ -98,8 +100,20 @@ def _umbrella(*args, env=None):
     return subprocess.run([str(HOST / "bin" / "odapkit"), *args], capture_output=True, text=True, env=env)
 
 
-def test_umbrella_help_json_lists_the_tools_with_a_schema():
-    r = _umbrella("help", "--json")
+def _odw():
+    """The odw the alias runs: this checkout's build, else the one on PATH."""
+    built = HOST / "target" / "release" / "odw"
+    return str(built) if built.is_file() else shutil.which("odw")
+
+
+def test_umbrella_help_json_lists_the_tools_with_a_schema(tmp_path):
+    """Run outside any workspace, so an odw on PATH built by another checkout (a worktree has no build of its
+    own) still lists this checkout's tools, through ODAP_TOOLKIT_HOST_DIR, which the alias sets (HL-102)."""
+    if not _odw():
+        pytest.skip("odw is not built and not on PATH (setup.sh builds it)")
+    env = {k: v for k, v in os.environ.items() if not k.startswith("ODAP_")}
+    env["ODAP_WORKSPACE_DIR"] = str(tmp_path)
+    r = _umbrella("help", "--json", env=env)
     assert r.returncode == 0, r.stderr
     doc = json.loads(r.stdout)
     assert schemas.errors(doc, "tools-list") == []

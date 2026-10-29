@@ -24,11 +24,11 @@ Roots are the paths of the workspace's `repos.tsv`; `--root` limits the run to s
 | `script` | everything else | repository scripts, generators, studies |
 | `hook` | files under `hooks/`, files a `.pre-commit-hooks.yaml` or a plugin's `hooks.json` runs, and image build scripts (`*.chroot`) | hooks |
 
-Each entry carries the facts read from its source and from the sources it runs, two levels down (`python -m`, a script it `exec`s, a shell library it sources, a module it imports, including each module a `from pkg import a, b` names): the flags it names (`--help`, `--json`, `--dry-run`, `--check`), whether it prompts, whether it writes files or changes state, whether it uses the network, a VM or a disk image, exit statuses other than 0, 1 and 2, subcommands outside the closed verb set, and the argument parser (`argparse`, `clap`) that guarantees `--help` and exit 2 on an unknown flag.
+Each entry carries the facts read from its source and from the sources it runs, two levels down (`python -m`, a script it `exec`s, a shell library it sources, a module it imports, including each module a `from pkg import a, b` names): the flags it names (`--help`, `--json`, `--dry-run`, `--check`), whether it prompts, whether it writes files or changes state, whether it uses the network, a VM or a disk image, exit statuses other than 0, 1 and 2, subcommands outside the closed verb set, and the argument parser (`argparse`, `clap`) that guarantees `--help` and exit 2 on an unknown flag. A Cargo binary's sources are its crate's and those of the crates it depends on in the same repository, so a `--help` handled in `cli.rs` counts.
 
 ## Probes
 
-An executable is run only when its source handles `--help` and it is not a device binary, a hook, a Cargo binary (not built by the test), or a command that uses the network, a VM, a disk image or a system service; the inventory says why each other executable was read from source only. Each run:
+An executable is run only when its source handles `--help` and it is not a device binary, a hook, a Cargo binary (not built by the test; a Cargo umbrella, `odw`, runs as its checkout's release build, `target/release/<name>` in its crate folder or a folder above it up to the repository, when there is one), or a command that uses the network, a VM, a disk image or a system service; the inventory says why each other executable was read from source only. Each run:
 
 - has stdin at end of file and no terminal, `NO_COLOR=1`, an empty temporary working folder and a timeout (`--timeout`, 20 s by default);
 - on macOS runs inside a sandbox that denies the network and every file write outside that folder, the uv cache and Python virtual environments.

@@ -9,7 +9,7 @@ import textwrap
 
 import pytest
 
-from odw import audit, cli_conformance, cli_inventory, cli_probe, schemas
+from odw import audit, cli_conformance, cli_inventory, cli_probe, cli_rules, schemas
 
 HOST = pathlib.Path(__file__).resolve().parents[1]
 
@@ -382,3 +382,58 @@ def test_every_tool_that_had_a_probe_declares_it_in_its_tools_toml():
         assert schemas.errors(doc, "tools") == [], folder
         declared = {t["name"] for t in doc["tool"] if t.get("probe")}
         assert names <= declared, (folder, names - declared)
+
+
+# HL-102: the two umbrellas pass the conformance test: odapkit names --help and its error code in its own
+# source, and odw, a Cargo binary, is probed through the build its checkout made.
+UMBRELLA_BUILD = """\
+#!/bin/sh
+case "${1:-}" in
+  -h|--help) echo "odw: the maintainers' umbrella (odw help --json)"; exit 0 ;;
+  help) echo '{"schema":"opendap.tools-list/v1","items":[]}'; exit 0 ;;
+  *) echo "odw: error input.invalid: unknown flag" >&2; echo "  hint: odw --help" >&2; exit 2 ;;
+esac
+"""
+
+
+def _umbrella_ws(tmp_path):
+    (tmp_path / "repos.tsv").write_text("path\trepository\npublic/tools\to/t\n")
+    repo(tmp_path, "public/tools", {
+        "host/bin/odapkit": ((HOST / "bin" / "odapkit").read_text(), 0o755),
+        "host/crates/odw-dispatch/Cargo.toml": ('[package]\nname = "odw-dispatch"\nversion = "0.1.0"\n'
+                                                '[[bin]]\nname = "odw"\npath = "src/main.rs"\n', 0o644),
+        "host/crates/odw-dispatch/src/main.rs": ("fn main() { odw_dispatch::run(); }\n", 0o644),
+        "host/crates/odw-dispatch/src/cli.rs": ('match a { "-h" | "--help" => {} }\n'
+                                                'eprintln!("error tool.not_found"); let code = "input.invalid"; '
+                                                '// hint\n', 0o644),
+    })
+    return tmp_path
+
+
+def test_the_odapkit_alias_names_help_and_a_coded_error_in_its_source(tmp_path):
+    items = by_name(cli_inventory.inventory(_umbrella_ws(tmp_path)))
+    alias = items["odapkit"]
+    assert alias["kind"] == "umbrella" and alias["probe"], alias["probe_skipped"]
+    assert alias["facts"]["help"] and alias["facts"]["error_code"] and alias["facts"]["hint"]
+
+
+def test_an_unbuilt_odw_is_read_from_its_crate_and_never_fails_help(tmp_path):
+    ws = _umbrella_ws(tmp_path)
+    odw = by_name(cli_inventory.inventory(ws))["odw"]
+    assert odw["kind"] == "umbrella" and not odw["probe"] and "not built" in odw["probe_skipped"]
+    assert odw["facts"]["help"]  # named in cli.rs, a source of the crate, not in main.rs
+    assert cli_rules.cell("help", odw, None, {"summaries": {}})[0] == "unverified"
+
+
+def test_a_built_odw_is_probed_as_the_binary(tmp_path):
+    ws = _umbrella_ws(tmp_path)
+    built = ws / "public/tools/host/target/release/odw"
+    built.parent.mkdir(parents=True)
+    built.write_text(UMBRELLA_BUILD)
+    built.chmod(0o755)
+    odw = by_name(cli_inventory.inventory(ws))["odw"]
+    assert odw["probe"] and odw["exec"] == str(built)
+    probes = cli_probe.probe_all([odw], ws, timeout=10)
+    m = cli_conformance.conformance(ws, [odw], probes)
+    states = {c["criterion"]: c["state"] for c in m["results"]}
+    assert {k: v for k, v in states.items() if v not in ("pass", "n/a")} == {}, states

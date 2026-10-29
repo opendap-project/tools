@@ -10,6 +10,8 @@
 # ODAP_TOOLKIT_HOST_DIR to this checkout when unset, as before, so the tools find the shared helpers
 # (lib/cli.sh, odw.clikit).
 #
+# --help, -h: odw's help; without odw, this alias's usage and how to build odw (exit 0).
+#
 # Exit status: odw's, which is the tool's; 2 when there is no such tool; 1 when odw is not built.
 set -eu
 
@@ -20,7 +22,18 @@ export ODAP_TOOLKIT_HOST_DIR="${ODAP_TOOLKIT_HOST_DIR:-$host}"
 odw="$host/target/release/odw"
 [ -x "$odw" ] || odw="$(command -v odw 2>/dev/null || true)"
 if [ -z "$odw" ]; then
-  printf '%s\n' "odapkit: error tool.not_found: odw is not built" \
+  case "${1:-}" in
+    # --help answers without odw: usage on stdout, exit 0, and how to build it (command standard §6).
+    -h|--help)
+      printf '%s\n' "odapkit: the maintainers' umbrella under its earlier name; it runs odw, which is not built" "" \
+        "Usage: odapkit TOOL [ARGS…]     the same as odw TOOL [ARGS…]" \
+        "       odapkit [help] [--json]  the same as odw help [--json] (opendap.tools-list/v1)" "" \
+        "Example: odapkit help --json" "" \
+        "Build odw first: cargo build --release --locked --manifest-path \"$host/crates/odw-dispatch/Cargo.toml\" --target-dir \"$host/target\""
+      exit 0 ;;
+  esac
+  code='tool.not_found'
+  printf '%s\n' "odapkit: error $code: odw is not built" \
     "  hint: odapkit runs odw, which setup.sh builds and links next to it" \
     "  fix: cargo build --release --locked --manifest-path \"$host/crates/odw-dispatch/Cargo.toml\" --target-dir \"$host/target\"" >&2
   exit 1

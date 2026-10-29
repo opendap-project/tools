@@ -84,7 +84,8 @@ def probe(entry, ws, timeout=20.0):
     """The probes of one inventory entry, or None when it may not be run."""
     if not entry["probe"]:
         return None
-    base = command(pathlib.Path(ws) / entry["path"], entry["mode"])
+    # A built Cargo umbrella runs as its binary; its entry path is the source it was built from.
+    base = [entry["exec"]] if entry.get("exec") else command(pathlib.Path(ws) / entry["path"], entry["mode"])
     res = {"help": run(base + ["--help"], timeout, ws), "unknown_flag": run(base + [UNKNOWN_FLAG], timeout, ws)}
     args = json_args(entry, ws)
     if args:

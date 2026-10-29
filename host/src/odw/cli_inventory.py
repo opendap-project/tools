@@ -5,9 +5,11 @@ shebang or a Python `__main__`; tests, fixtures, vendored code and library modul
 binary target of a Cargo package (`[[bin]]`, `src/main.rs`, `src/bin/*.rs`). Kinds: `umbrella`, `plugin`,
 `device-binary`, `host-binary`, `script`, `hook`. Each entry carries the facts read from its source (and the
 sources it runs, one level down) that the conformance test needs, whether it may be probed by running it, and the
-read-only --json call its tools.toml declares (`probe`, as `json_probe` with `declared_in`).
+read-only --json call its tools.toml declares (`probe`, as `json_probe` with `declared_in`). A Cargo umbrella (odw)
+is probed through its checkout's release build when there is one (`exec`), and read from source otherwise.
 Spec: docs/specs/cli-conformance.md.
 """
+import os
 import pathlib
 import re
 import subprocess
@@ -152,7 +154,8 @@ def facts(sources):
     # A wrapper that only hands its arguments to another program handles --help where that program does.
     delegates = lang == "sh" and bool(re.search(r'^\s*exec\s.*"\$@"', own, re.M)) and len(sources) > 1
     f = {k: bool(rx.search(every)) for k, rx in FACTS.items()}
-    f["help"] = bool(FACTS["help"].search(own)) or (delegates and f["help"])
+    # A Rust binary's argument handling lives anywhere in its crate (cli.rs), not only in main.rs.
+    f["help"] = bool(FACTS["help"].search(every if lang == "rs" else own)) or (delegates and f["help"])
     # The argument parser that guarantees --help (exit 0) and an unknown flag (exit 2) for this executable.
     parsing = every if delegates or lang == "rs" else own
     f["parser"] = ("clap" if re.search(r"\bclap::|derive\([^)]*\bParser\b", parsing) else
@@ -243,18 +246,34 @@ def _cargo_bins(repo, files):
     return out
 
 
-def _entry(root, path, name, kind, mode, f):
+def built_binary(repo, crate, name):
+    """The release build of a Cargo binary: target/release/NAME in its crate folder or a folder above it, up to
+    the repository (setup.sh builds odw into host/target); None when there is none."""
+    folder = repo / crate if crate else repo
+    for d in [folder, *folder.parents]:
+        exe = d / "target" / "release" / name
+        if exe.is_file() and os.access(exe, os.X_OK):
+            return str(exe)
+        if d == repo:
+            break
+    return None
+
+
+def _entry(root, path, name, kind, mode, f, built=None):
     probe, why = True, ""
     if kind in ("device-binary", "hook"):
         probe, why = False, f"{kind}: classified from source, never run"
-    elif f.get("cargo"):
+    elif f.get("cargo") and not built:
         probe, why = False, "Cargo binary: classified from source, not built"
     elif f["network"]:
         probe, why = False, f"network or VM ({f['network']}): classified from source, never run"
     elif not f["help"]:
         probe, why = False, "no --help handling in source: running it would run its action"
-    return {"path": f"{root}/{path}", "root": root, "name": name, "kind": kind, "mode": mode, "probe": probe,
+    item = {"path": f"{root}/{path}", "root": root, "name": name, "kind": kind, "mode": mode, "probe": probe,
             "probe_skipped": why, "facts": f}
+    if built and probe:
+        item["exec"] = built
+    return item
 
 
 def declarations(ws, root):
@@ -305,7 +324,9 @@ def inventory(ws, roots=None):
             f["cargo"] = True
             full = f"{root}/{crate}" if crate else root
             kind = "umbrella" if name in UMBRELLAS else "device-binary" if DEVICE_ROOTS.match(full) else "host-binary"
-            items.append(_entry(root, entry, name, kind, "cargo", f))
+            # An umbrella is probed through the build its checkout made (HL-102); other Cargo binaries are read.
+            built = built_binary(repo, crate, name) if kind == "umbrella" else None
+            items.append(_entry(root, entry, name, kind, "cargo", f, built))
     return sorted(items, key=lambda e: e["path"])
 
 
