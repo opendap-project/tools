@@ -295,7 +295,7 @@ Legend: **Now** = software/simulation/static verification available before hardw
 | T1-001, BLIB-002 | Confirmed | Open source; licences | `reuse lint` (pre-commit) | — | E: reuse |
 | T1-002, T1-003, BRD-003, HCS-001…003 | Confirmed | General-purpose gadget; HATs and faceplates | Covered by P14–P18 | — | — |
 | T1-019 | Confirmed | Faceplates not swapped regularly | Informs flex/connector cycle rating (no test) | — | — |
-| KLIB-001, FLIB-001, BLIB-001 | Confirmed | Shared libraries | Library lint (existing skills) | — | E |
+| KLIB-001, FLIB-001, BLIB-001 | Confirmed | Shared libraries | Library lint checks | — | E |
 | CAM-005, NAS-005/006, OSC-005, PWR-005, RAD-005, REC-005, VNA-005 (+ *-001…004) | Confirmed / Draft | HAT products | Per-HAT plans; REC reuses the bit-perfect harness | Per-HAT bench tests | B |
 
 ## 6. Sources (accessed 2026-10-21/22)
