@@ -52,7 +52,7 @@ Every command-line surface, from the `opendap` and `odw` umbrellas and their plu
 - `bin/odw-verify` — verification matrices as data: render, collect check results by variant, uncovered requirements: [verification matrices](docs/specs/verification.md)
 - `Brewfile` — Homebrew packages
 - `src/odw/evaluate.py` — the evaluation-matrix engine every study uses: [evaluation matrix](docs/specs/evaluation-matrix.md)
-- `schemas/`, `src/odw/` — the workspace schemas (check, tools, check-result, matrix, task, decisions) and their validator: [workspace schemas](docs/specs/workspace-schemas.md). Tests: `uv run pytest` from the tools root, whose `pyproject.toml` and `uv.lock` build `odw` from this folder (HL-71)
+- `src/odw/` — the validator of the workspace schemas, which live in the root's [`schemas/`](../schemas/README.md) folder (HL-71). Tests: `uv run pytest` from the tools root, whose `pyproject.toml` and `uv.lock` build `odw` from this folder (HL-71)
 - `docs/` — requirements and specs (development workflow, workspace schemas)
 
 ## License
@@ -61,6 +61,5 @@ This repository follows the [REUSE](https://reuse.software) layout: license text
 
 - Default: **GNU GPL v3.0 or later** (`GPL-3.0-or-later`)
 - Markdown files and `docs/`: **Creative Commons Attribution-ShareAlike 4.0** (`CC-BY-SA-4.0`)
-- `schemas/`: **Mozilla Public License 2.0** (`MPL-2.0`), so others can build on the formats
 
 Copyright © 2026 The OpenDAP Project.

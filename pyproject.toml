@@ -19,9 +19,9 @@ build-backend = "hatchling.build"
 packages = ["host/src/odw"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"host/schemas" = "odw/schemas"
+"schemas" = "odw/schemas"
 "host/tools.toml" = "odw/tools.toml"
 
 [tool.pytest.ini_options]
-testpaths = ["host/tests"]
+testpaths = ["host/tests", "schemas/tests"]
 markers = ["slow: builds the package"]

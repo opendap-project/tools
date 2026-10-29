@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/plan-tasks.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/schemas/plan-tasks.schema.json",
   "title": "opendap.plan-tasks/v1: tasks of a programme, as odw plan list and next print them with --json",
   "type": "object",
   "additionalProperties": false,

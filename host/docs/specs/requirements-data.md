@@ -1,7 +1,7 @@
 # Requirements as data
 
 - **Status:** draft
-- **Tool:** `odw req` (`src/odw/requirements.py`); schema `opendap.requirements/v1` ([`schemas/requirements.schema.json`](../../schemas/requirements.schema.json))
+- **Tool:** `odw req` (`src/odw/requirements.py`); schema `opendap.requirements/v1` ([`schemas/requirements.schema.json`](../../../schemas/requirements.schema.json))
 
 A component's requirements are data that tools read: other repositories cite them, verification rows prove them, release manifests list them. Their source is `docs/requirements/requirements.toml`; `docs/requirements/README.md` is rendered from it and checked.
 

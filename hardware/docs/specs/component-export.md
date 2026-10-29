@@ -27,7 +27,7 @@ Composition is hierarchical, and not only at the top: any component may consume 
 
 ## `component.yaml` schema
 
-The schema is [`schemas/component.schema.json`](../../schemas/component.schema.json) (JSON Schema 2020-12). It covers what the rules and the table above list, and nothing else: unknown keys are rejected, so a new field is added here first. Check a component with `odw component validate [PATH]` (a `component.yaml`, an `export/` folder or a component repository).
+The schema is [`schemas/component.schema.json`](../../../schemas/component.schema.json) (JSON Schema 2020-12). It covers what the rules and the table above list, and nothing else: unknown keys are rejected, so a new field is added here first. Check a component with `odw component validate [PATH]` (a `component.yaml`, an `export/` folder or a component repository).
 
 | Key | Required | Type | From |
 |---|---|---|---|

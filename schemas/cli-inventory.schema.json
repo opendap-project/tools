@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/cli-inventory.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/schemas/cli-inventory.schema.json",
   "title": "opendap.cli-inventory/v1: every command-line surface of the public roots, with its command-standard kind",
   "type": "object",
   "additionalProperties": false,

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/owners.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/schemas/owners.schema.json",
   "title": "Ownership rows (owners.tsv at the workspace root, read as one object per row)",
   "type": "array",
   "items": {

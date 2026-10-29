@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/plan-mirror-config.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/schemas/plan-mirror-config.schema.json",
   "title": "Public tracking mirror of a programme (mirror.toml in the programme folder)",
   "type": "object",
   "additionalProperties": false,

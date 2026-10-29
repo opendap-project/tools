@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/verification.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/schemas/verification.schema.json",
   "title": "opendap.verification/v1: a verification matrix, one case per row; observed by hand or collected from opendap.check-result/v1",
   "type": "object",
   "additionalProperties": false,

@@ -1,0 +1,21 @@
+version = 1
+
+# Tests and fixtures: GPL-3.0-or-later, as the tools that read them.
+[[annotations]]
+path = "**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 The OpenDAP Project"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+# The schemas others build on: MPL-2.0.
+[[annotations]]
+path = "*.schema.json"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 The OpenDAP Project"
+SPDX-License-Identifier = "MPL-2.0"
+
+[[annotations]]
+path = "**/*.md"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 The OpenDAP Project"
+SPDX-License-Identifier = "CC-BY-SA-4.0"

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/tools/blob/main/hardware/schemas/component.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/schemas/component.schema.json",
   "title": "OpenDAP component export (export/component.yaml)",
   "description": "Describes a component's export/ folder: the component as one unit, for other components and the product integration. Specification: docs/specs/component-export.md.",
   "type": "object",

@@ -141,7 +141,7 @@ class KicadCheck(unittest.TestCase):
             import jsonschema
         except ImportError:
             self.skipTest("jsonschema not installed")
-        schema = os.path.join(ROOT, "..", "host", "schemas", "check-result.schema.json")
+        schema = os.path.join(ROOT, "..", "schemas", "check-result.schema.json")
         if not os.path.isfile(schema):
             self.skipTest("no toolkit-host checkout next to this one")
         with open(schema) as f:

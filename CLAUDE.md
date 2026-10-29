@@ -1,6 +1,6 @@
 # tools
 
-One folder per former repository (`hardware/`, `hooks/`, `host/`, `image/` and `verify/`), whose content moves into the domain folders one domain at a time: `measure/` so far.
+One folder per former repository (`hardware/`, `hooks/`, `host/`, `image/` and `verify/`), whose content moves into the domain folders one domain at a time: `measure/` and `schemas/` so far.
 
 <!-- >>> odapkit sync: managed block from the workspace templates; edit them, not this block -->
 Part of [OpenDAP](https://github.com/opendap-project). This repository is Open Source.

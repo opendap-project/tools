@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/matrix.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/schemas/matrix.schema.json",
   "title": "opendap.matrix/v1: an evaluation matrix (options × criteria → states, verdicts, rank, recommendation)",
   "type": "object",
   "additionalProperties": false,

@@ -291,11 +291,12 @@ def test_the_tool_passes_its_own_test(tmp_path):
 
 
 def test_the_tool_passes_its_own_test_on_a_copy(tmp_path):
-    """The same, on a copy of this checkout's tracked files: host/ of the tools root, with the root's Python
-    project (pyproject.toml, uv.lock, conftest.py) that builds odw since HL-71."""
+    """The same, on a copy of this checkout's tracked files: host/ and schemas/ of the tools root, with the
+    root's Python project (pyproject.toml, uv.lock, conftest.py) that builds odw since HL-71."""
     repo = tmp_path / "public/tools"
     top = HOST.parent
-    files = [f"host/{f}" for f in _git(["ls-files", "-z"], HOST).split("\0") if f] + list(ROOT_PROJECT)
+    files = [f for f in _git(["ls-files", "-z"], top).split("\0") if f.split("/")[0] in ("host", "schemas")]
+    files += list(ROOT_PROJECT)
     for f in files:
         if (top / f).is_file():
             (repo / f).parent.mkdir(parents=True, exist_ok=True)

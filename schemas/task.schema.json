@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/task.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/schemas/task.schema.json",
   "title": "Programme task record (one TOML file per task)",
   "type": "object",
   "additionalProperties": false,

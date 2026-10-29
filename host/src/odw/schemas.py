@@ -6,9 +6,11 @@ import tomllib
 
 import jsonschema
 
-# Installed, the schemas ship inside the package (odw/schemas); in a checkout they are at the repository root.
+# Installed, the schemas ship inside the package (odw/schemas); in a checkout they are the schemas domain at the
+# tools root (schemas/, HL-71), the nearest folder above the package that holds them.
 _HERE = pathlib.Path(__file__).resolve().parent
-SCHEMAS = _HERE / "schemas" if (_HERE / "schemas").is_dir() else _HERE.parents[1] / "schemas"
+SCHEMAS = _HERE / "schemas" if (_HERE / "schemas").is_dir() else next(
+    (p / "schemas" for p in _HERE.parents if (p / "schemas" / "task.schema.json").is_file()), _HERE / "schemas")
 
 
 @functools.cache

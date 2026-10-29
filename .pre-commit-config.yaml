@@ -83,7 +83,7 @@ repos:
         entry: uv run --quiet pytest -q
         language: system
         pass_filenames: false
-        files: ^(?:host/(?:src|schemas|tests)/|host/tools\.toml$|pyproject\.toml$|uv\.lock$|conftest\.py$)
+        files: ^(?:host/(?:src|tests)/|host/tools\.toml$|schemas/|pyproject\.toml$|uv\.lock$|conftest\.py$)
       # The odw dispatch crate: its unit and fixture-workspace tests, built into this checkout's target/.
       - id: odw-dispatch-tests
         name: host odw dispatch tests (cargo test)

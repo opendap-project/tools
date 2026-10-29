@@ -2,7 +2,7 @@
 
 - **Status:** accepted (2026-10-27), with [RFC 0017](https://github.com/opendap-project/rfcs/blob/main/text/0017-naming-and-topology.md). It applies to each root at its cut; until then [RFC 0009](https://github.com/opendap-project/rfcs/blob/main/text/0009-odapkit.md) and the [`opendap` CLI spec](https://github.com/opendap-project/host/blob/main/cli/docs/specs/opendap-cli.md) are in force for that root's tools (§10 lists the delta).
 - **Home:** this file; it moves to `tools/workspace/docs/specs/` at the `tools` cut (RFC 0017 §7).
-- **Schemas:** `opendap.tools/v1` (`tools.schema.json`), `opendap.tools-list/v1` (`tools-list.schema.json`), `opendap.check/v1` (`check.schema.json`), `opendap.check-result/v1`, in [`schemas/`](../../schemas/) ([workspace schemas](workspace-schemas.md)).
+- **Schemas:** `opendap.tools/v1` (`tools.schema.json`), `opendap.tools-list/v1` (`tools-list.schema.json`), `opendap.check/v1` (`check.schema.json`), `opendap.check-result/v1`, in [`schemas/`](../../../schemas/) ([workspace schemas](../../../schemas/README.md)).
 - **Requirements:** TK-003, TK-009, TK-010, TK-011.
 - **References:** Cloudflare's `cf` CLI and Forge, the pipeline that generates `cf`'s commands from the API schemas ([announcement](https://blog.cloudflare.com/cloudflare-cf-cli-launch/)); the UNIX conventions (clig.dev).
 

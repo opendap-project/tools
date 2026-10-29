@@ -25,12 +25,6 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 The OpenDAP Project"
 SPDX-License-Identifier = "MPL-2.0"
 
-[[annotations]]
-path = "schemas/**"
-precedence = "aggregate"
-SPDX-FileCopyrightText = "2026 The OpenDAP Project"
-SPDX-License-Identifier = "MPL-2.0"
-
 # Patches to QEMU files under the MIT licence (audio/), carried until QEMU has the fixes.
 [[annotations]]
 path = "qemu/patches/**"

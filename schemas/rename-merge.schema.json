@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/rename-merge.schema.json",
+  "$id": "https://github.com/opendap-project/tools/blob/main/schemas/rename-merge.schema.json",
   "title": "opendap.rename-merge/v1: a root's source repositories joined with their history (odw rename merge)",
   "type": "object",
   "additionalProperties": false,

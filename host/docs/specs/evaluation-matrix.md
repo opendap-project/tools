@@ -1,7 +1,7 @@
 # Evaluation matrix
 
 - **Status:** draft
-- **Engine:** `odw.evaluate` (`src/odw/evaluate.py`); output `opendap.matrix/v1` ([workspace schemas](workspace-schemas.md))
+- **Engine:** `odw.evaluate` (`src/odw/evaluate.py`); output `opendap.matrix/v1` ([workspace schemas](../../../schemas/README.md))
 
 Every study, selection and trade-off is an evaluation matrix: options × criteria, a state and a reason in every cell, a verdict per option, a rank and a labelled recommendation. One engine computes them, so studies differ only in their options, criteria and models.
 
