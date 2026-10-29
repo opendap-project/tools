@@ -17,10 +17,3 @@ path = "docs/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 The OpenDAP Project"
 SPDX-License-Identifier = "CC-BY-SA-4.0"
-
-# The render fixture's schematic: a copy of kicad-lib's examples/load-switch and its drawing sheet (CERN-OHL-W-2.0).
-[[annotations]]
-path = ["tests/fixtures/render/component/hardware/demo/*.kicad_sch", "tests/fixtures/render/component/hardware/demo/load-switch.kicad_pro", "tests/fixtures/render/component/hardware/demo/sym-lib-table", "tests/fixtures/render/component/hardware/demo/example.kicad_sym", "tests/fixtures/render/component/hardware/drawing-sheets/**"]
-precedence = "aggregate"
-SPDX-FileCopyrightText = "2026 The OpenDAP Project"
-SPDX-License-Identifier = "CERN-OHL-W-2.0"

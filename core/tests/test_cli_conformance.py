@@ -401,7 +401,7 @@ MIGRATED = {"core": {"cli", "component"}, "documentation": {"docs", "req", "veri
             "electronics": {"craft", "variant", "stackup"}, "sim": {"sim"}}
 
 
-@pytest.mark.skipif(not (HOST.parent / "hardware" / "tools.toml").is_file(), reason="not the merged tools root")
+@pytest.mark.skipif(not (HOST.parent / "core" / "tools.toml").is_file(), reason="not the merged tools root")
 def test_every_tool_that_had_a_probe_declares_it_in_its_tools_toml():
     import tomllib
     for folder, names in MIGRATED.items():

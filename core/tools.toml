@@ -19,3 +19,12 @@ replaces = "odapkit-component"
 audience = "maintainer"
 stability = "preview"
 probe = ["validate", "--json", "{root}/component/tests/fixtures/board"]
+
+[[tool]]
+name = "render"
+summary = "Generate and check a component's committed visual outputs: schematics, layer plots, 3D renders"
+entry = "bin/odw-render"
+replaces = "odapkit-render"
+audience = "maintainer"
+stability = "preview"
+probe = ["check", "--json", "{root}/render/tests/fixtures/no-components"]

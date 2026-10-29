@@ -1,6 +1,6 @@
 # Export a FreeCAD document as one STEP solid (the component as a single body).
 # Run with FreeCAD's headless interpreter:
-#   freecadcmd tools/freecad-export.py -- INPUT.FCStd OUTPUT.step
+#   freecadcmd mechanical/freecad_export.py -- INPUT.FCStd OUTPUT.step
 # Also prints mass properties (volume, center of mass) of the exported body.
 import sys
 import FreeCAD

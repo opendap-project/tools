@@ -60,7 +60,7 @@ files:
 
 The contract is silent on the following, so the schema leaves them out or open:
 
-- **Units and frame of the mass properties.** The schema uses grams and millimetres (`freecad-export.py` reports millimetres) and the coordinate frame of the exported STEP. To confirm, together with where the frame's origin is defined.
+- **Units and frame of the mass properties.** The schema uses grams and millimetres (`mechanical/freecad_export.py` reports millimetres) and the coordinate frame of the exported STEP. To confirm, together with where the frame's origin is defined.
 - **Body and envelope.** Mechanics exports a single-body STEP plus a simplified envelope; nothing in a file entry tells them apart yet (likewise the Blender collection and the glTF, or the per-channel Touchstone files).
 - **Formats of `name`, `version` and interface identifiers.** Whether `name` is the repository name, the tag format (for example `v0.1.0`), and how an interface is named (by the repository that defines it, for example `hat-standard`) and versioned.
 - **What a component consumes.** Rule 2 pins every consumed export to a tag, but the contract does not say whether `component.yaml` lists the exports it consumes.

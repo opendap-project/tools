@@ -13,7 +13,7 @@ from odw import audit, cli_inventory
 HOST = pathlib.Path(__file__).resolve().parents[1]
 TOP = HOST.parent
 FOLDERS = sorted(p.parent.name for p in TOP.glob("*/tools.toml"))
-merged = pytest.mark.skipif(not (TOP / "hardware" / "tools.toml").is_file(), reason="not the merged tools root")
+merged = pytest.mark.skipif(not (TOP / "core" / "tools.toml").is_file(), reason="not the merged tools root")
 
 
 def tools():

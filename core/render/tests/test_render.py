@@ -1,4 +1,4 @@
-"""Tests for odw render (tools/render/): normalisation, manifests, stamps and the check, on a stub adapter without
+"""Tests for odw render (core/render/): normalisation, manifests, stamps and the check, on a stub adapter without
 any CAD program; then the KiCad adapters on tests/fixtures/render/component, the FreeCAD and Blender adapters on
 models made at test time (each skipped when its program is missing).
 
@@ -20,11 +20,13 @@ for _k in [k for k in os.environ if k.startswith("GIT_")]:
     del os.environ[_k]
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
-TOOL = os.path.join(ROOT, "tools", "render", "__main__.py")
-FIXTURE = os.path.join(HERE, "fixtures", "render")
-sys.path.insert(0, os.path.join(ROOT, "tools", "render"))
-sys.path.insert(0, os.path.join(ROOT, "tools"))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))  # the tools root (HL-71)
+TOOL = os.path.join(ROOT, "core", "render", "__main__.py")
+FIXTURE = os.path.join(HERE, "fixtures")
+sys.path.insert(0, os.path.join(ROOT, "core", "render"))
+sys.path.insert(0, os.path.join(ROOT, "electronics", "render"))
+sys.path.insert(0, os.path.join(ROOT, "mechanical", "render"))
+sys.path.append(os.path.join(ROOT, "core"))
 
 import cad  # noqa: E402
 import core  # noqa: E402

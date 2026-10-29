@@ -1,8 +1,8 @@
 # Render tool
 
 - **Status:** Implemented (2026-10-29). It implements [RFC 0021](https://github.com/opendap-project/rfcs/blob/main/text/0021-committed-visual-outputs.md) (committed visual outputs): §2 to §8 in the tool, §6 in the hooks.
-- **Tool:** `odw render` ([`bin/odw-render`](../../bin/odw-render), an entry point to [`tools/render/`](../../tools/render/): `cli.py` the command line, `core.py` the engine, `kicad_render.py` the KiCad adapters, `cad.py` the FreeCAD and Blender adapters, `normalize.py` the determinism rewrites); Python 3.11 standard library, and the program of each declared source.
-- **Tests:** [`tests/test_render.py`](../../tests/test_render.py), fixtures in [`tests/fixtures/render/`](../../tests/fixtures/render/). The KiCad, FreeCAD and Blender tests skip when their program is missing.
+- **Tool:** `odw render` ([`core/bin/odw-render`](../../bin/odw-render), an entry point to [`core/render/`](../../render/): `cli.py` the command line, `core.py` the engine, `normalize.py` the determinism rewrites; the KiCad adapters in [`electronics/render/kicad_render.py`](../../../electronics/render/kicad_render.py), the FreeCAD and Blender adapters in [`mechanical/render/cad.py`](../../../mechanical/render/cad.py), HL-71); Python 3.11 standard library, and the program of each declared source.
+- **Tests:** [`core/render/tests/test_render.py`](../../render/tests/test_render.py), fixtures in [`core/render/tests/fixtures/`](../../render/tests/fixtures/). The KiCad, FreeCAD and Blender tests skip when their program is missing.
 
 ## 1. What it does
 

@@ -47,11 +47,11 @@ repos:
       # odw render (RFC 0021): normalisation, manifests and stamps; the KiCad, FreeCAD and Blender
       # adapters when their programs are installed.
       - id: render-tests
-        name: hardware odw render (tests/test_render.py)
-        entry: sh -c 'cd hardware && python3 -m unittest tests.test_render'
+        name: core odw render (render/tests/test_render.py)
+        entry: sh -c 'cd core/render && python3 -m unittest tests.test_render'
         language: system
         pass_filenames: false
-        files: ^(?:core/clihost\.py$|hardware/(tools/render/|tests/test_render\.py$|tests/fixtures/render/|bin/odw-render$))
+        files: ^(?:core/clihost\.py$|core/render/|core/bin/odw-render$|electronics/render/|mechanical/render/|hooks/hooks/outputs-)
   # electronics/
   - repo: local
     hooks:

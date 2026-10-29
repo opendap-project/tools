@@ -2,7 +2,7 @@
 
 | Folder | Content |
 | --- | --- |
-| [`hardware/`](hardware/README.md) | Hardware tooling not moved yet (`odw render`, the FreeCAD export), and the [component export contract](hardware/docs/specs/component-export.md) every component follows |
+| [`hardware/`](hardware/README.md) | The hardware tools' Python project, and the [component export contract](hardware/docs/specs/component-export.md) every component follows |
 | [`hooks/`](hooks/README.md) | Shared [pre-commit](https://pre-commit.com) hooks for every OpenDAP repository |
 | [`host/`](host/README.md) | Developer host setup for OpenDAP: the tools, toolchains and checks every contributor installs |
 | [`image/`](image/README.md) | Tools to build Blackbird OS images and the software that goes into them, for the platform's maintainers |
@@ -14,10 +14,11 @@
 | [`electronics/`](electronics/README.md) | Electronics tooling: PCB and schematic craft checks, the layer stack and impedance solver, board variants |
 | [`env/`](env/README.md) | The maintainers' host environment: QEMU for virtual devices, a LAN address for them, the build VM, the indexer |
 | [`workspace/`](workspace/README.md) | `odw` itself and the workspace tools: plan, audit, shared files, the restructure's cut engine |
+| [`mechanical/`](mechanical/README.md) | Mechanical tooling: the FreeCAD export and `odw render`'s CAD adapters |
 | [`measure/`](measure/README.md) | Measurement tooling for OpenDAP: motion recorded on screen and measured (`odw motion`) |
 | [`verify/`](verify/README.md) | Verification tooling for OpenDAP: simulations and samples captured from sessions, on the virtual T1 now and on prototypes later |
 
-Each folder keeps its own `README.md`, `CLAUDE.md` and `REUSE.toml`; the licence texts are in `LICENSES/`. `hardware/`, `hooks/`, `host/`, `image/` and `verify/` came from the former `toolkit-hardware`, `toolkit-hooks`, `toolkit-host`, `toolkit-image` and `toolkit-verify` repositories with their history ([RFC 0017](https://github.com/opendap-project/rfcs/blob/main/text/0017-naming-and-topology.md)); their content moves into the domain folders one domain at a time (`core/`, `documentation/`, `electronics/`, `env/`, `measure/`, `parts/`, `schemas/`, `sim/` and `workspace/` so far).
+Each folder keeps its own `README.md`, `CLAUDE.md` and `REUSE.toml`; the licence texts are in `LICENSES/`. `hardware/`, `hooks/`, `host/`, `image/` and `verify/` came from the former `toolkit-hardware`, `toolkit-hooks`, `toolkit-host`, `toolkit-image` and `toolkit-verify` repositories with their history ([RFC 0017](https://github.com/opendap-project/rfcs/blob/main/text/0017-naming-and-topology.md)); their content moves into the domain folders one domain at a time (`core/`, `documentation/`, `electronics/`, `env/`, `measure/`, `mechanical/`, `parts/`, `schemas/`, `sim/` and `workspace/` so far).
 
 ## Tests never inherit a hook's git variables
 
