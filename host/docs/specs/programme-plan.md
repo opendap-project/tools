@@ -1,7 +1,7 @@
 # Programme plan
 
 - **Status:** draft
-- **Tool:** `odw plan` (`src/odw/plan.py`); formats in [workspace schemas](../../../schemas/README.md) (`task`, `decisions`, `plan-mirror-config`, `plan-mirror`)
+- **Tool:** `odw plan` (`host/src/odw/plan.py`); formats in [workspace schemas](../../../schemas/README.md) (`task`, `decisions`, `plan-mirror-config`, `plan-mirror`)
 
 A programme is a piece of maintainers' work that spans many sessions and repositories. Its state lives in files, never in a session, so any person or agent can resume it.
 

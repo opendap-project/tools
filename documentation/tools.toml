@@ -1,0 +1,30 @@
+# The tools this folder adds to the maintainers' umbrella command (command standard §3).
+schema = "opendap.tools/v1"
+front = "odw"
+
+[[tool]]
+name = "docs"
+summary = "Docs gates, the generated docs index and RFC application status"
+entry = "bin/odw-docs"
+replaces = "odapkit-docs"
+audience = "maintainer"
+stability = "preview"
+probe = ["check", "--json", "{root}/README.md"]
+
+[[tool]]
+name = "req"
+summary = "Requirements as data: import, render and check them, index every repository"
+entry = "bin/odw-req"
+replaces = "odapkit-req"
+audience = "maintainer"
+stability = "preview"
+probe = ["index", "--workspace", "{workspace}", "--json"]
+
+[[tool]]
+name = "verify"
+summary = "Verification matrices as data: render, collect results by variant, uncovered requirements"
+entry = "bin/odw-verify"
+replaces = "odapkit-verify"
+audience = "maintainer"
+stability = "preview"
+probe = ["coverage", "{root}/tests/fixtures/verification/matrix.toml", "--workspace", "{workspace}", "--json"]

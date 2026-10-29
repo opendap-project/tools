@@ -1,7 +1,7 @@
 # Docs gates
 
 - **Status:** draft
-- **Tool:** `odw docs` (`src/odw/docs.py`); method behind it: living docs (maintainers)
+- **Tool:** `odw docs` (`documentation/odw/docs.py`); method behind it: living docs (maintainers)
 
 Docs are a maintained product: the gates below keep them correct on every commit, so the practice holds without anyone remembering it.
 

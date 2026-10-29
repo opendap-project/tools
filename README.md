@@ -7,11 +7,12 @@
 | [`host/`](host/README.md) | Developer host setup for OpenDAP: the tools, toolchains and checks every contributor installs |
 | [`image/`](image/README.md) | Tools to build Blackbird OS images and the software that goes into them, for the platform's maintainers |
 | [`core/`](core/README.md) | What every domain shares: command-line conventions and their conformance test, the evaluation-matrix engine, the `odw` package's shared modules |
+| [`documentation/`](documentation/README.md) | The documentation engines: requirements as data, docs gates and index, RFC status, verification matrices |
 | [`schemas/`](schemas/README.md) | The workspace formats as JSON Schemas, with their fixtures and tests |
 | [`measure/`](measure/README.md) | Measurement tooling for OpenDAP: motion recorded on screen and measured (`odw motion`) |
 | [`verify/`](verify/README.md) | Verification tooling for OpenDAP: simulations and samples captured from sessions, on the virtual T1 now and on prototypes later |
 
-Each folder keeps its own `README.md`, `CLAUDE.md` and `REUSE.toml`; the licence texts are in `LICENSES/`. `hardware/`, `hooks/`, `host/`, `image/` and `verify/` came from the former `toolkit-hardware`, `toolkit-hooks`, `toolkit-host`, `toolkit-image` and `toolkit-verify` repositories with their history ([RFC 0017](https://github.com/opendap-project/rfcs/blob/main/text/0017-naming-and-topology.md)); their content moves into the domain folders one domain at a time (`core/`, `measure/` and `schemas/` so far).
+Each folder keeps its own `README.md`, `CLAUDE.md` and `REUSE.toml`; the licence texts are in `LICENSES/`. `hardware/`, `hooks/`, `host/`, `image/` and `verify/` came from the former `toolkit-hardware`, `toolkit-hooks`, `toolkit-host`, `toolkit-image` and `toolkit-verify` repositories with their history ([RFC 0017](https://github.com/opendap-project/rfcs/blob/main/text/0017-naming-and-topology.md)); their content moves into the domain folders one domain at a time (`core/`, `documentation/`, `measure/` and `schemas/` so far).
 
 ## Tests never inherit a hook's git variables
 
@@ -19,7 +20,7 @@ Under a pre-commit hook, git exports `GIT_DIR`, `GIT_INDEX_FILE` and others. A t
 
 | Tests | Protection |
 | --- | --- |
-| Python under pytest (every suite the root's `pyproject.toml` runs, `core/tests`, `host/tests` and `schemas/tests` today) | the autouse fixture in the root's `conftest.py`, which applies to every test below it |
+| Python under pytest (every suite the root's `pyproject.toml` runs, `core/tests`, `documentation/tests`, `host/tests` and `schemas/tests` today) | the autouse fixture in the root's `conftest.py`, which applies to every test below it |
 | Python under unittest (`hardware/`, `hooks/`, `image/`, `measure/`) | at the top of each test module, after its imports: `for _k in [k for k in os.environ if k.startswith("GIT_")]: del os.environ[_k]` (in the module, because `python3 -m unittest discover tests` never imports `tests/__init__.py`) |
 | Rust (`host/crates/odw-dispatch/tests/odw.rs`) | the `command()` helper, which starts every child from `env_clear()`; a helper that only drops git's variables calls `env_remove` for each `GIT_*` one |
 | Shell (`image/tests/cli.sh`, `measure/tests/cli.sh`) | after `set -u`: `for v in $(env \| sed -n 's/^\(GIT_[A-Za-z0-9_]*\)=.*/\1/p'); do unset "$v"; done` |

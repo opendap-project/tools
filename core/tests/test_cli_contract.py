@@ -14,7 +14,7 @@ from odw import (audit, cli_conformance, clikit, docs, noindex, plan, rename, re
 TOP = pathlib.Path(__file__).resolve().parents[2]
 HOST = TOP / "host"
 # The folders whose tools.toml declares the odw package's tools (HL-71: core, then each domain as it moves).
-FOLDERS = ["core", "host"]
+FOLDERS = ["core", "documentation", "host"]
 TOOLS = {t["name"]: {**t, "folder": d} for d in FOLDERS
          for t in tomllib.loads((TOP / d / "tools.toml").read_text())["tool"]}
 PYTHON = {"audit": audit, "cli": cli_conformance, "docs": docs, "noindex": noindex, "plan": plan,

@@ -1,7 +1,7 @@
 # Verification matrices
 
 - **Status:** draft
-- **Tool:** `odw verify` (`src/odw/verify.py`); schema `opendap.verification/v1` ([`schemas/verification.schema.json`](../../../schemas/verification.schema.json))
+- **Tool:** `odw verify` (`documentation/odw/verify.py`); schema `opendap.verification/v1` ([`schemas/verification.schema.json`](../../../schemas/verification.schema.json))
 
 A verification matrix lists every case a component must prove, one row each, with what was expected, what was seen, the evidence, a status and the levels at which the case runs again. It is data; its Markdown is generated.
 

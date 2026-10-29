@@ -12,15 +12,6 @@ stability = "preview"
 probe = ["--workspace", "{workspace}", "--json"]
 
 [[tool]]
-name = "docs"
-summary = "Docs gates, the generated docs index and RFC application status"
-entry = "bin/odw-docs"
-replaces = "odapkit-docs"
-audience = "maintainer"
-stability = "preview"
-probe = ["check", "--json", "{root}/README.md"]
-
-[[tool]]
 name = "noindex"
 summary = "Keep generated trees (target/, .venv/, test caches) out of the macOS Spotlight index"
 entry = "bin/odw-noindex"
@@ -56,15 +47,6 @@ stability = "preview"
 probe = ["plan", "no-such-root", "--workspace", "{workspace}", "--map", "/dev/null", "--json"]
 
 [[tool]]
-name = "req"
-summary = "Requirements as data: import, render and check them, index every repository"
-entry = "bin/odw-req"
-replaces = "odapkit-req"
-audience = "maintainer"
-stability = "preview"
-probe = ["index", "--workspace", "{workspace}", "--json"]
-
-[[tool]]
 name = "sync"
 summary = "Shared boilerplate from the workspace templates: report drift or repair it"
 entry = "bin/odw-sync"
@@ -72,15 +54,6 @@ replaces = "odapkit-sync"
 audience = "maintainer"
 stability = "preview"
 probe = ["--workspace", "{workspace}", "--check", "--json"]
-
-[[tool]]
-name = "verify"
-summary = "Verification matrices as data: render, collect results by variant, uncovered requirements"
-entry = "bin/odw-verify"
-replaces = "odapkit-verify"
-audience = "maintainer"
-stability = "preview"
-probe = ["coverage", "{root}/tests/fixtures/verification/matrix.toml", "--workspace", "{workspace}", "--json"]
 
 [[tool]]
 name = "vmnet"
