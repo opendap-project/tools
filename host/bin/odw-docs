@@ -4,4 +4,4 @@
 # Usage: odw docs check [--strict] [--json] PATH... | index DOCS_DIR [--check] | rfc-status [--write DIR] [--json]
 # Spec: docs/specs/docs-gates.md.
 here="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/.." && pwd)"
-exec uv run --quiet --project "$here" python -m odw.docs "$@"
+exec uv run --quiet --project "$here/.." python -m odw.docs "$@"

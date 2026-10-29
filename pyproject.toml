@@ -1,3 +1,5 @@
+# The tools root's Python project (HL-71): the odw package, its schemas and tools.toml, and every domain's
+# pytest suite, whose conftest.py at this root keeps the GIT_* protection (HL-64) for all of them.
 [project]
 name = "odw"
 version = "0.1.0"
@@ -14,12 +16,12 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/odw"]
+packages = ["host/src/odw"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"schemas" = "odw/schemas"
-"tools.toml" = "odw/tools.toml"
+"host/schemas" = "odw/schemas"
+"host/tools.toml" = "odw/tools.toml"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["host/tests"]
 markers = ["slow: builds the package"]

@@ -9,3 +9,9 @@ SPDX-License-Identifier = "CC-BY-SA-4.0"
 path = [".pre-commit-config.yaml", ".pre-commit-hooks.yaml", ".gitignore", ".gitattributes", ".markdownlint-cli2.jsonc", "REUSE.toml"]
 SPDX-FileCopyrightText = "2026 The OpenDAP Project"
 SPDX-License-Identifier = "MIT"
+
+# The root's Python project (HL-71): the odw package's build and lock, and the conftest every pytest suite shares.
+[[annotations]]
+path = ["pyproject.toml", "uv.lock", "conftest.py"]
+SPDX-FileCopyrightText = "2026 The OpenDAP Project"
+SPDX-License-Identifier = "GPL-3.0-or-later"

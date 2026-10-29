@@ -52,7 +52,7 @@ Every command-line surface, from the `opendap` and `odw` umbrellas and their plu
 - `bin/odw-verify` — verification matrices as data: render, collect check results by variant, uncovered requirements: [verification matrices](docs/specs/verification.md)
 - `Brewfile` — Homebrew packages
 - `src/odw/evaluate.py` — the evaluation-matrix engine every study uses: [evaluation matrix](docs/specs/evaluation-matrix.md)
-- `schemas/`, `src/odw/` — the workspace schemas (check, tools, check-result, matrix, task, decisions) and their validator: [workspace schemas](docs/specs/workspace-schemas.md). Tests: `uv run pytest`
+- `schemas/`, `src/odw/` — the workspace schemas (check, tools, check-result, matrix, task, decisions) and their validator: [workspace schemas](docs/specs/workspace-schemas.md). Tests: `uv run pytest` from the tools root, whose `pyproject.toml` and `uv.lock` build `odw` from this folder (HL-71)
 - `docs/` — requirements and specs (development workflow, workspace schemas)
 
 ## License

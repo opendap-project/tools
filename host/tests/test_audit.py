@@ -212,3 +212,18 @@ def test_test_files_running_git_without_the_protection(tmp_path):
         "py/tests/test_leaky.py", "py/tests/test_per_call.py", "rs/src/lib.rs", "rs/tests/leaky.rs",
         "sh/tests/leaky.sh"]
     assert r["software"]["test_files_running_git_unprotected"] == 5
+
+
+def test_a_root_conftest_protects_only_the_suites_its_pytest_runs(tmp_path):
+    """HL-71: the tools root's conftest.py sits beside the pyproject.toml whose testpaths pytest runs; a unittest
+    module in another folder never imports it, so it still needs its own stanza."""
+    (tmp_path / "repos.tsv").write_text("path\trepository\npublic/a\to/a\n")
+    leaky = 'import subprocess\nsubprocess.run(["git", "init"])\n'
+    repo(tmp_path, "public/a", {
+        "conftest.py": CONFTEST,
+        "pyproject.toml": '[tool.pytest.ini_options]\ntestpaths = ["host/tests"]\n',
+        "host/tests/test_under_root_conftest.py": leaky,
+        "measure/tests/test_unittest_module.py": leaky,
+    })
+    r = audit.audit(tmp_path)
+    assert r["conformance"]["public/a"]["tests_running_git_unprotected"] == ["measure/tests/test_unittest_module.py"]

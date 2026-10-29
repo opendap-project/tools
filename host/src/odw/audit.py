@@ -16,6 +16,7 @@ import os
 import pathlib
 import re
 import subprocess
+import tomllib
 import sys
 
 from odw import clikit, workspace
@@ -107,10 +108,23 @@ def _test_code(f, text):
     return None
 
 
+def _conftest_scope(repo, d):
+    """The folders a conftest.py in `d` protects: `d`, or only the pytest testpaths of a pyproject.toml beside it
+    (the tools root, HL-71), since a unittest module outside them never imports it."""
+    pyproject = repo / d / "pyproject.toml"
+    try:
+        paths = tomllib.loads(pyproject.read_text())["tool"]["pytest"]["ini_options"]["testpaths"]
+    except (OSError, KeyError, TypeError, tomllib.TOMLDecodeError):
+        return {d}
+    return {"/".join(x for x in (d, p.strip("/")) if x) for p in paths}
+
+
 def unprotected_git_tests(repo, files):
     """The test files that run git without removing the GIT_* variables a hook exports (HL-64)."""
-    conftests = {os.path.dirname(f) for f in files if f.endswith("/conftest.py") or f == "conftest.py"
-                 if STRIPS_GIT[".py"].search(_read(repo / f))}
+    conftests = set()
+    for f in files:
+        if (f.endswith("/conftest.py") or f == "conftest.py") and STRIPS_GIT[".py"].search(_read(repo / f)):
+            conftests |= _conftest_scope(repo, os.path.dirname(f))
     out = []
     for f in files:
         suffix = pathlib.PurePath(f).suffix

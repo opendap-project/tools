@@ -5,4 +5,4 @@
 #        odw rename (plan | apply | check) ROOT [--workspace DIR] [--map TSV] [--root-dir DIR] [--json]
 # Spec: docs/specs/rename.md.
 here="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/.." && pwd)"
-exec uv run --quiet --project "$here" python -m odw.rename "$@"
+exec uv run --quiet --project "$here/.." python -m odw.rename "$@"

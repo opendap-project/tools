@@ -12,6 +12,7 @@ import pytest
 from odw import audit, cli_conformance, cli_inventory, cli_probe, schemas
 
 HOST = pathlib.Path(__file__).resolve().parents[1]
+ROOT_PROJECT = ("pyproject.toml", "uv.lock", "conftest.py")  # the tools root's Python project (HL-71)
 
 GOOD = '''\
 #!/usr/bin/env python3
@@ -289,21 +290,22 @@ def test_the_tool_passes_its_own_test(tmp_path):
     _conforms(tmp_path)
 
 
-@pytest.mark.parametrize("root,folder", [("public/toolkit/host", ""), ("public/tools", "host")])
-def test_the_tool_passes_its_own_test_in_either_layout(tmp_path, root, folder):
-    """The same, on a copy of this checkout's tracked files: a repository of its own, or host/ of the tools root."""
-    repo = tmp_path / root
-    dest = repo / folder
-    for f in _git(["ls-files", "-z"], HOST).split("\0"):
-        if f and (HOST / f).is_file():
-            (dest / f).parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(HOST / f, dest / f)
+def test_the_tool_passes_its_own_test_on_a_copy(tmp_path):
+    """The same, on a copy of this checkout's tracked files: host/ of the tools root, with the root's Python
+    project (pyproject.toml, uv.lock, conftest.py) that builds odw since HL-71."""
+    repo = tmp_path / "public/tools"
+    top = HOST.parent
+    files = [f"host/{f}" for f in _git(["ls-files", "-z"], HOST).split("\0") if f] + list(ROOT_PROJECT)
+    for f in files:
+        if (top / f).is_file():
+            (repo / f).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(top / f, repo / f)
     _git(["init", "-q"], repo)
     _git(["add", "-A"], repo)
     _git(["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"], repo)
     # The probe's sandbox writes only inside an existing .venv, as in a real checkout.
-    subprocess.run(["uv", "sync", "--quiet", "--frozen", "--project", str(dest)], check=True, env=audit.git_env())
-    (tmp_path / "repos.tsv").write_text(f"path\trepository\n{root}\to/h\n")
+    subprocess.run(["uv", "sync", "--quiet", "--frozen", "--project", str(repo)], check=True, env=audit.git_env())
+    (tmp_path / "repos.tsv").write_text("path\trepository\npublic/tools\to/h\n")
     _conforms(tmp_path)
 
 

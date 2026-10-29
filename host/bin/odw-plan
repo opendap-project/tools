@@ -4,4 +4,4 @@
 # Usage: odw plan [--programme DIR] [--json] list|next|show|check|claim|release|done|render ...
 # Spec: docs/specs/programme-plan.md. Run odw plan --help for every option.
 here="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/.." && pwd)"
-exec uv run --quiet --project "$here" python -m odw.plan "$@"
+exec uv run --quiet --project "$here/.." python -m odw.plan "$@"

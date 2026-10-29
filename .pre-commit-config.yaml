@@ -77,12 +77,13 @@ repos:
   # host/
   - repo: local
     hooks:
+      # The root's Python project (pyproject.toml, uv.lock, conftest.py) runs every pytest suite from the root.
       - id: odw-tests
-        name: host odw tests (schemas, plan, audit)
-        entry: sh -c 'cd host && uv run --quiet pytest -q'
+        name: odw tests (schemas, plan, audit; the root's pytest suites)
+        entry: uv run --quiet pytest -q
         language: system
         pass_filenames: false
-        files: ^host/(?:(src|schemas|tests)/|pyproject\.toml$)
+        files: ^(?:host/(?:src|schemas|tests)/|host/tools\.toml$|pyproject\.toml$|uv\.lock$|conftest\.py$)
       # The odw dispatch crate: its unit and fixture-workspace tests, built into this checkout's target/.
       - id: odw-dispatch-tests
         name: host odw dispatch tests (cargo test)
