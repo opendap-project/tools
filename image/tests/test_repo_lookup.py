@@ -10,14 +10,14 @@ import sys
 import tempfile
 import unittest
 
-from tests.test_host_lookup import ENV, ROOT, fake_host, git_init
+from tests.test_host_lookup import ENV, ROOT, fake_core, git_init
 
 ENV = {k: v for k, v in ENV.items() if not (k.startswith("ODAP_") and k.endswith("_DIR"))}
 PROBE = '#!/bin/sh\n. "$(cd "$(dirname "$0")/.." && pwd)/lib/odapkit.sh"\nrepo_dir "$1"\n'
 
 
 def workspace(tmp, rows, folders):
-    """public/tools/image with this checkout's lookups, a fake host/ beside it, and the given rows and folders."""
+    """public/tools/image with this checkout's lookups, a fake core/ beside it, and the given rows and folders."""
     ws = os.path.join(tmp, "ws")
     mine = os.path.join(ws, "public", "tools", "image")
     for rel in ("lib/odapkit.sh", "bin/odw-security-check"):
@@ -27,7 +27,7 @@ def workspace(tmp, rows, folders):
     with open(os.path.join(mine, "bin", "odapkit-probe"), "w") as f:
         f.write(PROBE)
     os.chmod(os.path.join(mine, "bin", "odapkit-probe"), 0o755)
-    fake_host(os.path.join(ws, "public", "tools", "host"), "host")
+    fake_core(os.path.join(ws, "public", "tools", "core"), "host")  # the shared helpers (HL-71)
     git_init(os.path.join(ws, "public", "tools"))
     for d in folders:
         os.makedirs(os.path.join(ws, d), exist_ok=True)

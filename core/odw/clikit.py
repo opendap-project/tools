@@ -6,7 +6,7 @@
   on stdout; returns its exit status.
 - `Parser`: argparse whose `--help` starts `<front> <tool>: <summary>` and ends with examples, and whose usage
   errors (an unknown flag, a bad argument, an unknown subcommand) are `CliError("input.invalid", status=2)`.
-- `summary(name, tools_toml=None)`: the tool's summary from a root's `tools.toml` (this one by default), the one
+- `summary(name, tools_toml=None)`: the tool's summary from a `tools.toml` (the domain folders' by default), the one
   source of that first line. The module loads on Python 3.9 (KiCad's); `summary` needs 3.11 (tomllib).
 - `load_toml(path, code, shown, fix, status)`: a TOML file's contents; a file that does not parse is `CliError(code)` with
   its file and line (`error.file`, `error.line` in the JSON document), never a traceback.
@@ -21,18 +21,25 @@ import pathlib
 import sys
 
 ERROR_SCHEMA = "opendap.error/v1"
-# Installed, tools.toml ships inside the package (odw/tools.toml); in a checkout it is at the repository root.
+# The tools.toml files that declare odw's tools: installed, they ship inside the package (odw/tools/<domain>.toml);
+# in a checkout they are the domain folders' own, below the tools root (HL-71).
 _HERE = pathlib.Path(__file__).resolve().parent
-TOOLS_TOML = _HERE / "tools.toml" if (_HERE / "tools.toml").is_file() else _HERE.parents[1] / "tools.toml"
+
+
+def _tools_tomls():
+    if (_HERE / "tools").is_dir():
+        return sorted((_HERE / "tools").glob("*.toml"))
+    root = next((p for p in _HERE.parents if (p / "pyproject.toml").is_file()), _HERE.parent)
+    return sorted(root.glob("*/tools.toml"))
 
 
 @functools.lru_cache(maxsize=None)
 def summary(name, tools_toml=None):
-    """The summary a tools.toml (this root's by default) declares for tool `name`: the one source of the --help
+    """The summary a tools.toml (the domain folders' by default) declares for tool `name`: the one source of the --help
     first line. tomllib is imported here, so the module itself loads on Python 3.9 (KiCad's)."""
     import tomllib
-    f = pathlib.Path(tools_toml) if tools_toml else TOOLS_TOML
-    tools = tomllib.loads(f.read_text()).get("tool", []) if f.is_file() else []
+    files = [pathlib.Path(tools_toml)] if tools_toml else _tools_tomls()
+    tools = [t for f in files if f.is_file() for t in tomllib.loads(f.read_text()).get("tool", [])]
     return next((t["summary"] for t in tools if t["name"] == name), None)
 
 

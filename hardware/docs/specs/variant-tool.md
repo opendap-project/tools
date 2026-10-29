@@ -21,7 +21,7 @@ It is generic: nothing in it names a board. A component is found by its folder l
 
 The verbs are the command standard's closed set; `show`, the name `get` had before, still runs it and prints a one-line hint to use `get`, and is not listed in `--help`.
 
-Every command takes `--json` (documents `opendap.variant-list/v1`, `opendap.variant-get/v1`, `opendap.variant-diff/v1`, `opendap.variant-bom/v1`, `opendap.variant-build/v1`, `opendap.variant-check/v1`, each with a `findings` list) and `--dir` (the variants folder). Exit status: 0 no finding at error level (warnings allowed), 1 at least one error, 2 a usage, file or tool error (`input.invalid`, `variant.not_found`, `catalog.not_found`, `project.not_found`, `tool.missing`, `kicad.failed`, `variant.build_failed`), reported with a code, a hint and a fix as the [command standard](../../../host/docs/specs/command-standard.md) asks.
+Every command takes `--json` (documents `opendap.variant-list/v1`, `opendap.variant-get/v1`, `opendap.variant-diff/v1`, `opendap.variant-bom/v1`, `opendap.variant-build/v1`, `opendap.variant-check/v1`, each with a `findings` list) and `--dir` (the variants folder). Exit status: 0 no finding at error level (warnings allowed), 1 at least one error, 2 a usage, file or tool error (`input.invalid`, `variant.not_found`, `catalog.not_found`, `project.not_found`, `tool.missing`, `kicad.failed`, `variant.build_failed`), reported with a code, a hint and a fix as the [command standard](../../../core/docs/specs/command-standard.md) asks.
 
 ## 2. Variant file: `opendap.board-variant/v1`
 

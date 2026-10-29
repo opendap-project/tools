@@ -6,7 +6,7 @@ import subprocess
 import tomllib
 
 import pytest
-from test_cli_conformance import by_name, repo
+from clifixtures import by_name, repo
 
 from odw import audit, cli_inventory
 
@@ -46,8 +46,9 @@ def test_every_old_name_is_a_tracked_link_to_the_plugin():
 @merged
 @pytest.mark.parametrize("name", ["plan", "sync", "cli"])
 def test_the_old_path_runs_the_plugin_and_its_help_names_odw(name):
+    folder = next(d for d, t in tools() if t["name"] == name)
     for exe in (f"odw-{name}", f"odapkit-{name}"):
-        r = subprocess.run([str(HOST / "bin" / exe), "--help"], capture_output=True, text=True,
+        r = subprocess.run([str(TOP / folder / "bin" / exe), "--help"], capture_output=True, text=True,
                            env=audit.git_env(), stdin=subprocess.DEVNULL)
         assert r.returncode == 0, r.stderr
         assert r.stdout.splitlines()[0].startswith(f"odw {name}: "), exe

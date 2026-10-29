@@ -4,7 +4,7 @@ import json
 import pytest
 
 from odw import cli_conformance, cli_inventory, cli_probe, cli_rules, schemas
-from test_cli_conformance import HOST, by_name, repo
+from clifixtures import HOST, by_name, repo
 
 
 # HL-102: the two umbrellas pass the conformance test: odapkit names --help and its error code in its own

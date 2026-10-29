@@ -36,8 +36,8 @@ workspace_root() {
 # True when FILE belongs to the user running the tool (POSIX: no test -O).
 _mine() { [ -n "$(find "$1" -prune -user "$(id -u)" 2>/dev/null)" ]; }
 
-# toolkit-host: host/ of this repository when this checkout is one of its folders (the merged tools root: the
-# nearest folder with a .git above it), else $ODAP_TOOLS_DIR/host (odw sets ODAP_TOOLS_DIR), else
+# The helpers: core/ of this repository when this checkout is one of its folders (the merged tools root: the
+# nearest folder with a .git above it), else $ODAP_TOOLS_DIR/core (odw sets ODAP_TOOLS_DIR), else
 # $ODAP_TOOLKIT_HOST_DIR (deprecated; odapkit sets it), else the workspace's
 # repos.tsv: only a workspace this user owns, and a folder inside it, so a repos.tsv someone else wrote never
 # names code to source.
@@ -48,14 +48,18 @@ _host_sibling() {
     [ "$d" = / ] && return 1
     d="$(dirname "$d")"
   done
-  [ "$d" != "$top" ] && _mine "$d/.git" && [ -f "$d/host/lib/cli.sh" ] && _mine "$d/host/lib/cli.sh" && echo "$d/host"
+  [ "$d" != "$top" ] && _mine "$d/.git" && [ -f "$d/core/lib/cli.sh" ] && _mine "$d/core/lib/cli.sh" && echo "$d/core"
 }
 _host_dir() {
   _host_sibling && return 0
-  # The tools root (ODAP_TOOLS_DIR, which odw exports): its host/ holds the helpers (HL-71).
-  [ -n "${ODAP_TOOLS_DIR:-}" ] && [ -f "$ODAP_TOOLS_DIR/host/lib/cli.sh" ] && { echo "$ODAP_TOOLS_DIR/host"; return 0; }
-  # Deprecated alias, until the old variables go (HL-71 phase 4).
-  [ -n "${ODAP_TOOLKIT_HOST_DIR:-}" ] && { echo "$ODAP_TOOLKIT_HOST_DIR"; return 0; }
+  # The tools root (ODAP_TOOLS_DIR, which odw exports): its core/ holds the helpers (HL-71).
+  [ -n "${ODAP_TOOLS_DIR:-}" ] && [ -f "$ODAP_TOOLS_DIR/core/lib/cli.sh" ] && { echo "$ODAP_TOOLS_DIR/core"; return 0; }
+  # Deprecated alias, until HL-71 phase 4: a host/ folder of the tools root (its sibling core/ holds the
+  # helpers), or a toolkit-host checkout of its own.
+  if [ -n "${ODAP_TOOLKIT_HOST_DIR:-}" ]; then
+    if [ -f "$ODAP_TOOLKIT_HOST_DIR/../core/lib/cli.sh" ]; then echo "$ODAP_TOOLKIT_HOST_DIR/../core"; else echo "$ODAP_TOOLKIT_HOST_DIR"; fi
+    return 0
+  fi
   ws="$(workspace_root)" || return 1
   _mine "$ws/repos.tsv" || return 1
   p="$(awk -F'\t' 'NR > 1 { n = split($2, a, "/"); if (a[n] == "toolkit-host" && $1 !~ /(^\/|\.\.)/) print $1 }' "$ws/repos.tsv")"

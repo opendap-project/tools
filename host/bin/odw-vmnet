@@ -24,7 +24,8 @@ set -eu
 
 here="$(cd "$(dirname "$0")/.." && pwd)"
 CLI_TOOL="odw vmnet"
-. "$here/lib/cli.sh"
+# The shared helpers, in core/ since HL-71.
+. "$here/../core/lib/cli.sh"
 
 verb=""; dry=0
 for a in "$@"; do

@@ -9,9 +9,9 @@ import textwrap
 
 import pytest
 
+from clifixtures import HOST, TOP, by_name, git, repo
 from odw import audit, cli_conformance, cli_inventory, cli_probe, schemas
 
-HOST = pathlib.Path(__file__).resolve().parents[1]
 ROOT_PROJECT = ("pyproject.toml", "uv.lock", "conftest.py")  # the tools root's Python project (HL-71)
 
 GOOD = '''\
@@ -78,22 +78,6 @@ fn main() {
 """
 
 
-def git(args, cwd):
-    subprocess.run(["git", *args], cwd=cwd, check=True, env=audit.git_env(), capture_output=True)
-
-
-def repo(root, path, files):
-    d = root / path
-    for name, (text, mode) in files.items():
-        f = d / name
-        f.parent.mkdir(parents=True, exist_ok=True)
-        f.write_text(textwrap.dedent(text))
-        f.chmod(mode)
-    git(["init", "-q"], d)
-    git(["add", "-A"], d)
-    git(["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"], d)
-
-
 @pytest.fixture
 def ws(tmp_path, monkeypatch):
     monkeypatch.setenv("MARKER", str(tmp_path / "danger-ran"))
@@ -125,10 +109,6 @@ def ws(tmp_path, monkeypatch):
     })
     repo(tmp_path, "public/os", {"image/mkosi.extra/usr/bin/odap-reboot": ("#!/bin/sh\nreboot\n", 0o755)})
     return tmp_path
-
-
-def by_name(items):
-    return {e["name"]: e for e in items}
 
 
 def test_inventory_finds_and_classes_every_executable(ws):
@@ -291,11 +271,11 @@ def test_the_tool_passes_its_own_test(tmp_path):
 
 
 def test_the_tool_passes_its_own_test_on_a_copy(tmp_path):
-    """The same, on a copy of this checkout's tracked files: host/ and schemas/ of the tools root, with the
+    """The same, on a copy of this checkout's tracked files: core/, host/ and schemas/ of the tools root, with the
     root's Python project (pyproject.toml, uv.lock, conftest.py) that builds odw since HL-71."""
     repo = tmp_path / "public/tools"
     top = HOST.parent
-    files = [f for f in _git(["ls-files", "-z"], top).split("\0") if f.split("/")[0] in ("host", "schemas")]
+    files = [f for f in _git(["ls-files", "-z"], top).split("\0") if f.split("/")[0] in ("core", "host", "schemas")]
     files += list(ROOT_PROJECT)
     for f in files:
         if (top / f).is_file():
@@ -384,7 +364,7 @@ def test_the_tools_schema_takes_a_list_of_probe_calls():
         assert schemas.errors(doc, "tools"), bad
 
 
-MIGRATED = {"host": {"audit", "cli", "docs", "noindex", "plan", "rename", "req", "sync", "verify"},
+MIGRATED = {"core": {"cli"}, "host": {"audit", "docs", "noindex", "plan", "rename", "req", "sync", "verify"},
             "hardware": {"component", "craft", "sim", "variant", "stackup"}}
 
 

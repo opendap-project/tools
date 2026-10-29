@@ -1,4 +1,4 @@
-"""Every odapkit tool of this root holds to the plugin contract (command standard §6), through odw.clikit."""
+"""Every tool of the odw package's folders holds to the plugin contract (command standard §6), through odw.clikit."""
 import json
 import os
 import pathlib
@@ -11,16 +11,20 @@ import pytest
 from odw import (audit, cli_conformance, clikit, docs, noindex, plan, rename, requirements, schemas, sync,
                  verify)
 
-HOST = pathlib.Path(__file__).resolve().parents[1]
-TOOLS = {t["name"]: t for t in tomllib.loads((HOST / "tools.toml").read_text())["tool"]}
+TOP = pathlib.Path(__file__).resolve().parents[2]
+HOST = TOP / "host"
+# The folders whose tools.toml declares the odw package's tools (HL-71: core, then each domain as it moves).
+FOLDERS = ["core", "host"]
+TOOLS = {t["name"]: {**t, "folder": d} for d in FOLDERS
+         for t in tomllib.loads((TOP / d / "tools.toml").read_text())["tool"]}
 PYTHON = {"audit": audit, "cli": cli_conformance, "docs": docs, "noindex": noindex, "plan": plan,
           "rename": rename, "req": requirements, "sync": sync, "verify": verify}
 
 
 def test_every_plugin_in_bin_is_declared():
-    on_disk = {p.name.removeprefix("odw-") for p in (HOST / "bin").glob("odw-*")}
+    on_disk = {p.name.removeprefix("odw-") for d in FOLDERS for p in (TOP / d / "bin").glob("odw-*")}
     assert on_disk == set(TOOLS)
-    assert all((HOST / t["entry"]).is_file() for t in TOOLS.values())
+    assert all((TOP / t["folder"] / t["entry"]).is_file() for t in TOOLS.values())
 
 
 @pytest.mark.parametrize("name", sorted(PYTHON))
@@ -108,7 +112,7 @@ def _odw():
 
 def test_umbrella_help_json_lists_the_tools_with_a_schema(tmp_path):
     """Run outside any workspace, so an odw on PATH built by another checkout (a worktree has no build of its
-    own) still lists this checkout's tools, through ODAP_TOOLKIT_HOST_DIR, which the alias sets (HL-102)."""
+    own) still lists this checkout's tools, through ODAP_TOOLS_DIR, which the alias sets (HL-102, HL-71)."""
     if not _odw():
         pytest.skip("odw is not built and not on PATH (setup.sh builds it)")
     r = _umbrella("help", "--json", env=_outside(tmp_path))
@@ -121,11 +125,11 @@ def test_umbrella_help_json_lists_the_tools_with_a_schema(tmp_path):
         item = by_name[name]
         assert (item["summary"], item["audience"], item["stability"]) == (
             tool["summary"], tool["audience"], tool["stability"])
-        assert item["entry"] == str(HOST / tool["entry"])
+        assert item["entry"] == str(TOP / tool["folder"] / tool["entry"])
 
 
 def _outside(tmp_path):
-    """No workspace: the odw that runs lists this checkout's tools (ODAP_TOOLKIT_HOST_DIR, set by the alias)."""
+    """No workspace: the odw that runs lists this checkout's tools (ODAP_TOOLS_DIR, set by the alias)."""
     env = {k: v for k, v in os.environ.items() if not k.startswith("ODAP_")}
     env["ODAP_WORKSPACE_DIR"] = str(tmp_path)
     return env

@@ -1,8 +1,8 @@
 # shellcheck shell=sh
-# toolkit-host's command-line helpers (lib/cli.sh) for this repository's shell tools, sourced (POSIX sh):
+# The shared command-line helpers (core/lib/cli.sh) for this folder's shell tools, sourced (POSIX sh):
 # cli_fail CODE MSG HINT FIX [STATUS], cli_usage MSG, cli_json_str, cli_summary NAME FILE (command standard §6).
-# toolkit-host is host/ of this repository when this checkout is one of its folders (the merged tools root), else
-# $ODAP_TOOLS_DIR/host (odw sets ODAP_TOOLS_DIR), else ODAP_TOOLKIT_HOST_DIR (deprecated; odapkit sets it), else the
+# The helpers are core/ of this repository when this checkout is one of its folders (the merged tools root), else
+# $ODAP_TOOLS_DIR/core (odw sets ODAP_TOOLS_DIR), else ODAP_TOOLKIT_HOST_DIR (deprecated; odapkit sets it), else the
 # workspace's repos.tsv; without it,
 # the same error format in its smallest form. cli_root is this checkout.
 cli_root="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/.." && pwd)"
@@ -13,8 +13,8 @@ CLI_JSON="${CLI_JSON:-0}"
 # True when FILE belongs to the user running the tool (POSIX: no test -O).
 _cli_mine() { [ -n "$(find "$1" -prune -user "$(id -u)" 2>/dev/null)" ]; }
 
-# host/ beside this folder in the same repository (the merged tools root): the nearest folder at or above
-# cli_root with a .git is the repository's top; when that is not cli_root itself, its host/ holds the helpers.
+# core/ beside this folder in the same repository (the merged tools root): the nearest folder at or above
+# cli_root with a .git is the repository's top; when that is not cli_root itself, its core/ holds the helpers.
 # The .git and the helpers must belong to this user.
 _cli_sibling() {
   d="$cli_root"
@@ -22,16 +22,20 @@ _cli_sibling() {
     [ "$d" = / ] && return 1
     d="$(dirname "$d")"
   done
-  [ "$d" != "$cli_root" ] && _cli_mine "$d/.git" && [ -f "$d/host/lib/cli.sh" ] && _cli_mine "$d/host/lib/cli.sh" &&
-    echo "$d/host"
+  [ "$d" != "$cli_root" ] && _cli_mine "$d/.git" && [ -f "$d/core/lib/cli.sh" ] && _cli_mine "$d/core/lib/cli.sh" &&
+    echo "$d/core"
 }
 
 _cli_host() {
   _cli_sibling && return 0
-  # The tools root (ODAP_TOOLS_DIR, which odw exports): its host/ holds the helpers (HL-71).
-  [ -n "${ODAP_TOOLS_DIR:-}" ] && [ -f "$ODAP_TOOLS_DIR/host/lib/cli.sh" ] && { echo "$ODAP_TOOLS_DIR/host"; return 0; }
-  # Deprecated alias, until the old variables go (HL-71 phase 4).
-  [ -n "${ODAP_TOOLKIT_HOST_DIR:-}" ] && { echo "$ODAP_TOOLKIT_HOST_DIR"; return 0; }
+  # The tools root (ODAP_TOOLS_DIR, which odw exports): its core/ holds the helpers (HL-71).
+  [ -n "${ODAP_TOOLS_DIR:-}" ] && [ -f "$ODAP_TOOLS_DIR/core/lib/cli.sh" ] && { echo "$ODAP_TOOLS_DIR/core"; return 0; }
+  # Deprecated alias, until HL-71 phase 4: a host/ folder of the tools root (its sibling core/ holds the
+  # helpers), or a toolkit-host checkout of its own.
+  if [ -n "${ODAP_TOOLKIT_HOST_DIR:-}" ]; then
+    if [ -f "$ODAP_TOOLKIT_HOST_DIR/../core/lib/cli.sh" ]; then echo "$ODAP_TOOLKIT_HOST_DIR/../core"; else echo "$ODAP_TOOLKIT_HOST_DIR"; fi
+    return 0
+  fi
   d="$cli_root"
   while [ "$d" != / ]; do
     # Only a workspace this user owns: a repos.tsv someone else wrote never names code to source.

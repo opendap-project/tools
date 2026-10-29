@@ -2,7 +2,7 @@
 
 Tools to build Blackbird OS images and the software that goes into them, for the platform's maintainers. Part of the OpenDAP Developer Toolkit, which is a set of repositories, each with the tools of one domain.
 
-Each tool is an `odapkit-<tool>` executable in `bin/`, run as `odapkit <tool>` through toolkit-host's `odapkit` command ([RFC 0009](https://github.com/opendap-project/rfcs/blob/main/text/0009-odapkit.md)); `odapkit help` lists them, `--help` describes each. Each does one thing, finds the repositories it works on through the workspace's `repos.tsv` (or `ODAP_<REPOSITORY>_DIR`), and prints its result on stdout. Exit status is 0 on success, 1 on failure and 2 on a usage error (an unknown flag included). Each tool is declared in `tools.toml`, whose summary is the first line of its `--help`; errors carry a stable dotted code, a hint and a fix (a command), from toolkit-host's [shared helpers](../host/docs/specs/cli-conformance.md#shared-helper). Every command that changes state takes `--dry-run`, which names what it would do and changes nothing; `--json` prints one document with a `schema` (below), and errors as `opendap.error/v1`.
+Each tool is an `odapkit-<tool>` executable in `bin/`, run as `odapkit <tool>` through toolkit-host's `odapkit` command ([RFC 0009](https://github.com/opendap-project/rfcs/blob/main/text/0009-odapkit.md)); `odapkit help` lists them, `--help` describes each. Each does one thing, finds the repositories it works on through the workspace's `repos.tsv` (or `ODAP_<REPOSITORY>_DIR`), and prints its result on stdout. Exit status is 0 on success, 1 on failure and 2 on a usage error (an unknown flag included). Each tool is declared in `tools.toml`, whose summary is the first line of its `--help`; errors carry a stable dotted code, a hint and a fix (a command), from the [shared helpers](../core/docs/specs/cli-conformance.md#shared-helper). Every command that changes state takes `--dry-run`, which names what it would do and changes nothing; `--json` prints one document with a `schema` (below), and errors as `opendap.error/v1`.
 
 | Tool | Does |
 |---|---|
@@ -19,7 +19,7 @@ Run them as `odapkit <tool>` (toolkit-host `setup.sh` links `odapkit` into `~/.l
 ## Layout
 
 - `bin/` — the tools
-- `lib/odapkit.sh` — what they share: `--help`, the error and flag helpers (toolkit-host's `lib/cli.sh`: `host/` of the same repository when this checkout is one of its folders, the merged `tools` root, else `$ODAP_TOOLS_DIR/host` (`odw` exports `ODAP_TOOLS_DIR`), else `ODAP_TOOLKIT_HOST_DIR` (deprecated until HL-71 phase 4), else `repos.tsv`; `odw security-check` finds odw.clikit the same way, and `tests/test_host_lookup.py` builds both layouts), finding repositories, host-wide paths
+- `lib/odapkit.sh` — what they share: `--help`, the error and flag helpers (core's `lib/cli.sh`: `core/` of the same repository when this checkout is one of its folders (the merged `tools` root), else `$ODAP_TOOLS_DIR/core` (`odw` exports `ODAP_TOOLS_DIR`), else `ODAP_TOOLKIT_HOST_DIR` (deprecated until HL-71 phase 4; its sibling `core/` when it names `host/` of a tools root), else `repos.tsv`; `odw security-check` finds odw.clikit the same way, and `tests/test_host_lookup.py` builds both layouts), finding repositories, host-wide paths
 - `tools.toml` — the tools this root declares to the maintainers' umbrella command
 - `tests/cli.sh` — every tool's command-line contract (`--help`, an unknown flag, `--json`, `--dry-run`), on temporary folders; run by pre-commit
 - `vm/` — the image build VM's definition

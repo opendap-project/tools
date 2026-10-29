@@ -30,6 +30,16 @@ def fake_host(d, name):
         f.write(f"MARK = {name!r}\n")
 
 
+def fake_core(d, name):
+    """The tools root's core/ (HL-71): lib/cli.sh and odw/clikit.py, saying which one they are."""
+    os.makedirs(os.path.join(d, "lib"))
+    os.makedirs(os.path.join(d, "odw"))
+    with open(os.path.join(d, "lib", "cli.sh"), "w") as f:
+        f.write(f"FAKE_HOST={name}\n" + FAKE_SH)
+    with open(os.path.join(d, "odw", "clikit.py"), "w") as f:
+        f.write(f"MARK = {name!r}\n")
+
+
 def git_init(d):
     subprocess.run(["git", "init", "-q", d], check=True, env=ENV)
 
@@ -50,8 +60,10 @@ def build(tmp, layout, folder, files, host=True):
     for rel in files:
         os.makedirs(os.path.dirname(os.path.join(mine, rel)), exist_ok=True)
         shutil.copy2(os.path.join(ROOT, rel), os.path.join(mine, rel))
-    if host:
+    if host and layout == "today":
         fake_host(os.path.join(base, "host"), "host")
+    elif host:
+        fake_core(os.path.join(base, "core"), "host")  # the helpers of the merged root are its core/ (HL-71)
     if layout == "today":
         git_init(mine)
         if host:
@@ -90,17 +102,22 @@ def probe_py(mine, env):
 
 
 class ShellHelpers(unittest.TestCase):
-    """lib/cli.sh: host/ of the same repository first (the merged tools root), then
-    $ODAP_TOOLS_DIR/host, then ODAP_TOOLKIT_HOST_DIR (deprecated), then
+    """lib/cli.sh: core/ of the same repository first (the merged tools root), then
+    $ODAP_TOOLS_DIR/core, then ODAP_TOOLKIT_HOST_DIR (deprecated; its sibling core/ when it is host/ of a
+    tools root), then
     the toolkit-host row of repos.tsv. Built in both toolkit layouts."""
 
-    def found(self, layout, env=False, host=True, tools=False):
+    def found(self, layout, env=False, host=True, tools=False, alias_on_tools=False):
         with tempfile.TemporaryDirectory() as tmp:
             mine = build(tmp, layout, FOLDER, FILES, host)
             extra = {"ODAP_TOOLKIT_HOST_DIR": os.path.join(tmp, "elsewhere")} if env else {}
-            if tools:  # ODAP_TOOLS_DIR: the tools root, whose host/ holds the helpers (HL-71)
-                fake_host(os.path.join(tmp, "troot", "host"), "troot")
+            if tools or alias_on_tools:  # ODAP_TOOLS_DIR: the tools root, whose host/ holds the helpers (HL-71)
+                fake_core(os.path.join(tmp, "troot", "core"), "troot")
                 extra["ODAP_TOOLS_DIR"] = os.path.join(tmp, "troot")
+            if alias_on_tools:  # the deprecated variable names host/ of a tools root: its sibling core/ (HL-71)
+                fake_core(os.path.join(tmp, "aroot", "core"), "aroot")
+                os.makedirs(os.path.join(tmp, "aroot", "host"))
+                extra = {"ODAP_TOOLKIT_HOST_DIR": os.path.join(tmp, "aroot", "host")}
             return probe_sh(mine, extra)
 
     def test_today_reads_the_toolkit_host_row(self):
@@ -130,19 +147,27 @@ class ShellHelpers(unittest.TestCase):
     def test_merged_host_beside_it_comes_before_the_tools_root(self):
         self.assertEqual(self.found("merged", host=True, tools=True), "host")
 
+    def test_the_deprecated_variable_on_a_tools_host_finds_its_core(self):
+        self.assertEqual(self.found("merged", host=False, alias_on_tools=True), "aroot")
+
 
 class PythonHelpers(unittest.TestCase):
     """tools/clihost.py: host/ of the same repository first (the merged tools root), then
-    $ODAP_TOOLS_DIR/host, then ODAP_TOOLKIT_HOST_DIR (deprecated), then
+    $ODAP_TOOLS_DIR/core, then ODAP_TOOLKIT_HOST_DIR (deprecated; its sibling core/ when it is host/ of a
+    tools root), then
     the toolkit-host row of repos.tsv. Built in both toolkit layouts."""
 
-    def found(self, layout, env=False, host=True, tools=False):
+    def found(self, layout, env=False, host=True, tools=False, alias_on_tools=False):
         with tempfile.TemporaryDirectory() as tmp:
             mine = build(tmp, layout, FOLDER, FILES, host)
             extra = {"ODAP_TOOLKIT_HOST_DIR": os.path.join(tmp, "elsewhere")} if env else {}
-            if tools:  # ODAP_TOOLS_DIR: the tools root, whose host/ holds the helpers (HL-71)
-                fake_host(os.path.join(tmp, "troot", "host"), "troot")
+            if tools or alias_on_tools:  # ODAP_TOOLS_DIR: the tools root, whose host/ holds the helpers (HL-71)
+                fake_core(os.path.join(tmp, "troot", "core"), "troot")
                 extra["ODAP_TOOLS_DIR"] = os.path.join(tmp, "troot")
+            if alias_on_tools:  # the deprecated variable names host/ of a tools root: its sibling core/ (HL-71)
+                fake_core(os.path.join(tmp, "aroot", "core"), "aroot")
+                os.makedirs(os.path.join(tmp, "aroot", "host"))
+                extra = {"ODAP_TOOLKIT_HOST_DIR": os.path.join(tmp, "aroot", "host")}
             return probe_py(mine, extra)
 
     def test_today_reads_the_toolkit_host_row(self):
@@ -171,6 +196,9 @@ class PythonHelpers(unittest.TestCase):
 
     def test_merged_host_beside_it_comes_before_the_tools_root(self):
         self.assertEqual(self.found("merged", host=True, tools=True), "host")
+
+    def test_the_deprecated_variable_on_a_tools_host_finds_its_core(self):
+        self.assertEqual(self.found("merged", host=False, alias_on_tools=True), "aroot")
 
 
 if __name__ == "__main__":

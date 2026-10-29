@@ -1,7 +1,7 @@
 # Command-line conformance
 
 - **Status:** draft
-- **Tool:** `odw cli` (`bin/odw-cli`, `src/odw/cli_inventory.py`, `src/odw/cli_probe.py`, `src/odw/cli_rules.py`, `src/odw/cli_conformance.py`); shared helpers `src/odw/clikit.py` and `lib/cli.sh`
+- **Tool:** `odw cli` (`bin/odw-cli`, `core/odw/cli_inventory.py`, `core/odw/cli_probe.py`, `core/odw/cli_rules.py`, `core/odw/cli_conformance.py`); shared helpers `core/odw/clikit.py` and `lib/cli.sh`
 - **Implements:** the [command standard](command-standard.md) §5 (every command-line surface) and §8 (conformance test), item 9 and, for plugins, items 1 to 6
 - **Schemas:** `opendap.cli-inventory/v1` (`schemas/cli-inventory.schema.json`), `opendap.check-result/v1`, `opendap.matrix/v1`
 - **Requirements:** TK-009, TK-010, TK-011
@@ -35,7 +35,7 @@ An executable is run only when its source handles `--help` and it is not a devic
 
 The probes are `--help`, an unknown flag (`--odw-no-such-flag`) and, for a tool whose `tools.toml` entry declares a `probe` (a read-only call, or a list of calls each run and each required to pass, a call being a table `{ call, reaches }` when it names the script it runs, which that call's result then verifies (`json_reaches`), `{root}` for the folder of that `tools.toml` and `{workspace}` for the workspace; inventoried as `json_probe`, a list of calls, with `declared_in`), those calls; an umbrella's is `help --json`. A tool with no public input to read from is probed on a fixture under `tests/fixtures/` (`odw plan list` on `tests/fixtures/programme`, `odw verify coverage` on `tests/fixtures/verification`; the hardware tools on that folder's own `tests/fixtures/`); `odw rename`, which has no public rename map, is probed on a refused call and its `opendap.error/v1` document. A script a tool runs has no `probe` of its own: the tool's call that runs it names it (`reaches`), and the script is verified through that call (`sch-craft-check.py` through `craft check --json` on a symbol library, `craftrules.py` through `craft rules render --check --json`). An executable that declares `--json` and that no call names is unverified (`pcb-craft-check.py`, which needs KiCad). `--jobs` (4 by default) runs that many executables at a time.
 
-`odw cli` passes its own test in both toolkit layouts: toolkit-host as a repository of its own, and `host/` as a folder of the merged `tools` root (`tests/test_cli_conformance.py`).
+`odw cli` passes its own test in the merged `tools` root, on the checkout itself and on a copy of its `core/`, `host/` and `schemas/` folders with the root's Python project (`core/tests/test_cli_conformance.py`).
 
 ## Rules
 
@@ -62,10 +62,10 @@ Every tool of this repository gets the plugin contract (command standard §6) fr
 
 | Helper | For | Gives |
 | --- | --- | --- |
-| `odw.clikit` (`src/odw/clikit.py`) | Python tools | `CliError(code, message, hint, fix, status, details)`; `report()` (text on stderr, `opendap.error/v1` on stdout with `--json`, `details` added to its `error`); `load_toml(path, code, shown, fix, status)`, a TOML file that does not parse as `CliError(code)` with its file, line and column, never a traceback; `Parser`, an argparse whose `--help` starts `<front> <tool>: <summary>` and ends with examples, and whose usage errors are `input.invalid` with exit 2; `summary(name, tools_toml)` from a root's `tools.toml` (this one by default); the module loads on Python 3.9, KiCad's, while `summary` needs 3.11; `main()`, which maps `--help`, errors and results to exit status 0, 1, 2 |
-| `lib/cli.sh` | POSIX shell tools | `cli_fail CODE MSG HINT FIX [STATUS]`, `cli_usage`, `cli_json_str`, `cli_help` (first line from `tools.toml`), `cli_summary`, and `cli_interactive`, true only with a terminal on stdin and stdout and neither `CI` nor `ODAP_NONINTERACTIVE` set |
+| `odw.clikit` (`core/odw/clikit.py`) | Python tools | `CliError(code, message, hint, fix, status, details)`; `report()` (text on stderr, `opendap.error/v1` on stdout with `--json`, `details` added to its `error`); `load_toml(path, code, shown, fix, status)`, a TOML file that does not parse as `CliError(code)` with its file, line and column, never a traceback; `Parser`, an argparse whose `--help` starts `<front> <tool>: <summary>` and ends with examples, and whose usage errors are `input.invalid` with exit 2; `summary(name, tools_toml)` from a root's `tools.toml` (this one by default); the module loads on Python 3.9, KiCad's, while `summary` needs 3.11; `main()`, which maps `--help`, errors and results to exit status 0, 1, 2 |
+| `lib/cli.sh` (`core/lib/cli.sh`) | POSIX shell tools | `cli_fail CODE MSG HINT FIX [STATUS]`, `cli_usage`, `cli_json_str`, `cli_help` (first line from `tools.toml`), `cli_summary`, and `cli_interactive`, true only with a terminal on stdin and stdout and neither `CI` nor `ODAP_NONINTERACTIVE` set |
 
-The error text is `<front> <tool>: error <code>: <message>`, then an indented `hint: <hint>` line and an indented `fix: <command>` line. Codes are dotted, lower case, and stable once published (`input.invalid`, `workspace.not_found`, `tool.not_found`, `task.claimed`, …). A tool in another folder of the `tools` root finds the helpers as `host/` of the same repository, else as `$ODAP_TOOLS_DIR/host` (`odw` exports `ODAP_TOOLS_DIR` for the tools it runs), else through `ODAP_TOOLKIT_HOST_DIR`, a deprecated alias the `odapkit` alias still sets until HL-71 phase 4; a tool run directly finds this checkout through the workspace's `repos.tsv`, as for any other repository.
+The error text is `<front> <tool>: error <code>: <message>`, then an indented `hint: <hint>` line and an indented `fix: <command>` line. Codes are dotted, lower case, and stable once published (`input.invalid`, `workspace.not_found`, `tool.not_found`, `task.claimed`, …). A tool in another folder of the `tools` root finds the helpers as `core/` of the same repository, else as `$ODAP_TOOLS_DIR/core` (`odw` exports `ODAP_TOOLS_DIR` for the tools it runs, and so does the `odapkit` alias), else through `ODAP_TOOLKIT_HOST_DIR`, a deprecated alias until HL-71 phase 4 that resolves to the sibling `core/` when it names `host/` of a tools root; a tool run directly finds this checkout through the workspace's `repos.tsv`, as for any other repository.
 
 ## Output
 

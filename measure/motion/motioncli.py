@@ -59,33 +59,45 @@ TOOL = "odw motion"
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
+def alias_home(host):
+    """The helpers' folder for the deprecated ODAP_TOOLKIT_HOST_DIR: its sibling core/ when it is host/ of the tools
+    root (HL-71), else the toolkit-host checkout it names."""
+    core = os.path.normpath(os.path.join(host, "..", "core"))
+    return core if os.path.isfile(os.path.join(core, "odw", "clikit.py")) else host
+
+
+def import_root(home):
+    """The folder to put on sys.path so `odw` imports from `home`: core/ holds odw/, a toolkit-host checkout src/odw/."""
+    return home if os.path.isfile(os.path.join(home, "odw", "clikit.py")) else os.path.join(home, "src")
+
+
 def _sibling_host(start):
-    """host/ of the same repository when `start` is one of its folders (the merged tools root): the nearest
-    folder at or above `start` with a .git is the repository's top, and its host/ holds odw.clikit."""
+    """core/ of the same repository when `start` is one of its folders (the merged tools root): the nearest
+    folder at or above `start` with a .git is the repository's top, and its core/ holds odw.clikit (HL-71)."""
     d = start = os.path.realpath(start)
     while not os.path.exists(os.path.join(d, ".git")):
         if d == os.path.dirname(d):
             return None
         d = os.path.dirname(d)
-    helper = os.path.join(d, "host", "src", "odw", "clikit.py")
+    helper = os.path.join(d, "core", "odw", "clikit.py")
     mine = d != start and os.lstat(os.path.join(d, ".git")).st_uid == os.getuid()  # this user's repository only
     if mine and os.path.isfile(helper) and os.stat(helper).st_uid == os.getuid():
-        return os.path.join(d, "host")
+        return os.path.join(d, "core")
     return None
 
 
 def _host_dir():
-    """toolkit-host: host/ of this repository (the merged tools root), else $ODAP_TOOLS_DIR/host (odw sets
+    """The helpers: core/ of this repository (the merged tools root), else $ODAP_TOOLS_DIR/core (odw sets
     ODAP_TOOLS_DIR), else ODAP_TOOLKIT_HOST_DIR (deprecated; odapkit sets it), else the workspace's repos.tsv."""
     d = HERE
     sibling = _sibling_host(os.path.join(HERE, ".."))
     if sibling:
         return sibling
-    tools = os.environ.get("ODAP_TOOLS_DIR")  # the tools root, which odw exports: its host/ holds the helpers (HL-71)
-    if tools and os.path.isfile(os.path.join(tools, "host", "src", "odw", "clikit.py")):
-        return os.path.join(tools, "host")
+    tools = os.environ.get("ODAP_TOOLS_DIR")  # the tools root, which odw exports: its core/ holds the helpers (HL-71)
+    if tools and os.path.isfile(os.path.join(tools, "core", "odw", "clikit.py")):
+        return os.path.join(tools, "core")
     if os.environ.get("ODAP_TOOLKIT_HOST_DIR"):  # deprecated alias, until HL-71 phase 4
-        return os.environ["ODAP_TOOLKIT_HOST_DIR"]
+        return alias_home(os.environ["ODAP_TOOLKIT_HOST_DIR"])
     while d != os.path.dirname(d):
         if os.path.isfile(os.path.join(d, "repos.tsv")) and os.stat(os.path.join(d, "repos.tsv")).st_uid == os.getuid():
             for line in open(os.path.join(d, "repos.tsv")).read().splitlines()[1:]:
@@ -104,7 +116,7 @@ def _clikit():
     if not host:
         sys.exit(f"{TOOL}: error repo.not_found: no toolkit-host checkout\n  hint: its odw.clikit runs this tool's "
                  "command line\n  fix: export ODAP_TOOLS_DIR=<tools checkout>")
-    sys.path.insert(0, os.path.join(host, "src"))
+    sys.path.insert(0, import_root(host))
     from odw import clikit
     return clikit
 

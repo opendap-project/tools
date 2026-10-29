@@ -7,8 +7,8 @@
 # odw discovers the tools from each workspace root's tools.toml, then PATH (command standard §3). This
 # alias keeps every `odapkit <tool>` call working until the tools cut renames the call sites. It runs
 # the odw this checkout built (target/release/odw, built by setup.sh), else the odw on PATH, and sets
-# ODAP_TOOLKIT_HOST_DIR to this checkout when unset, as before, so the tools find the shared helpers
-# (lib/cli.sh, odw.clikit).
+# ODAP_TOOLS_DIR to the tools root this checkout is a folder of, and ODAP_TOOLKIT_HOST_DIR (deprecated) to this
+# checkout, when unset, so odw lists every domain's tools and the tools find the shared helpers (core/).
 #
 # --help, -h: odw's help; without odw, this alias's usage and how to build odw (exit 0).
 #
@@ -18,6 +18,9 @@ set -eu
 self="$(readlink -f "$0" 2>/dev/null || echo "$0")"
 host="$(cd "$(dirname "$self")/.." && pwd)"
 export ODAP_TOOLKIT_HOST_DIR="${ODAP_TOOLKIT_HOST_DIR:-$host}"
+# The tools root this checkout is a folder of (one root variable, HL-71): odw reads every domain folder's tools.
+root="$(dirname "$host")"
+[ -f "$root/core/tools.toml" ] && export ODAP_TOOLS_DIR="${ODAP_TOOLS_DIR:-$root}"
 
 odw="$host/target/release/odw"
 [ -x "$odw" ] || odw="$(command -v odw 2>/dev/null || true)"

@@ -31,7 +31,7 @@ Use them from a repository's `.pre-commit-config.yaml`, pinned to a tag:
 
 ## KiCad ERC and DRC
 
-`kicad-erc` and `kicad-drc` run `hooks/kicad-check.py erc|drc FILE…` on the changed files. Only a file with a same-named `.kicad_pro` next to it is checked, with `kicad-cli` at error severity; a failing project prints `KiCad ERC failed: FILE` (or DRC) and the first 60 lines of the report. `--json` also prints an [`opendap.check-result/v1`](../host/schemas/check-result.schema.json) document on stdout: one result per file (`pass`, `fail`, `skip` outside a project, `error` when `kicad-cli` gave no report) and one per violation, with its KiCad type as `rule`. `kicad-cli` is `$KICAD_CLI`, else KiCad.app's (`$KICAD_APP`, default `/Applications/KiCad/KiCad.app`), else the first on `PATH`. Python 3.9 or later, standard library only. `hooks/kicad-check.sh` is the former entry point and runs the same engine.
+`kicad-erc` and `kicad-drc` run `hooks/kicad-check.py erc|drc FILE…` on the changed files. Only a file with a same-named `.kicad_pro` next to it is checked, with `kicad-cli` at error severity; a failing project prints `KiCad ERC failed: FILE` (or DRC) and the first 60 lines of the report. `--json` also prints an [`opendap.check-result/v1`](../schemas/check-result.schema.json) document on stdout: one result per file (`pass`, `fail`, `skip` outside a project, `error` when `kicad-cli` gave no report) and one per violation, with its KiCad type as `rule`. `kicad-cli` is `$KICAD_CLI`, else KiCad.app's (`$KICAD_APP`, default `/Applications/KiCad/KiCad.app`), else the first on `PATH`. Python 3.9 or later, standard library only. `hooks/kicad-check.sh` is the former entry point and runs the same engine.
 
 ## Composed KiCad rule files
 
@@ -55,7 +55,7 @@ The same engine is the maintainers' `odw dru compose|check` (`bin/odw-dru`, decl
 - `.pre-commit-hooks.yaml` — hook definitions
 - `hooks/` — the hook scripts and their engines
 - `bin/` — the tools this repository adds to `odw` (`tools.toml`; `odw-*`, each `odapkit-*` a link for one minor release), thin wrappers over the engines in `hooks/`
-- `lib/cli.sh` — the command-line helpers of the shell wrappers (toolkit-host's, with a minimal fallback): `host/` of the same repository when this checkout is one of its folders (the merged `tools` root), else `$ODAP_TOOLS_DIR/host` (`odw` exports `ODAP_TOOLS_DIR`), else `ODAP_TOOLKIT_HOST_DIR` (deprecated until HL-71 phase 4), else the `toolkit-host` row of `repos.tsv` (`tests/test_host_lookup.py` builds both layouts)
+- `lib/cli.sh` — the command-line helpers of the shell wrappers (core's, with a minimal fallback): `core/` of the same repository when this checkout is one of its folders (the merged `tools` root), else `$ODAP_TOOLS_DIR/core` (`odw` exports `ODAP_TOOLS_DIR`), else `ODAP_TOOLKIT_HOST_DIR` (deprecated until HL-71 phase 4; its sibling `core/` when it names `host/` of a tools root), else the `toolkit-host` row of `repos.tsv` (`tests/test_host_lookup.py` builds both layouts)
 - `tests/` — tests and their fixtures: `python3 -m unittest discover tests` (pre-commit runs them). They pass in both toolkit layouts: this repository, and `hooks/` of the merged `tools` root, where `.pre-commit-hooks.yaml` sits at the root with entries under `hooks/hooks/`
 
 ## License

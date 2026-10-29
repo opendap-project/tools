@@ -8,7 +8,7 @@ import pytest
 
 from odw import clikit
 
-HOST = pathlib.Path(__file__).resolve().parents[1]
+CORE = pathlib.Path(__file__).resolve().parents[1]  # core/: lib/cli.sh and odw/clikit.py (HL-71)
 
 
 def _parser():
@@ -82,7 +82,7 @@ def test_subcommand_usage_errors_are_cli_errors_too():
 
 
 def _sh(script, *args, env=None):
-    full = f'. "{HOST}/lib/cli.sh"\n{script}'
+    full = f'. "{CORE}/lib/cli.sh"\n{script}'
     return subprocess.run(["sh", "-c", full, "t", *args], capture_output=True, text=True,
                           env={**os.environ, **(env or {})})
 
@@ -119,7 +119,7 @@ def test_summary_reads_another_roots_tools_toml(tmp_path):
 def test_clikit_imports_on_python_3_9_syntax_and_stdlib():
     # KiCad's bundled Python is 3.9: no tomllib at import time, no 3.10+ syntax.
     import ast
-    src = (HOST / "src/odw/clikit.py").read_text()
+    src = (CORE / "odw/clikit.py").read_text()
     tree = ast.parse(src, feature_version=(3, 9))
     top = [n for n in tree.body if isinstance(n, (ast.Import, ast.ImportFrom))]
     assert not any(a.name == "tomllib" for n in top for a in n.names)

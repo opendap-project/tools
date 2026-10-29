@@ -1,0 +1,12 @@
+# The tools this folder adds to the maintainers' umbrella command (command standard §3).
+schema = "opendap.tools/v1"
+front = "odw"
+
+[[tool]]
+name = "cli"
+summary = "Inventory every command-line surface and check it against the command standard"
+entry = "bin/odw-cli"
+replaces = "odapkit-cli"
+audience = "maintainer"
+stability = "preview"
+probe = ["list", "--workspace", "{workspace}", "--root", "public/tools", "--json"]
