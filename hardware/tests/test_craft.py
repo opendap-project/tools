@@ -9,6 +9,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import unittest
 
 # Tests never inherit a hook's GIT_* variables (HL-64): under pre-commit, git exports GIT_DIR, GIT_INDEX_FILE and
@@ -96,6 +97,53 @@ class Craft(unittest.TestCase):
         self.assertEqual(run("check").returncode, 2)
         self.assertEqual(run("check", "--target", "Q9", os.path.join(FIX, "good.kicad_pcb")).returncode, 2)
 
+
+
+sys.path.insert(0, os.path.join(HERE, "..", "tools", "craft"))
+import pin1  # noqa: E402  (the CRAFT-13 geometry, pure Python)
+
+
+def box(x, y, w, h):
+    return (x - w / 2, y - h / 2, x + w / 2, y + h / 2)
+
+
+class Pin1Geometry(unittest.TestCase):
+    """CRAFT-13 "next to pin 1": distances to the lands' edges, not their centres (no KiCad needed)."""
+
+    # TI RGX0011A (VQFN-HR-11): pins 1-3 are 2.5 mm bars across the body; pins 4-11 short pads on the
+    # long sides; the library's triangle sits past the left end of pin 1's bar.
+    BODY = box(0, 0, 2.0, 3.0)
+    LANDS = ([("1", box(0, -0.5, 2.5, 0.35)), ("2", box(0, 0, 2.5, 0.35)), ("3", box(0, 0.5, 2.5, 0.35))]
+             + [(str(n), box(x, 1.4, 0.25, 0.6)) for n, x in ((4, -0.75), (5, -0.25), (6, 0.25), (7, 0.75))]
+             + [(str(n), box(x, -1.4, 0.25, 0.6)) for n, x in ((8, 0.75), (9, 0.25), (10, -0.25), (11, -0.75))])
+    MARK = (-1.675, -0.5)  # the triangle's box centre
+
+    def test_long_pin1_land_counts_along_its_length(self):
+        self.assertTrue(pin1.next_to_pin1(self.MARK, self.BODY, self.LANDS, "1"))
+
+    def test_pad_centres_would_name_another_pin(self):
+        # the rule the board check used before: pin 11's centre is nearer than pin 1's
+        nearest = min(self.LANDS, key=lambda nb: (((nb[1][0] + nb[1][2]) / 2 - self.MARK[0]) ** 2
+                                                  + ((nb[1][1] + nb[1][3]) / 2 - self.MARK[1]) ** 2))
+        self.assertEqual(nearest[0], "11")
+
+    def test_mark_at_another_pin_fails(self):
+        self.assertFalse(pin1.next_to_pin1((-1.675, 0.5), self.BODY, self.LANDS, "1"))  # past pin 3
+
+    def test_mark_inside_the_body_fails(self):
+        self.assertFalse(pin1.next_to_pin1((-0.9, -0.5), self.BODY, self.LANDS, "1"))
+
+    def test_equidistant_mark_marks_neither(self):
+        lands = [("1", box(-1, 0, 0.6, 0.6)), ("2", box(1, 0, 0.6, 0.6))]
+        self.assertFalse(pin1.next_to_pin1((0, -1.0), box(0, 0, 1.0, 1.0), lands, "1"))
+
+    def test_pads_on_one_land_are_one_land(self):
+        # USB-C: A1 and B12 share a land, and the mark beside it marks pin A1
+        lands = [("A1", box(-3, 0, 0.6, 1.15)), ("B12", box(-3, 0, 0.6, 1.15)), ("A4", box(-2.2, 0, 0.6, 1.15))]
+        self.assertTrue(pin1.next_to_pin1((-3, -0.9), box(0, 4, 9.0, 7.0), lands, "A1"))
+
+    def test_no_pin1_land_fails(self):
+        self.assertFalse(pin1.next_to_pin1((0, 0), box(0, 0, 0.1, 0.1), [("2", box(1, 0, 0.5, 0.5))], "1"))
 
 if __name__ == "__main__":
     unittest.main()

@@ -40,7 +40,6 @@ Exit status: 0 every item at or below the target passes, 1 otherwise, 2 usage er
 from __future__ import annotations
 
 import fnmatch
-import math
 import os
 import re
 import sys
@@ -49,6 +48,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "cra
 import craftrules  # noqa: E402  (tools/craft: the rules as data, tools/craft/rules.toml)
 import pcbmodel  # noqa: E402  (tools/craft: the board model and its helpers)
 import pcbreport  # noqa: E402  (tools/craft: the DRC fold, the configuration and the report)
+import pin1  # noqa: E402  (tools/craft: the CRAFT-13 geometry, "next to pin 1")
 
 RULES = craftrules.load()
 LEVELS = RULES.levels
@@ -119,6 +119,17 @@ def check_refdes(b, out):
     out += [c10, c11, c12]
 
 
+def fab_body(fp):
+    """The part's body for CRAFT-13: its fabrication outline's box, else its courtyard box."""
+    layer = pcbnew.B_Fab if is_on_bottom(fp) else pcbnew.F_Fab
+    boxes = [bbox_mm(g.GetBoundingBox()) for g in fp.GraphicalItems()
+             if g.GetClass() == "PCB_SHAPE" and g.GetLayer() == layer]
+    if not boxes:
+        return body_box(fp)
+    return (min(b[0] for b in boxes), min(b[1] for b in boxes),
+            max(b[2] for b in boxes), max(b[3] for b in boxes))
+
+
 def check_pin1(b, out):
     c = Check("CRAFT-13", "Q1", "Pin-1 and polarity marks on polarised parts")
     for fp in b.fps:
@@ -128,21 +139,15 @@ def check_pin1(b, out):
         first = [p for p in pads if p.GetNumber() in ("1", "A1")]
         if not first or len(pads) < 2:
             continue
-        p1 = first[0].GetPosition()
-        body = body_box(fp)
-        cx, cy = (body[0] + body[2]) / 2, (body[1] + body[3]) / 2
-        size = max(body[2] - body[0], body[3] - body[1], 0.1)
+        body = fab_body(fp)
+        lands = [(p.GetNumber(), bbox_mm(p.GetBoundingBox())) for p in pads]
         marked = False
         for s, owner in b.shapes:
             if owner is not fp:
                 continue
             box = bbox_mm(s.GetBoundingBox())
-            sx, sy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
-            if math.hypot(sx - cx, sy - cy) < 0.1 * size:
-                continue  # centred on the body: an outline, not a mark
-            nearest = min(pads, key=lambda p: math.hypot(to_mm(p.GetPosition().x) - sx,
-                                                         to_mm(p.GetPosition().y) - sy))
-            if nearest.GetPosition() == p1:
+            centre = ((box[0] + box[2]) / 2, (box[1] + box[3]) / 2)
+            if pin1.next_to_pin1(centre, body, lands, first[0].GetNumber()):
                 marked = True
                 break
         if not marked:
