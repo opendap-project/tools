@@ -4,7 +4,8 @@ An executable is a tracked file in a `bin/`, `scripts/`, `tools/` or `hooks/` fo
 shebang or a Python `__main__`; tests, fixtures, vendored code and library modules are not executables), or a
 binary target of a Cargo package (`[[bin]]`, `src/main.rs`, `src/bin/*.rs`). Kinds: `umbrella`, `plugin`,
 `device-binary`, `host-binary`, `script`, `hook`. Each entry carries the facts read from its source (and the
-sources it runs, one level down) that the conformance test needs, and whether it may be probed by running it.
+sources it runs, one level down) that the conformance test needs, whether it may be probed by running it, and the
+read-only --json call its tools.toml declares (`probe`, as `json_probe` with `declared_in`).
 Spec: docs/specs/cli-conformance.md.
 """
 import pathlib
@@ -256,6 +257,19 @@ def _entry(root, path, name, kind, mode, f):
             "probe_skipped": why, "facts": f}
 
 
+def declarations(ws, root):
+    """{executable path: (folder, tools.toml entry)} for a root's tools.toml files: its own, and one in each
+    folder directly below it (the merged `tools` root keeps one per tool folder), entries relative to it."""
+    top = pathlib.Path(ws) / root
+    out = {}
+    for f in [top / "tools.toml"] + sorted(d / "tools.toml" for d in top.glob("[!.]*/")):
+        if f.is_file():
+            base = f.parent.relative_to(ws).as_posix()
+            for t in tomllib.loads(f.read_text()).get("tool", []):
+                out.setdefault(f"{base}/{t['entry']}", (base, t))
+    return out
+
+
 def inventory(ws, roots=None):
     """Every executable of the public roots (the workspace's repos.tsv), sorted by path."""
     ws = pathlib.Path(ws)
@@ -267,6 +281,7 @@ def inventory(ws, roots=None):
         modes = tracked_modes(repo)
         files = list(modes)
         hooks = _hook_names(repo, files)
+        declared = declarations(ws, root)
         for rel, mode in modes.items():
             parts = pathlib.PurePath(rel).parts
             if not any(p in FOLDERS for p in parts[:-1]):
@@ -275,7 +290,11 @@ def inventory(ws, roots=None):
             if not _is_executable(rel, mode, text):
                 continue
             kind = kind_of(root, rel, hooks)
-            items.append(_entry(root, rel, pathlib.PurePath(rel).name, kind, mode, facts(_closure(repo, files, rel))))
+            item = _entry(root, rel, pathlib.PurePath(rel).name, kind, mode, facts(_closure(repo, files, rel)))
+            base, tool = declared.get(item["path"], (None, {}))
+            if tool.get("probe"):
+                item.update(declared_in=base, json_probe=list(tool["probe"]))
+            items.append(item)
         crates = _crates(repo, files)
         for name, crate, entry, deps in _cargo_bins(repo, files):
             # The binary's crate and the crates of this repository it depends on (its errors may live there).

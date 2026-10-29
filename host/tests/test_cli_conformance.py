@@ -336,3 +336,49 @@ def test_summaries_in_either_toolkit_layout(tmp_path, layout):
     root = layout.rsplit("/", 1)[0] if layout.startswith("public/tools/") else layout
     items = [{"root": root, "path": f"{layout}/bin/odapkit-good"}]
     assert cli_conformance.summaries(tmp_path, items) == {f"{layout}/bin/odapkit-good": "a conforming fixture"}
+
+
+# HL-63: the read-only --json call of each tool is declared in its tools.toml (`probe`), one metadata source.
+def test_a_probe_declared_in_tools_toml_is_attached_and_run(ws):
+    toml = ws / "public/tools/tools.toml"
+    toml.write_text(toml.read_text() + 'probe = ["--json"]\n')
+    good = by_name(cli_inventory.inventory(ws))["odapkit-good"]
+    assert good["json_probe"] == ["--json"] and good["declared_in"] == "public/tools"
+    assert "json_probe" not in by_name(cli_inventory.inventory(ws))["odapkit-bad"]
+    probes = cli_probe.probe_all([good], ws, timeout=10)
+    assert probes[good["path"]]["json"]["argv"][-1] == "--json"
+
+
+def test_probe_arguments_resolve_the_root_and_the_workspace(tmp_path):
+    entry = {"kind": "plugin", "json_probe": ["get", "{root}/tests/fixtures/x", "--workspace", "{workspace}", "--json"],
+             "declared_in": "public/tools/host"}
+    assert cli_probe.json_args(entry, tmp_path) == [
+        "get", f"{tmp_path}/public/tools/host/tests/fixtures/x", "--workspace", str(tmp_path), "--json"]
+    assert cli_probe.json_args({"kind": "umbrella", "name": "odw"}, tmp_path) == ["help", "--json"]
+    assert cli_probe.json_args({"kind": "plugin", "name": "odapkit-x"}, tmp_path) is None
+    assert not hasattr(cli_probe, "JSON_PROBES")
+
+
+def test_the_tools_schema_takes_a_probe_with_json():
+    doc = {"schema": "opendap.tools/v1", "front": "odw", "tool": [{
+        "name": "x", "summary": "s", "entry": "bin/x", "audience": "maintainer", "stability": "preview"}]}
+    assert schemas.errors(doc, "tools") == []
+    doc["tool"][0]["probe"] = ["list", "--json"]
+    assert schemas.errors(doc, "tools") == []
+    for bad in ([], ["list"], ["list", 1]):
+        doc["tool"][0]["probe"] = bad
+        assert schemas.errors(doc, "tools"), bad
+
+
+MIGRATED = {"host": {"audit", "cli", "docs", "noindex", "plan", "rename", "req", "sync", "verify"},
+            "hardware": {"component", "craft", "sim", "variant", "stackup"}}
+
+
+@pytest.mark.skipif(not (HOST.parent / "hardware" / "tools.toml").is_file(), reason="not the merged tools root")
+def test_every_tool_that_had_a_probe_declares_it_in_its_tools_toml():
+    import tomllib
+    for folder, names in MIGRATED.items():
+        doc = tomllib.loads((HOST.parent / folder / "tools.toml").read_text())
+        assert schemas.errors(doc, "tools") == [], folder
+        declared = {t["name"] for t in doc["tool"] if t.get("probe")}
+        assert names <= declared, (folder, names - declared)

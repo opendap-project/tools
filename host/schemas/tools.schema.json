@@ -63,6 +63,17 @@
           },
           "replaces": {
             "type": "string"
+          },
+          "probe": {
+            "description": "A read-only call whose --json output the conformance test parses: the arguments after the entry, {root} for the folder of this tools.toml and {workspace} for the workspace (command standard §8 item 5)",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            },
+            "contains": {
+              "const": "--json"
+            }
           }
         }
       }

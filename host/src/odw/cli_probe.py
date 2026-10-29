@@ -14,31 +14,20 @@ import subprocess
 import tempfile
 
 UNKNOWN_FLAG = "--odw-no-such-flag"
-# Read-only invocations whose --json output the conformance test parses, by executable name ({workspace} is
-# replaced by the workspace folder). An executable that declares --json and is not listed here is unverified.
-HOST_FIX = "{workspace}/public/toolkit/host/tests/fixtures"
-HW = "{workspace}/public/toolkit/hardware"
-JSON_PROBES = {
-    "odapkit": ["help", "--json"],
-    "odw": ["help", "--json"],
-    "odapkit-audit": ["--workspace", "{workspace}", "--json"],
-    "odapkit-component": ["validate", "--json", f"{HW}/tests/fixtures/component/board"],
-    "odapkit-craft": ["check", "--json", f"{HW}/tests/fixtures/craft-sch/bad.kicad_sym"],
-    "odapkit-sim": ["list", "--json", f"{HW}/tests/fixtures/sim"],
-    "odapkit-variant": ["get", "--dir", f"{HW}/tests/fixtures/variant/board/variants", "--json", "variant-b"],
-    "odapkit-stackup": ["stack", f"{HW}/tests/fixtures/stackup/fixture.toml", "--json"],
-    "sch-craft-check.py": ["--json", f"{HW}/tests/fixtures/craft-sch/bad.kicad_sym"],
-    "craftrules.py": ["render", f"{HW}/tests/fixtures/craft-rules/pcb-craft-standard.md", "--check", "--json"],
-    "odapkit-cli": ["list", "--workspace", "{workspace}", "--root", "public/toolkit/host", "--json"],
-    "odapkit-docs": ["check", "--json", "{workspace}/public/toolkit/host/README.md"],
-    "odapkit-noindex": ["--dry-run", "--json", "{workspace}/public/toolkit/host"],
-    "odapkit-plan": ["--programme", f"{HOST_FIX}/programme", "--json", "list"],
-    # No public rename map exists to plan from: the probe reads the error document of a refused call.
-    "odapkit-rename": ["plan", "no-such-root", "--workspace", "{workspace}", "--map", "/dev/null", "--json"],
-    "odapkit-req": ["index", "--workspace", "{workspace}", "--json"],
-    "odapkit-sync": ["--workspace", "{workspace}", "--check", "--json"],
-    "odapkit-verify": ["coverage", f"{HOST_FIX}/verification/matrix.toml", "--workspace", "{workspace}", "--json"],
-}
+# The umbrella's own read-only --json call (command standard §4). Every other tool declares its call in its
+# tools.toml (`probe`); an executable that declares --json without one is unverified.
+UMBRELLA_PROBE = ["help", "--json"]
+
+
+def json_args(entry, ws):
+    """The arguments of an entry's read-only --json probe, {root} and {workspace} resolved; None when it has none."""
+    if entry.get("kind") == "umbrella":
+        return list(UMBRELLA_PROBE)
+    args = entry.get("json_probe")
+    if not args:
+        return None
+    root = str(pathlib.Path(ws) / entry["declared_in"])
+    return [a.replace("{root}", root).replace("{workspace}", str(ws)) for a in args]
 
 
 def _uv_cache():
@@ -97,9 +86,9 @@ def probe(entry, ws, timeout=20.0):
         return None
     base = command(pathlib.Path(ws) / entry["path"], entry["mode"])
     res = {"help": run(base + ["--help"], timeout, ws), "unknown_flag": run(base + [UNKNOWN_FLAG], timeout, ws)}
-    args = JSON_PROBES.get(entry["name"])
+    args = json_args(entry, ws)
     if args:
-        res["json"] = run(base + [a.replace("{workspace}", str(ws)) for a in args], timeout, ws)
+        res["json"] = run(base + args, timeout, ws)
     return res
 
 

@@ -25,7 +25,6 @@ import datetime as dt
 import json
 import pathlib
 import sys
-import tomllib
 
 from odw import cli_inventory, cli_probe, cli_rules, clikit, evaluate, workspace
 
@@ -42,17 +41,11 @@ class UsageError(clikit.CliError):
 
 
 def summaries(ws, items):
-    """{executable path: summary} for every entry of the roots' tools.toml files: each root's own, and one in
-    each folder directly below it (the merged `tools` root keeps one per tool folder), entries relative to it."""
+    """{executable path: summary} for every entry of the roots' tools.toml files (cli_inventory.declarations)."""
     out = {}
     for root in sorted({e["root"] for e in items}):
-        top = pathlib.Path(ws) / root
-        files = [top / "tools.toml"] + sorted(d / "tools.toml" for d in top.glob("[!.]*/"))
-        for f in files:
-            if f.is_file():
-                base = f.parent.relative_to(ws).as_posix()
-                for t in tomllib.loads(f.read_text()).get("tool", []):
-                    out.setdefault(f"{base}/{t['entry']}", t.get("summary", ""))
+        for path, (_, t) in cli_inventory.declarations(ws, root).items():
+            out.setdefault(path, t.get("summary", ""))
     return out
 
 

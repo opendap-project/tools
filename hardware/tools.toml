@@ -8,6 +8,7 @@ summary = "Validate a component's export/component.yaml against the component ex
 entry = "bin/odapkit-component"
 audience = "maintainer"
 stability = "preview"
+probe = ["validate", "--json", "{root}/tests/fixtures/component/board"]
 
 [[tool]]
 name = "craft"
@@ -15,6 +16,7 @@ summary = "Check a KiCad board, schematic or symbol library against the OpenDAP 
 entry = "bin/odapkit-craft"
 audience = "maintainer"
 stability = "preview"
+probe = ["check", "--json", "{root}/tests/fixtures/craft-sch/bad.kicad_sym"]
 
 [[tool]]
 name = "parts"
@@ -29,6 +31,7 @@ summary = "Board variants (RFC 0011): validate, diff, BOM and per-variant schema
 entry = "bin/odapkit-variant"
 audience = "maintainer"
 stability = "preview"
+probe = ["get", "--dir", "{root}/tests/fixtures/variant/board/variants", "--json", "variant-b"]
 
 [[tool]]
 name = "sim"
@@ -36,6 +39,7 @@ summary = "Run a board's simulation regression checks (ngspice) against limits f
 entry = "bin/odapkit-sim"
 audience = "maintainer"
 stability = "preview"
+probe = ["list", "--json", "{root}/tests/fixtures/sim"]
 
 [[tool]]
 name = "stackup"
@@ -43,3 +47,4 @@ summary = "Layer stack and impedance-controlled trace geometry of a PCB: a 2D qu
 entry = "bin/odapkit-stackup"
 audience = "maintainer"
 stability = "preview"
+probe = ["stack", "{root}/tests/fixtures/stackup/fixture.toml", "--json"]

@@ -8,6 +8,7 @@ summary = "Inventory every command-line surface and check it against the command
 entry = "bin/odapkit-cli"
 audience = "maintainer"
 stability = "preview"
+probe = ["list", "--workspace", "{workspace}", "--root", "public/tools", "--json"]
 
 [[tool]]
 name = "audit"
@@ -15,6 +16,7 @@ summary = "Workspace metrics from every repository's tracked files: dated snapsh
 entry = "bin/odapkit-audit"
 audience = "maintainer"
 stability = "preview"
+probe = ["--workspace", "{workspace}", "--json"]
 
 [[tool]]
 name = "docs"
@@ -22,6 +24,7 @@ summary = "Docs gates, the generated docs index and RFC application status"
 entry = "bin/odapkit-docs"
 audience = "maintainer"
 stability = "preview"
+probe = ["check", "--json", "{root}/README.md"]
 
 [[tool]]
 name = "noindex"
@@ -29,6 +32,7 @@ summary = "Keep generated trees (target/, .venv/, test caches) out of the macOS 
 entry = "bin/odapkit-noindex"
 audience = "maintainer"
 stability = "preview"
+probe = ["--dry-run", "--json", "{root}"]
 
 [[tool]]
 name = "plan"
@@ -36,6 +40,7 @@ summary = "A maintainers' programme as data: list, claim and record its tasks, c
 entry = "bin/odapkit-plan"
 audience = "maintainer"
 stability = "preview"
+probe = ["--programme", "{root}/tests/fixtures/programme", "--json", "list"]
 
 [[tool]]
 name = "qemu"
@@ -50,6 +55,7 @@ summary = "One root's cut from the rename map: merge, plan, apply and check"
 entry = "bin/odapkit-rename"
 audience = "maintainer"
 stability = "preview"
+probe = ["plan", "no-such-root", "--workspace", "{workspace}", "--map", "/dev/null", "--json"]
 
 [[tool]]
 name = "req"
@@ -57,6 +63,7 @@ summary = "Requirements as data: import, render and check them, index every repo
 entry = "bin/odapkit-req"
 audience = "maintainer"
 stability = "preview"
+probe = ["index", "--workspace", "{workspace}", "--json"]
 
 [[tool]]
 name = "sync"
@@ -64,6 +71,7 @@ summary = "Shared boilerplate from the workspace templates: report drift or repa
 entry = "bin/odapkit-sync"
 audience = "maintainer"
 stability = "preview"
+probe = ["--workspace", "{workspace}", "--check", "--json"]
 
 [[tool]]
 name = "verify"
@@ -71,6 +79,7 @@ summary = "Verification matrices as data: render, collect results by variant, un
 entry = "bin/odapkit-verify"
 audience = "maintainer"
 stability = "preview"
+probe = ["coverage", "{root}/tests/fixtures/verification/matrix.toml", "--workspace", "{workspace}", "--json"]
 
 [[tool]]
 name = "vmnet"
