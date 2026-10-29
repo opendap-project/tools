@@ -28,7 +28,7 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 
 import cad  # noqa: E402
 import core  # noqa: E402
-import kicad  # noqa: E402
+import kicad_render as kicad  # noqa: E402
 import normalize  # noqa: E402
 
 

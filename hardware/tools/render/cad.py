@@ -13,7 +13,7 @@ import subprocess
 
 import normalize
 from normalize import read_bytes
-from kicad import Unavailable, _run
+from kicad_render import Unavailable, _run
 
 FREECAD_SCRIPT = r'''
 import sys, FreeCAD, Import

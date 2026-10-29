@@ -11,7 +11,7 @@ import tempfile
 import tomllib
 
 import cad
-import kicad
+import kicad_render as kicad
 import normalize
 from normalize import read_bytes
 
