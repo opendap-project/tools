@@ -52,6 +52,7 @@ class Plan:
     structure_only: bool = False
     texts: dict = dataclasses.field(default_factory=dict)  # new path -> new content (not reported)
     links: list = dataclasses.field(default_factory=list)  # a tracked link's new target (HL-109)
+    uncovered: list = dataclasses.field(default_factory=list)  # tracked files no path row accounts for (HL-71)
 
 
 def _git(cwd, *args, check=True):
@@ -180,7 +181,7 @@ def build(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
     """The plan. `structure_only`: each source keeps its paths under its landing folder, so no path row moves or
     deletes and no identifier row applies; rows into other roots are still listed, and URLs and links follow."""
     kind, files = view(m, root, ws, root_dir)
-    plan = Plan(root, cut, kind, structure_only=structure_only)
+    plan = Plan(root, cut, kind, structure_only=structure_only, uncovered=rename_map.uncovered(m, root, files))
     if structure_only:
         rows_only = Plan(root, cut, kind)
         _rows(m, root, files, rows_only)
@@ -260,7 +261,7 @@ def build(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
 
 def document(plan, mode="plan", **extra):
     keys = ["moves", "deletes", "done", "missing", "pending", "cross_root", "conflicts", "identifiers", "edits",
-            "generated", "links"]
+            "generated", "links", "uncovered"]
     summary = {k: len(getattr(plan, k)) for k in keys}
     for k in ("link", "url", "identifier"):
         summary[f"edits_{k}"] = sum(1 for e in plan.edits if e["kind"] == k)
@@ -394,6 +395,7 @@ def _text_plan(doc):
     out += [f"conflict {x['path']}: {x['reason']}" for x in doc["conflicts"]]
     out += [f"missing {x['from']} (row {x['row']})" for x in doc["missing"]]
     out += [f"cross-root {x['direction']} {x['from']} -> {x['to']}" for x in doc["cross_root"]]
+    out += [f"uncovered {x}" for x in doc.get("uncovered", [])]
     out += [f"pending {x['action']} {x['old']} -> {x['new']} ({x['reason']})" for x in doc["pending"]]
     out += [f"identifier {x['old']} -> {x['new']}: {x['status']}"
             f"{' (' + x['reason'] + ')' if 'reason' in x else ''}, {x['occurrences']} occurrences, first {x['first']}"

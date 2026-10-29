@@ -46,3 +46,22 @@ def test_the_rows_of_a_root_cut_as_structure_only_plan_as_moves(tmp_path, capsys
     assert code == 0, err
     moves = {mv["from"]: mv["to"] for mv in json.loads(out)["moves"]}
     assert moves == {"a/x.py": "core/x.py", "b/docs/y.md": "documentation/docs/y.md"}
+
+
+def test_the_plan_lists_the_tracked_files_no_row_accounts_for(tmp_path, capsys):
+    ws = cut_workspace(tmp_path)
+    tools = ws / "public/tools"
+    for rel in ("a/z.py", "README.md", "b/docs/old.md"):
+        (tools / rel).write_text("x\n")
+    git(tools, "add", ".")
+    git(tools, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "three more files")
+    rows = [("public/tools/README.md", "tools/README.md", "doc", "keep", ""),  # a root file that stays
+            ("public/toolkit/b/docs/old.md", "", "doc", "delete", "")]
+    with (tmp_path / "map.tsv").open("a") as f:
+        f.writelines("\t".join([*r, "test"]) + "\n" for r in rows)
+    code, out, err = run(capsys, "plan", "tools", "--workspace", str(ws), "--map", str(tmp_path / "map.tsv"),
+                         "--root-dir", str(tools), "--json")
+    assert code == 0, err
+    doc = json.loads(out)
+    assert doc["uncovered"] == ["a/z.py"]
+    assert doc["summary"]["uncovered"] == 1

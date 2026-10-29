@@ -93,6 +93,11 @@
         "properties": {"path": {"$ref": "#/$defs/path"}, "source": {"$ref": "#/$defs/path"}}
       }
     },
+    "uncovered": {
+      "type": "array",
+      "description": "Tracked files of the root that no path row accounts for, by its old path inside the root or its new one; a content move is complete when it is empty",
+      "items": {"$ref": "#/$defs/path"}
+    },
     "links": {
       "type": "array",
       "description": "Tracked links whose target names a renamed token (a unit's wants link), with the new target; a link is never read as text",

@@ -5,6 +5,7 @@ Rows are classified once: repository rows (`repo:` → where each source reposit
 (`<kind>:<value>`, for example `env:ODAP_X`). Spec: docs/specs/rename.md.
 """
 import dataclasses
+import fnmatch
 import pathlib
 import re
 import subprocess
@@ -209,6 +210,28 @@ def load(ws, map_path, landings=None):
         if name in sources:
             sources[name].landing = sub
     return Map(rows, sources)
+
+
+def uncovered(m, root, files):
+    """Tracked files of `root` that no path row accounts for, by its old path inside the root or its new one (HL-71):
+    a cut's plan lists every file once only when this is empty."""
+    pats = []
+    for r in m.rows:
+        if not is_path_row(m, r):
+            continue
+        src_root, frm = m.in_root(r.old)
+        if src_root == root and frm is not None:
+            pats.append(frm)
+        for n in (x.strip().split(" ")[0] for x in r.new.split(";")) if r.new else ():
+            if n.startswith(root + "/"):
+                pats.append(n.split("/", 1)[1])
+
+    def hit(p, pat):
+        if pat.endswith("/**") and "*" not in pat[:-3]:
+            return p.startswith(pat[:-3] + "/")
+        return fnmatch.fnmatchcase(p, pat) if "*" in pat else p == pat or p.startswith(pat.rstrip("/") + "/")
+
+    return sorted(p for p in files if not any(hit(p, pat) for pat in pats))
 
 
 def is_path_row(m, r):
