@@ -21,7 +21,8 @@ import pathlib
 import subprocess
 import sys
 
-from odw import audit, clikit, rename_generated, rename_keys as rk, rename_map, rename_merge, rename_rewrite as rw, workspace
+from odw import (audit, clikit, rename_generated, rename_idents as ri, rename_keys as rk, rename_map, rename_merge,
+                 rename_rewrite as rw, workspace)
 
 TOOL = "odapkit rename"
 
@@ -174,25 +175,6 @@ def _read_text(path):
         return None
 
 
-def _identifiers(m, root, cut, kinds=None):
-    apply, keys, scan = [], [], []
-    for r in rename_map.identifier_rows(m):
-        if kinds and rk.kind_of(r.old) not in kinds:
-            continue
-        i = rename_map.identifier(m, r)
-        if i.reason is None and i.owner in cut:
-            status = "apply"
-        elif i.reason is None:
-            status = "later"
-        else:
-            status = "manual"
-        if status == "apply":
-            (keys if rk.is_key_row(r) else apply).extend((o, n, r.line) for o, n in zip(i.old, i.new))
-        if not (i.reason or "").startswith("action-") and i.reason not in {"unparsed", "not-a-token"}:
-            scan.append((i, status))
-    return [(o, n) for o, n, _ in apply], keys, scan
-
-
 def build(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
     """The plan. `structure_only`: each source keeps its paths under its landing folder, so no path row moves or
     deletes and no identifier row applies; rows into other roots are still listed, and URLs and links follow."""
@@ -204,7 +186,7 @@ def build(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
         plan.cross_root, prefixes, pairs, keys, scan = rows_only.cross_root, [], [], [], []
     else:
         prefixes = _rows(m, root, files, plan)
-        pairs, keys, scan = _identifiers(m, root, cut, kinds)
+        pairs, keys, scan = ri.collect(m, cut, kinds)
     moves = {mv["from"]: mv["to"] for mv in plan.moves}
     key_table = {o: n for o, n, _ in keys}
     rk.plan_moves(plan, files, moves, key_table, {o: line for o, _, line in keys})
@@ -221,28 +203,29 @@ def build(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
 
     sources = {s.name: dataclasses.replace(s, landing=seen_roots.get(s.root, (None, {}))[1].get(s.name, s.landing))
                for s in m.sources.values() if s.root in cut and s.kind != "root"}
-    table = dict(pairs)
-    pattern = rw.identifier_pattern(pairs)
+    idents = ri.Rewriter(pairs)
     values = {v: (i, st) for i, st in scan for v in i.old}
     scan_pattern = rw.identifier_pattern([(v, v) for v in values])
     seen = {}
     deleted = {d["path"] for d in plan.deletes}
     generated = rename_generated.outputs(files)
     for src in sorted(files):
-        if src in deleted or src in generated or rw.frozen(src):
+        if src in deleted or src in generated or ri.untouched(src):
             continue
         text = _read_text(files[src])
-        if text is None:
+        if text is None or ri.immutable(src, text):
             continue
+        # Tests keep their URLs and links as test data; the identifiers they drive follow (HL-109 case 4).
+        frozen = rw.frozen(src)
         dst = moves.get(src, src)
         for n, v in rw.count(text, scan_pattern) if scan_pattern else []:
             seen.setdefault(values[v][0].row.line, []).append(f"{src}:{n}")
-        new, edits = rw.urls(text, sources, root, paths_of, src)
-        if src.endswith(".md"):
+        new, edits = (text, []) if frozen else rw.urls(text, sources, root, paths_of, src)
+        if src.endswith(".md") and not frozen:
             new, e2 = rw.links(new, src, dst, own)
             new, e3 = rw.to_relative(new, root, dst)
             edits += e2 + e3
-        new, e4 = rw.identifiers(new, pattern, table)
+        new, e4 = idents.rewrite(dst, new)
         new, e5 = rk.rewrite(new, key_patterns, key_table)
         edits += e4 + e5
         for e in edits:

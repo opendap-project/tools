@@ -198,18 +198,5 @@ def identifier_pattern(pairs):
     return re.compile("|".join(_bounded(o) for o in olds))
 
 
-def identifiers(text, pattern, table):
-    if pattern is None:
-        return text, []
-    edits, out = [], []
-    for n, line in enumerate(text.split("\n"), start=1):
-        def sub(m):
-            new = table[m.group(0)]
-            edits.append(Edit("identifier", n, m.group(0), new))
-            return new
-        out.append(pattern.sub(sub, line))
-    return "\n".join(out), edits
-
-
 def count(text, pattern):
     return [(n, m.group(0)) for n, line in enumerate(text.split("\n"), start=1) for m in pattern.finditer(line)]

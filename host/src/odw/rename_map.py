@@ -16,6 +16,8 @@ PREFIXED = re.compile(r"([a-z][a-z0-9-]*):(.+)")
 SUBKIND = re.compile(r"([a-z][a-z0-9-]*):(.+)")
 UNSAFE = set("<>()[]{}*…,")
 SEPARATORS = set("-_./:@$")
+# Kinds rewritten only in their own contexts, so a single word is safe: maker keys and users (HL-109).
+CONTEXT_ONLY = {"mfr", "identifier:user"}
 
 
 @dataclasses.dataclass
@@ -199,12 +201,27 @@ def _split_value(text):
     return kind, rest
 
 
+# A path the text names without its scheme: `path:fw_cfg:opt/org.opendap/x` stands as `opt/org.opendap/x` (HL-109).
+QUALIFIER = re.compile(r"^[a-z][a-z0-9_]*:(?!/)")
+
+
+def _unqualified(kind, value):
+    return QUALIFIER.sub("", value) if kind == "path" else value
+
+
+def kind_of(value):
+    """A map value's kind, with an identifier's subkind (`crate`, `identifier:user`); None when unprefixed."""
+    return _split_value(value)[0]
+
+
 def identifier(m, r):
     """The identifier row as old → new value lists, with the reason it needs a hand (or None)."""
     kind_o, old = _split_value(r.old)
     kind_n, new = _split_value(r.new) if r.new else (None, None)
-    olds = [v.strip() for v in (old or "").split(";")]
-    news = [v.strip() for v in (new or "").split(";")]
+    if r.new and new is None and kind_o:
+        kind_n, new = kind_o, r.new.strip()  # a new value written without its kind takes the old one's (HL-109)
+    olds = [_unqualified(kind_o, v.strip()) for v in (old or "").split(";")]
+    news = [_unqualified(kind_n, v.strip()) for v in (new or "").split(";")]
     own = owner(m, r, news if new else [])
     reason = None
     if old is None:
@@ -217,9 +234,9 @@ def identifier(m, r):
         reason = "count-mismatch"
     elif any(set(v) & UNSAFE or not v for v in olds + news) or any(v.startswith("(") for v in news):
         reason = "not-a-token"
-    elif not r.root and kind_o != "mfr" and any(not (set(v) & SEPARATORS or " " in v) for v in olds):
+    elif not r.root and kind_o not in CONTEXT_ONLY and any(not (set(v) & SEPARATORS or " " in v) for v in olds):
         reason = "plain-word"  # a `root` set by hand says the word is the identifier wherever it stands alone;
-        # maker keys (`mfr:`) are rewritten in key contexts only (odw/rename_keys.py), never as plain words
+        # maker keys and users are rewritten in their contexts only (rename_keys, rename_idents), never as words
     elif own is None:
         reason = "owner-unknown"
     return Identifier(r, olds, news, own, reason)
