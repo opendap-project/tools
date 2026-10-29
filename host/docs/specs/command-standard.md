@@ -132,7 +132,7 @@ emits = "check-result"
 verifies = ["TK-009"]
 ```
 
-`odw check [--stage fast|full|release] [--json] [--dry-run] [PATHS…]` finds the root from the current directory (the nearest folder at or above it that holds `check.toml`, inside its git repository: the search stops at the folder holding `.git`, so a `check.toml` above the repository never runs, and outside a repository there is none), selects the steps whose `paths` match the changed paths (all steps when none are given or a step has no `paths`), runs them, collects each `check-result`, and exits 0 when every step passes, 1 when one fails, 2 on a usage or `check.toml` error. Pre-commit calls `odw check --stage fast` on the staged paths; a pre-push hook calls `--stage full`.
+`odw check [--stage fast|full|release] [--json] [--dry-run] [PATHS…]` finds the root from the current directory (the nearest folder at or above it that holds `check.toml`, inside its git repository: the search stops at the folder holding `.git`, so a `check.toml` above the repository never runs, and outside a repository there is none), selects the steps whose `paths` match the changed paths (all steps when none are given or a step has no `paths`), runs them, collects each `check-result`, and exits 0 when every step passes, 1 when one fails, 2 on a usage or `check.toml` error. Pre-commit calls `odw check --stage fast` on the staged paths; a pre-push hook calls `--stage full`. Those hooks are rendered from each root's `check.toml` by `odapkit sync` (generator `odw-check`, [workspace sync](workspace-sync.md#odw-check-hooks)) and by `odapkit rename config` for a cut root, never written by hand.
 
 - The stage is `fast` by default; `release` runs the `full` steps, then its own. Changed paths are taken relative to the current directory; those outside the root are ignored. In `paths`, `*` and `?` stay within one folder and `**` crosses folders (`src/**/*.rs` also matches `src/a.rs`).
 - Each step runs in the root with stdin closed; its output goes to stderr, so stdout carries only the report. A step fails when it exits non-zero or, with `emits = "check-result"`, when it prints no `opendap.check-result/v1` document or one with a `fail` or `error` result; its results are collected as `<step>/<id>`.
@@ -173,7 +173,7 @@ A test in `tools/workspace`, run in every root's `full` stage for the tools that
 | Unknown tool | exit 2 | unchanged |
 | `opendap` plugins | specified (CLI spec §3), not implemented: the CLI has no external-subcommand dispatch yet | §2–§5 |
 | `opendap help` and plugins | RFC 0008 left open whether the CLI lists toolkit tools | `opendap help` lists `opendap` plugins only; maintainer tools are never listed |
-| `check.toml` | `odw check` runs it (since 2026-10-28); host and blackbird's `system` and `emulator` declare one | every root |
+| `check.toml` | `odw check` runs it (since 2026-10-28); host and blackbird's `system` and `emulator` declare one; pre-commit and pre-push run it through the hooks `odapkit sync` renders, in the repositories that took the block | every root |
 | Conformance test | `odapkit cli check` ([command-line conformance](cli-conformance.md)): the inventory and the §5 rules, probed or read from source | §8, run in each root's `full` stage |
 | Other command-line surfaces | inventoried by `odapkit cli list` (generated) and graded by `odapkit cli check` | §5, checked by the conformance test |
 

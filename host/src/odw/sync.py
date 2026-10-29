@@ -6,7 +6,9 @@ Usage: odapkit sync [--workspace DIR] [--templates DIR] (--check | --apply [--dr
 repository, the repository globs it applies to (`repos`, over the paths in every repos.tsv) and `when`: `always`
 (the file must exist and match) or `present` (it must match where a repository has it). [[generated]] entries render a `target` per repository
 from a workspace `source` with a named `generator` (`codeowners`: .github/CODEOWNERS from owners.tsv, odw.owners);
-`repos` may include `.`, the workspace repository. --check reports every
+`repos` may include `.`, the workspace repository. [[block]] entries keep one managed block in a file, made of
+template fragments and generated ones (`generator = "odw-check"`: the odw check hooks of the repository's check roots,
+odw.check_hooks), at the top, after a Markdown file's intro or, with `place = "end"`, last. --check reports every
 target that is missing or differs (exit 1); --apply writes them, and with --dry-run only names them. --json prints
 opendap.check-result/v1: with --check each drift fails; with --apply each target written (or that would be) is
 `info`. Default templates: <workspace>/templates.
@@ -23,7 +25,7 @@ import subprocess
 import sys
 import tomllib
 
-from odw import audit, clikit, owners, workspace
+from odw import audit, check_hooks, clikit, owners, workspace
 
 TOOL = "odapkit sync"
 
@@ -63,8 +65,17 @@ def _markers(block):
     return BEGIN.format(c=c) + tail, END.format(c=c) + tail
 
 
+# The markers of a block in a `#`-comment file, such as .pre-commit-config.yaml (odapkit rename config renders one).
+BLOCK_MARKERS = _markers({})
+
+
+# Fragments rendered per repository from its tracked files instead of a template: (repository folder, files) → text.
+FRAGMENTS = {"odw-check": check_hooks.render}
+
+
 def render_block(ws, templates, repo, block):
-    """The managed block for `repo`: the fragments whose `when_tracked` patterns match a tracked file."""
+    """The managed block for `repo`: the fragments whose `when_tracked` patterns match a tracked file, and the
+    generated fragments (`generator`) that render something for it."""
     b, e = _markers(block)
     files = _tracked(ws, repo)
     names = [pathlib.PurePosixPath(f).name for f in files]
@@ -72,6 +83,14 @@ def render_block(ws, templates, repo, block):
     for frag in block["fragment"]:
         pats = frag.get("when_tracked")
         if pats and not any(fnmatch.fnmatch(n, p) for n in names for p in pats):
+            continue
+        if "generator" in frag:
+            if frag["generator"] not in FRAGMENTS:
+                raise clikit.CliError("sync.invalid", f"unknown fragment generator {frag['generator']!r} in sync.toml",
+                                      f"the fragment generators are {', '.join(FRAGMENTS)}", f"{TOOL} --check --json")
+            text = FRAGMENTS[frag["generator"]](pathlib.Path(ws) / repo, files).strip("\n")
+            if text:
+                parts.append(text)
             continue
         parts.append((pathlib.Path(templates) / frag["template"]).read_text().strip("\n"))
     if not parts:
@@ -123,6 +142,11 @@ def _after_intro(rendered, text):
 
 def _compose(blk, want, text):
     prefix, current, rest = _split(text, blk)
+    if blk.get("place", "top") == "end":
+        # A YAML list the block continues (pre-commit's `repos:`): the block stays last.
+        if current is not None:
+            return prefix + want + ("\n" + rest if rest.strip() else "")
+        return text.rstrip("\n") + "\n" + want
     if blk.get("place", "top") == "after-intro":
         if current is not None:
             return prefix + want + ("\n" + rest if rest.strip() else "")

@@ -5,7 +5,7 @@ Usage: odapkit rename config ROOT [--workspace DIR] [--map TSV] [--root-dir DIR]
 
 Each folder brought its repository's configuration. The step hoists what the root shares (`LICENSES/` as the union,
 `.claude/`, `.github/`, `.markdownlint-cli2.jsonc`), joins the pre-commit configurations into one with each folder's
-hooks scoped to it (odw/rename_precommit.py), moves a hook manifest to the root, keeps one managed CLAUDE.md block
+hooks scoped to it (odw/rename_precommit.py) and the odw check hooks of its check roots rendered as the managed block odapkit sync keeps (odw/check_hooks.py), moves a hook manifest to the root, keeps one managed CLAUDE.md block
 (the root's), and writes the root README, CLAUDE.md and REUSE.toml when the root has none. One local commit; it
 never pushes. `odapkit sync --apply` then renders the root's managed blocks. Exit status: 0 done or nothing to do,
 1 refused, 2 usage. Spec: docs/specs/rename.md.
@@ -20,7 +20,7 @@ import re
 import subprocess
 import sys
 
-from odw import audit, clikit, rename_map, rename_precommit as rp, rename_rewrite as rw, workspace
+from odw import audit, check_hooks, clikit, rename_map, rename_precommit as rp, rename_rewrite as rw, sync, workspace
 
 TOOL = "odapkit rename config"
 SCHEMA = "opendap.rename-config/v1"
@@ -66,6 +66,15 @@ def _rebased(text, folder):
             return m.group(0)
         return m.group(0).replace(target, posixpath.normpath(f"{folder}/{target}"), 1)
     return rw.LINK.sub(sub, text)
+
+
+def _without_block(text):
+    """A folder's pre-commit configuration without its managed block (odapkit sync renders the root's)."""
+    begin, end = sync.BLOCK_MARKERS
+    if begin in text and end in text:
+        i, j = text.index(begin), text.index(end) + len(end)
+        return text[:i].rstrip("\n") + "\n" + text[j:].lstrip("\n")
+    return text
 
 
 def readme(root, top, folders, names):
@@ -139,7 +148,12 @@ def plan(m, root, top, licence_dir=None):
         if PRECOMMIT in files:
             raise Refused("config.exists", f"the root has a {PRECOMMIT} and {len(configs)} folders have their own",
                           "join them by hand, or remove the root's before the step", f"git -C {top} rm {PRECOMMIT}")
-        texts[PRECOMMIT], report = rp.merge(configs, set(names))
+        # Each folder's managed block (odapkit sync) goes; the root gets one, rendered for its check roots (HL-103).
+        texts[PRECOMMIT], report = rp.merge({f: _without_block(t) for f, t in configs.items()}, set(names))
+        checks = check_hooks.body(check_hooks.roots(top, files))
+        if checks:
+            begin, end = sync.BLOCK_MARKERS
+            texts[PRECOMMIT] += f"{begin}\n{checks}{end}\n"
         warnings += report.pop("warnings")
         hooks = report
         first = sorted(configs)[0]
