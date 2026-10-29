@@ -1,4 +1,4 @@
-"""Tests for odapkit parts (its engine, tools/sourcing/partscli.py) and tools/sourcing on synthetic fixtures (tests/fixtures/parts).
+"""Tests for odw parts (its engine, tools/sourcing/partscli.py) and tools/sourcing on synthetic fixtures (tests/fixtures/parts).
 
 The channel fixtures copy the structure of each source (Digi-Key's __NEXT_DATA__, FindChips'
 result rows, the JLCPCB parts API, and the documented responses of the keyed APIs) with made-up

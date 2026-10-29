@@ -1,7 +1,1 @@
-#!/bin/sh
-# Requirements as data: import a README's tables, render the README from requirements.toml, index every repository.
-#
-# Usage: odapkit req import README.md [--write] | render requirements.toml [--check] | index [--json]
-# Spec: docs/specs/requirements-data.md.
-here="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/.." && pwd)"
-exec uv run --quiet --project "$here" python -m odw.requirements "$@"
+odw-req

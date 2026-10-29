@@ -5,6 +5,7 @@ front = "odw"
 [[tool]]
 name = "dru"
 summary = "Compose a KiCad project's .kicad_dru from its fab and product rule sources, or check it"
-entry = "bin/odapkit-dru"
+entry = "bin/odw-dru"
+replaces = "odapkit-dru"
 audience = "maintainer"
 stability = "preview"

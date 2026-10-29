@@ -1,13 +1,13 @@
 """odw req: a component's requirements as data (opendap.requirements/v1) and the README rendered from them.
 
 Usage:
-    odapkit req import README.md [--write [--dry-run]]   Markdown tables → requirements.toml (stdout, or beside it)
-    odapkit req render requirements.toml [--check | --dry-run]   requirements.toml → README.md beside it, or check
+    odw req import README.md [--write [--dry-run]]   Markdown tables → requirements.toml (stdout, or beside it)
+    odw req render requirements.toml [--check | --dry-run]   requirements.toml → README.md beside it, or check
                                                   it is current; --dry-run says whether it would change
-    odapkit req index [--workspace DIR] [--json]  every requirement of every repository (README or TOML);
+    odw req index [--workspace DIR] [--json]  every requirement of every repository (README or TOML);
                                                   --json prints opendap.requirements-index/v1
-    odapkit req prefixes [--workspace DIR]        every id prefix is registered in an id-prefixes.tsv for its folder
-    odapkit req refs [--workspace DIR] [--strict] citations of unknown ids (error) and withdrawn or moved ids (warning)
+    odw req prefixes [--workspace DIR]        every id prefix is registered in an id-prefixes.tsv for its folder
+    odw req refs [--workspace DIR] [--strict] citations of unknown ids (error) and withdrawn or moved ids (warning)
 
 The document is a list of blocks: Markdown prose kept as written, and requirement tables
 (`| ID | Requirement | Priority | Status |`) as records with id, text, priority (must, should), status (confirmed,
@@ -23,7 +23,7 @@ import tomllib
 
 from odw import clikit, schemas, workspace
 
-TOOL = "odapkit req"
+TOOL = "odw req"
 
 HEADER = "| ID | Requirement | Priority | Status |"
 RULE = "|---|---|---|---|"
@@ -218,8 +218,8 @@ def main(argv=None):
 
 def _parser():
     ap = clikit.Parser(prog=TOOL, summary=clikit.summary("req"), description="Requirements as data.",
-                       examples=["odapkit req render docs/requirements/requirements.toml --check",
-                                 "odapkit req index --json", "odapkit req refs --strict"])
+                       examples=["odw req render docs/requirements/requirements.toml --check",
+                                 "odw req index --json", "odw req refs --strict"])
     sub = ap.add_subparsers(dest="cmd", required=True, parser_class=clikit.Parser)
     im = sub.add_parser("import")
     im.add_argument("readme")
@@ -266,7 +266,7 @@ def _main(argv):
         if args.check:
             if errs or not is_current(src, readme):
                 if not errs:
-                    print(f"{readme} is not current: run odapkit req render {src}", file=sys.stderr)
+                    print(f"{readme} is not current: run odw req render {src}", file=sys.stderr)
                 return 1
             return 0
         if args.dry_run:

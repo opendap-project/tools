@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/rename-plan.schema.json",
-  "title": "opendap.rename-plan/v1: what one root's cut moves and rewrites (odapkit rename plan and apply)",
+  "title": "opendap.rename-plan/v1: what one root's cut moves and rewrites (odw rename plan and apply)",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "mode", "root", "cut", "view", "summary", "moves", "deletes", "done", "missing", "pending",

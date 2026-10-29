@@ -1,4 +1,4 @@
-"""odapkit cli: the inventory of command-line surfaces and the conformance test, on fixture executables."""
+"""odw cli: the inventory of command-line surfaces and the conformance test, on fixture executables."""
 import json
 import os
 import pathlib
@@ -271,7 +271,7 @@ def _git(args, cwd):
 
 
 def _conforms(ws):
-    items = [e for e in cli_inventory.inventory(ws) if e["name"] == "odapkit-cli"]
+    items = [e for e in cli_inventory.inventory(ws) if e["name"] == "odw-cli"]
     assert items and items[0]["probe"]
     m = cli_conformance.conformance(ws, items, cli_probe.probe_all(items, ws, timeout=60))
     states = {c["criterion"]: (c["state"], c["why"]) for c in m["results"]}
@@ -279,7 +279,7 @@ def _conforms(ws):
 
 
 def test_the_tool_passes_its_own_test(tmp_path):
-    """odapkit cli, inventoried and probed in a workspace that holds this checkout, conforms. The checkout's
+    """odw cli, inventoried and probed in a workspace that holds this checkout, conforms. The checkout's
     git root is linked, so host/ is the root (toolkit-host) or a folder of it (the merged tools root)."""
     top = pathlib.Path(_git(["rev-parse", "--show-toplevel"], HOST).strip()).resolve()
     root = "public/toolkit/host" if top == HOST else "public/tools"

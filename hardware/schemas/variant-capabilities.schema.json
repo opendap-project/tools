@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/opendap-project/tools/blob/main/hardware/schemas/variant-capabilities.schema.json",
   "title": "opendap.variant-capabilities/v1",
-  "description": "What one variant fits and what each block gives software (RFC 0011 rule 7 and rule 8, SYS-040): a fragment for the board's device description (opendap.device-description/v1), which has no section for it yet. Written by odapkit variant apply as software/capabilities.json. Spec: docs/specs/variant-tool.md §7.",
+  "description": "What one variant fits and what each block gives software (RFC 0011 rule 7 and rule 8, SYS-040): a fragment for the board's device description (opendap.device-description/v1), which has no section for it yet. Written by odw variant apply as software/capabilities.json. Spec: docs/specs/variant-tool.md §7.",
   "type": "object",
   "additionalProperties": false,
   "required": [

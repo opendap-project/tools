@@ -39,19 +39,19 @@ repos:
     hooks:
       # The requirements README is rendered from requirements.toml and checked.
       - id: requirements-current-hardware
-        name: hardware requirements README rendered (odapkit req render --check)
-        entry: sh -c 'cd hardware && odapkit req render docs/requirements/requirements.toml --check'
+        name: hardware requirements README rendered (odw req render --check)
+        entry: sh -c 'cd hardware && odw req render docs/requirements/requirements.toml --check'
         language: system
         pass_filenames: false
         files: ^hardware/docs/requirements/
       # The craft standard's rule tables are rendered from tools/craft/rules.toml; the fixture copy
       # of the standard must stay current with it, and the checks must agree with the data.
       - id: craft-rules-current
-        name: hardware craft rule tables rendered (odapkit craft rules render --check)
-        entry: sh -c 'cd hardware && bin/odapkit-craft rules render tests/fixtures/craft-rules/pcb-craft-standard.md --check'
+        name: hardware craft rule tables rendered (odw craft rules render --check)
+        entry: sh -c 'cd hardware && bin/odw-craft rules render tests/fixtures/craft-rules/pcb-craft-standard.md --check'
         language: system
         pass_filenames: false
-        files: ^hardware/(tools/craft/|tests/fixtures/craft-rules/|bin/odapkit-craft$)
+        files: ^hardware/(tools/craft/|tests/fixtures/craft-rules/|bin/odw-craft$)
       - id: craft-rules-tests
         name: hardware craft rules data, golden and drift tests; the craft checks' S-expression model
         entry: sh -c 'cd hardware && python3 -m unittest tests.test_craft_rules tests.test_sexpr_model'
@@ -92,8 +92,8 @@ repos:
         files: ^host/(?:crates/odw-dispatch/|rust-toolchain\.toml$)
       # The requirements README is rendered from requirements.toml and checked.
       - id: requirements-current-host
-        name: host requirements README rendered (odapkit req render --check)
-        entry: sh -c 'cd host && odapkit req render docs/requirements/requirements.toml --check'
+        name: host requirements README rendered (odw req render --check)
+        entry: sh -c 'cd host && odw req render docs/requirements/requirements.toml --check'
         language: system
         pass_filenames: false
         files: ^host/docs/requirements/
@@ -102,8 +102,8 @@ repos:
     hooks:
       # The requirements README is rendered from requirements.toml and checked.
       - id: requirements-current-image
-        name: image requirements README rendered (odapkit req render --check)
-        entry: sh -c 'cd image && odapkit req render docs/requirements/requirements.toml --check'
+        name: image requirements README rendered (odw req render --check)
+        entry: sh -c 'cd image && odw req render docs/requirements/requirements.toml --check'
         language: system
         pass_filenames: false
         files: ^image/docs/requirements/
@@ -119,12 +119,12 @@ repos:
     hooks:
       # The requirements README is rendered from requirements.toml and checked.
       - id: requirements-current-verify
-        name: verify requirements README rendered (odapkit req render --check)
-        entry: sh -c 'cd verify && odapkit req render docs/requirements/requirements.toml --check'
+        name: verify requirements README rendered (odw req render --check)
+        entry: sh -c 'cd verify && odw req render docs/requirements/requirements.toml --check'
         language: system
         pass_filenames: false
         files: ^verify/docs/requirements/
-      # odapkit motion's command-line contract (command standard §6), without a screen or a recording.
+      # odw motion's command-line contract (command standard §6), without a screen or a recording.
       - id: cli-contract-verify
         name: verify command-line contract (tests/cli.sh)
         entry: sh -c 'cd verify && tests/cli.sh'
@@ -132,7 +132,7 @@ repos:
         pass_filenames: false
         files: ^verify/(?:(bin|tools|tests)/|tools\.toml$)
       - id: motion-tests
-        name: verify odapkit motion engine tests (tests/test_motion.py; a synthetic recording through ffmpeg)
+        name: verify odw motion engine tests (tests/test_motion.py; a synthetic recording through ffmpeg)
         entry: sh -c 'cd verify && python3 -m unittest discover tests'
         language: system
         pass_filenames: false

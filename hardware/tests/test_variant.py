@@ -1,4 +1,4 @@
-"""odapkit variant: catalog readers, variant validation, part resolution, KiCad edits and the command line.
+"""odw variant: catalog readers, variant validation, part resolution, KiCad edits and the command line.
 
 The first classes run without KiCad; `KiCadFixture` and `Commands` drive kicad-cli on the tiny fixture project
 (tests/fixtures/variant/board, built by make_fixture.py) and are skipped when kicad-cli is not installed.
@@ -31,7 +31,7 @@ for _k in [k for k in os.environ if k.startswith("GIT_")]:
 FIX = os.path.join(ROOT, "tests", "fixtures", "variant")
 BOARD = os.path.join(FIX, "board")
 VARIANTS = os.path.join(BOARD, "variants")
-TOOL = os.path.join(ROOT, "bin", "odapkit-variant")
+TOOL = os.path.join(ROOT, "bin", "odw-variant")
 ENV = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
 HAS_KICAD = kicad.cli() is not None
 

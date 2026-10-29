@@ -1,4 +1,4 @@
-"""odapkit stackup explore: enumerate candidate stackups for a zoned board and rank them.
+"""odw stackup explore: enumerate candidate stackups for a zoned board and rank them.
 
 A board is divided into zones (floorplan): areas that share the physical layers but use them
 for different roles. A layer can be ground under one zone and a power pour or low-speed

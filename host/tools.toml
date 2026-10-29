@@ -5,7 +5,8 @@ front = "odw"
 [[tool]]
 name = "cli"
 summary = "Inventory every command-line surface and check it against the command standard"
-entry = "bin/odapkit-cli"
+entry = "bin/odw-cli"
+replaces = "odapkit-cli"
 audience = "maintainer"
 stability = "preview"
 probe = ["list", "--workspace", "{workspace}", "--root", "public/tools", "--json"]
@@ -13,7 +14,8 @@ probe = ["list", "--workspace", "{workspace}", "--root", "public/tools", "--json
 [[tool]]
 name = "audit"
 summary = "Workspace metrics from every repository's tracked files: dated snapshots and conformance"
-entry = "bin/odapkit-audit"
+entry = "bin/odw-audit"
+replaces = "odapkit-audit"
 audience = "maintainer"
 stability = "preview"
 probe = ["--workspace", "{workspace}", "--json"]
@@ -21,7 +23,8 @@ probe = ["--workspace", "{workspace}", "--json"]
 [[tool]]
 name = "docs"
 summary = "Docs gates, the generated docs index and RFC application status"
-entry = "bin/odapkit-docs"
+entry = "bin/odw-docs"
+replaces = "odapkit-docs"
 audience = "maintainer"
 stability = "preview"
 probe = ["check", "--json", "{root}/README.md"]
@@ -29,7 +32,8 @@ probe = ["check", "--json", "{root}/README.md"]
 [[tool]]
 name = "noindex"
 summary = "Keep generated trees (target/, .venv/, test caches) out of the macOS Spotlight index"
-entry = "bin/odapkit-noindex"
+entry = "bin/odw-noindex"
+replaces = "odapkit-noindex"
 audience = "maintainer"
 stability = "preview"
 probe = ["--dry-run", "--json", "{root}"]
@@ -37,7 +41,8 @@ probe = ["--dry-run", "--json", "{root}"]
 [[tool]]
 name = "plan"
 summary = "A maintainers' programme as data: list, claim and record its tasks, check it, render its index"
-entry = "bin/odapkit-plan"
+entry = "bin/odw-plan"
+replaces = "odapkit-plan"
 audience = "maintainer"
 stability = "preview"
 probe = ["--programme", "{root}/tests/fixtures/programme", "--json", "list"]
@@ -45,14 +50,16 @@ probe = ["--programme", "{root}/tests/fixtures/programme", "--json", "list"]
 [[tool]]
 name = "qemu"
 summary = "QEMU for virtual OpenDAP devices, with the patches OpenDAP carries"
-entry = "bin/odapkit-qemu"
+entry = "bin/odw-qemu"
+replaces = "odapkit-qemu"
 audience = "maintainer"
 stability = "preview"
 
 [[tool]]
 name = "rename"
 summary = "One root's cut from the rename map: merge, plan, apply and check"
-entry = "bin/odapkit-rename"
+entry = "bin/odw-rename"
+replaces = "odapkit-rename"
 audience = "maintainer"
 stability = "preview"
 probe = ["plan", "no-such-root", "--workspace", "{workspace}", "--map", "/dev/null", "--json"]
@@ -60,7 +67,8 @@ probe = ["plan", "no-such-root", "--workspace", "{workspace}", "--map", "/dev/nu
 [[tool]]
 name = "req"
 summary = "Requirements as data: import, render and check them, index every repository"
-entry = "bin/odapkit-req"
+entry = "bin/odw-req"
+replaces = "odapkit-req"
 audience = "maintainer"
 stability = "preview"
 probe = ["index", "--workspace", "{workspace}", "--json"]
@@ -68,7 +76,8 @@ probe = ["index", "--workspace", "{workspace}", "--json"]
 [[tool]]
 name = "sync"
 summary = "Shared boilerplate from the workspace templates: report drift or repair it"
-entry = "bin/odapkit-sync"
+entry = "bin/odw-sync"
+replaces = "odapkit-sync"
 audience = "maintainer"
 stability = "preview"
 probe = ["--workspace", "{workspace}", "--check", "--json"]
@@ -76,7 +85,8 @@ probe = ["--workspace", "{workspace}", "--check", "--json"]
 [[tool]]
 name = "verify"
 summary = "Verification matrices as data: render, collect results by variant, uncovered requirements"
-entry = "bin/odapkit-verify"
+entry = "bin/odw-verify"
+replaces = "odapkit-verify"
 audience = "maintainer"
 stability = "preview"
 probe = ["coverage", "{root}/tests/fixtures/verification/matrix.toml", "--workspace", "{workspace}", "--json"]
@@ -84,6 +94,7 @@ probe = ["coverage", "{root}/tests/fixtures/verification/matrix.toml", "--worksp
 [[tool]]
 name = "vmnet"
 summary = "Give virtual OpenDAP devices a NIC on this Mac's network"
-entry = "bin/odapkit-vmnet"
+entry = "bin/odw-vmnet"
+replaces = "odapkit-vmnet"
 audience = "maintainer"
 stability = "preview"

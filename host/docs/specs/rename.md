@@ -1,21 +1,21 @@
 # Rename
 
 - **Status:** draft
-- **Tool:** `odapkit rename` (`src/odw/rename.py`, `src/odw/rename_map.py`, `src/odw/rename_rewrite.py`, `src/odw/rename_keys.py`, `src/odw/rename_generated.py`, `src/odw/rename_merge.py`, `src/odw/rename_merge_git.py`, `src/odw/rename_config.py`, `src/odw/rename_precommit.py`, `src/odw/rename_links.py`); schemas [`schemas/rename-plan.schema.json`](../../schemas/rename-plan.schema.json), [`schemas/rename-merge.schema.json`](../../schemas/rename-merge.schema.json) and [`schemas/rename-config.schema.json`](../../schemas/rename-config.schema.json)
+- **Tool:** `odw rename` (`src/odw/rename.py`, `src/odw/rename_map.py`, `src/odw/rename_rewrite.py`, `src/odw/rename_keys.py`, `src/odw/rename_generated.py`, `src/odw/rename_merge.py`, `src/odw/rename_merge_git.py`, `src/odw/rename_config.py`, `src/odw/rename_precommit.py`, `src/odw/rename_links.py`); schemas [`schemas/rename-plan.schema.json`](../../schemas/rename-plan.schema.json), [`schemas/rename-merge.schema.json`](../../schemas/rename-merge.schema.json) and [`schemas/rename-config.schema.json`](../../schemas/rename-config.schema.json)
 - **Applies:** [RFC 0017](https://github.com/opendap-project/rfcs/blob/main/text/0017-naming-and-topology.md) §7, steps 2 to 4 (merge with history, apply the rename map, rewrite links, render the shared configuration), one root at a time
 
-The topology cutover moves each root's source repositories into one repository and renames what the rename map lists. `odapkit rename merge` builds the root repository from its sources with their history; `odapkit rename` then applies the mechanical part of the map to it: it moves files with `git mv`, rewrites relative Markdown links, GitHub URLs and identifiers, and reports what is left. It never touches another root or repository and never pushes.
+The topology cutover moves each root's source repositories into one repository and renames what the rename map lists. `odw rename merge` builds the root repository from its sources with their history; `odw rename` then applies the mechanical part of the map to it: it moves files with `git mv`, rewrites relative Markdown links, GitHub URLs and identifiers, and reports what is left. It never touches another root or repository and never pushes.
 
 ```sh
-odapkit rename merge libs --map rename-map.tsv --into ../libs --dry-run   # sources, heads, steps
-odapkit rename merge libs --map rename-map.tsv --into ../libs            # the new root, with history
-odapkit rename plan libs --map rename-map.tsv            # dry run: every move and rewrite
-odapkit rename plan libs --map rename-map.tsv --json     # the same as opendap.rename-plan/v1
-odapkit rename plan libs --map rename-map.tsv --kind mfr # only the maker-key rows
-odapkit rename apply libs --map rename-map.tsv --root-dir ../libs
-odapkit rename check libs --map rename-map.tsv --root-dir ../libs --json
-odapkit rename apply tools --map rename-map.tsv --root-dir ../tools --structure-only   # each source whole in its folder
-odapkit rename config libs --map rename-map.tsv --root-dir ../libs --dry-run           # the shared configuration
+odw rename merge libs --map rename-map.tsv --into ../libs --dry-run   # sources, heads, steps
+odw rename merge libs --map rename-map.tsv --into ../libs            # the new root, with history
+odw rename plan libs --map rename-map.tsv            # dry run: every move and rewrite
+odw rename plan libs --map rename-map.tsv --json     # the same as opendap.rename-plan/v1
+odw rename plan libs --map rename-map.tsv --kind mfr # only the maker-key rows
+odw rename apply libs --map rename-map.tsv --root-dir ../libs
+odw rename check libs --map rename-map.tsv --root-dir ../libs --json
+odw rename apply tools --map rename-map.tsv --root-dir ../tools --structure-only   # each source whole in its folder
+odw rename config libs --map rename-map.tsv --root-dir ../libs --dry-run           # the shared configuration
 ```
 
 ## The rename map
@@ -66,7 +66,7 @@ Every text file of the root (UTF-8, no NUL byte, at most 8 MiB) is read once. Fi
 3. **Links into the root itself**: inside the root's Markdown, a link to the root's own URL at `main` becomes a relative link.
 4. **Identifiers** listed in the map, in every text file. Values match as whole tokens (not inside a longer name or path), longest first, in one pass, so `/usr/bin/odap-x` wins over `odap-x` and no rewrite feeds another. A kind adds or narrows contexts (`src/odw/rename_idents.py`, HL-109): a `crate` is also a Cargo key before `.workspace = true` and the like and, in Rust sources, its `snake_case` path (`opendap_input::`); a crate that is also a `binary` is the crate only in `Cargo.toml`, `Cargo.lock` and after `-p` or `--package`, and the binary elsewhere (`odap-boot handoff`); a `binary` is also the last segment of a path (`target/release/odap-vdev-view`); a `path` under `/run`, `/var/lib`, `/var/cache`, `/var/log` or `/etc` is also the value of the systemd key that takes it without its prefix (`RuntimeDirectory=opendap/composer`); an `identifier:user` is rewritten only where it names the user or group (`User=`, `Group=`, `SocketUser=`, `SocketGroup=`, `SupplementaryGroups=`, sysusers.d and tmpfiles.d columns, `~user`, `/home/user`, `chown user:group`), never as a word in prose. A file named after a renamed token moves with it (HL-109): a unit file, its drop-in folder and its wants links (`x.service`, `x.service.d/`), a udev rule (`70-x.rules`), a PAM service under `pam.d/` and a binary under `bin/`, `sbin/` or `libexec/` (never a crate folder, which its path rows move, nor a binary whose new value is a path); two files that would end at one path, or a move onto a file that stays, are a conflict. A tracked link is never read as text: when its target names a token, the plan lists it under `links` with its new target, and `apply` writes it as a link.
 
-**Generated files** are never rewritten. A requirements README (`docs/requirements/README.md` beside a `requirements.toml`) is rendered from its source: the rewrites go to `requirements.toml`, and the README is rendered again from the rewritten TOML, so `odapkit req render --check` passes after the cut. The plan lists such files under `generated` (path and source); `check` fails `rename.generated:<path>` for a generated file that does not match its source.
+**Generated files** are never rewritten. A requirements README (`docs/requirements/README.md` beside a `requirements.toml`) is rendered from its source: the rewrites go to `requirements.toml`, and the README is rendered again from the rewritten TOML, so `odw req render --check` passes after the cut. The plan lists such files under `generated` (path and source); `check` fails `rename.generated:<path>` for a generated file that does not match its source.
 
 **Which roots are cut.** URLs and identifiers are rewritten only for roots already cut: the roots the workspace's `repos.tsv` already lists as their own repository (`opendap-project/<root>`), and ROOT itself, since cuts need not follow RFC 0017's order; without a `repos.tsv`, the roots before ROOT in that order (`libs`, `tools`, `hats`, `host`, `t1`, `blackbird`). `--cut a,b` overrides both. A reference to a root not cut yet stays until that root's cut.
 
@@ -78,7 +78,7 @@ Every text file of the root (UTF-8, no NUL byte, at most 8 MiB) is read once. Fi
 | `later` | A safe token whose owner root is not cut yet |
 | `manual` | Needs a hand; `reason` says why: `plain-word` (a single word with no separator and no `root`, which may also appear in prose; never a maker key or an `identifier:user`, which are rewritten in their contexts only), `owner-unknown`, `kind-mismatch`, `count-mismatch` |
 
-The optional `root` column names the owner of an identifier row the tool cannot infer (`command:odapkit` → `tools`). Setting it on a plain word also states that the word is the identifier wherever it stands as a whole token, so it is rewritten (`odapkit`, never `odapkit-docs`); a word that also appears in prose keeps the column empty and stays `manual`. A value written as it appears in text is a token too (`skill:/opendap:requirement`, not the bare word). The owner of an identifier is the row's `root` column; without one, a root named as a token in the new value (`blackbird-composer.service` → `blackbird`, `ODAP_LIBS_DIR` → `libs`); without one, the root of a source repository named in the old value or the notes (`kicad-lib library key` → `libs`). Rows whose action is not `rename` or `merge`, or whose values are not tokens (parentheses, brackets, ellipses, `(removed)`), are not scanned.
+The optional `root` column names the owner of an identifier row the tool cannot infer (`command:odapkit` → `tools`). Setting it on a plain word also states that the word is the identifier wherever it stands as a whole token, so it is rewritten (`odapkit`, never `odw-docs`); a word that also appears in prose keeps the column empty and stays `manual`. A value written as it appears in text is a token too (`skill:/opendap:requirement`, not the bare word). The owner of an identifier is the row's `root` column; without one, a root named as a token in the new value (`blackbird-composer.service` → `blackbird`, `ODAP_LIBS_DIR` → `libs`); without one, the root of a source repository named in the old value or the notes (`kicad-lib library key` → `libs`). Rows whose action is not `rename` or `merge`, or whose values are not tokens (parentheses, brackets, ellipses, `(removed)`), are not scanned.
 
 ## Merge
 
@@ -116,7 +116,7 @@ A git step that fails after the root is created (`merge.git`) removes what the m
 
 **Checks and report.** After the merge, for each source: the commit count before and after the rewrite, and that every original commit's tree equals its rewritten commit's tree at the landing folder (`trees_match`, through the commit map). For the root: its commit count equals the sources' total plus the merge, and its object size next to the sources'. A failed check exits 1 and keeps the root for inspection (`merge.mismatch`). Warnings: `merge.lfs` when a source's head holds Git LFS pointers, files whose first line is the pointer's version line (a file that only mentions that line is not one; their objects are in the source's LFS store and are pushed to the new root separately) and `merge.gitlinks` for submodules. The report is `opendap.rename-merge/v1`: printed with `--json`, written to `--report <file>`, and kept with the commit maps (`old new` per line) in `.git/odw-merge/` of the root.
 
-After the merge, `odapkit rename plan ROOT --root-dir DIR` reads the merged root (`view: root`) and `apply` continues the cut.
+After the merge, `odw rename plan ROOT --root-dir DIR` reads the merged root (`view: root`) and `apply` continues the cut.
 
 **Maker keys** (`mfr:` rows) are rewritten by context, never as whole tokens: a maker key (`Texas_Instruments`, `Murata`, `Diodes-Inc.`) is also the maker's name in prose, and a hyphen does not make a value a key (`G-Switch` is a display name too). The key is rewritten only where the text uses it as one:
 
@@ -164,19 +164,19 @@ Folder `README.md`, `CLAUDE.md`, `REUSE.toml`, `.gitignore` and `.gitattributes`
 - a remote hook served by one of the root's own sources (`toolkit-hooks` inside `tools`) is dropped, and the providing folder's local copy runs for the whole root;
 - every other local hook is scoped to its folder and runs inside it: `entry: sh -c 'cd <folder> && <entry>'` when it takes no file names, the folder as a prefix for a script; its name starts with the folder, and an id two folders share gets the folder as a suffix (`requirements-current-host`);
 - a pre-push Rust hook (`types: [rust]` with `stages: [pre-push]`, such as clippy and cargo test) gets `types_or: [rust, cargo, cargo-lock]` instead, so a change to `Cargo.toml` or `Cargo.lock` alone (a pin) runs it too; rustfmt, given the file names, stays on Rust files;
-- each folder's managed block (`odapkit sync`) is dropped, and the root gets one at the end: the odw check hooks of its check roots (below, [workspace sync](workspace-sync.md#odw-check-hooks)), so `odapkit sync --check` passes after the cut;
+- each folder's managed block (`odw sync`) is dropped, and the root gets one at the end: the odw check hooks of its check roots (below, [workspace sync](workspace-sync.md#odw-check-hooks)), so `odw sync --check` passes after the cut;
 - a `files` or `exclude` pattern keeps its meaning under the folder: an anchored alternative loses its `^` behind the prefix, an unanchored one becomes `.*(?:…)`; values that need it are quoted (a name holding a colon followed by a space).
 
-The result is `opendap.rename-config/v1`; `odapkit sync --apply` then renders the root's `.gitignore` and `.gitattributes` blocks.
+The result is `opendap.rename-config/v1`; `odw sync --apply` then renders the root's `.gitignore` and `.gitattributes` blocks.
 
 ## Links
 
-`odapkit rename links` is the link check after the cuts, across the whole workspace instead of one root:
+`odw rename links` is the link check after the cuts, across the whole workspace instead of one root:
 
 ```sh
-odapkit rename links --map rename-map.tsv                        # what is left (opendap.check-result/v1)
-odapkit rename links --map rename-map.tsv --apply                # rewrite what lands, report the rest
-odapkit rename links --map rename-map.tsv --apply --find-in engineering --keep 'data/*.result.json'
+odw rename links --map rename-map.tsv                        # what is left (opendap.check-result/v1)
+odw rename links --map rename-map.tsv --apply                # rewrite what lands, report the rest
+odw rename links --map rename-map.tsv --apply --find-in engineering --keep 'data/*.result.json'
 ```
 
 It reads the tracked files of the workspace and of every repository `repos.tsv` names, and of those the `repos.tsv` of any overlay cloned two folders down names, and fails two kinds of URL:

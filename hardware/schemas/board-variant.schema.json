@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/opendap-project/tools/blob/main/hardware/schemas/board-variant.schema.json",
   "title": "opendap.board-variant/v1",
-  "description": "A board variant (RFC 0011 rule 7): one TOML file per variant, every block of the catalog once. Spec: docs/specs/variant-tool.md §2. The rules that need the catalog (blocks covered, alternates and params declared, promise) are checked by odapkit variant.",
+  "description": "A board variant (RFC 0011 rule 7): one TOML file per variant, every block of the catalog once. Spec: docs/specs/variant-tool.md §2. The rules that need the catalog (blocks covered, alternates and params declared, promise) are checked by odw variant.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "board", "name", "kind", "status", "target_level", "catalog", "blocks"],

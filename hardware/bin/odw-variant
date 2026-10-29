@@ -1,0 +1,6 @@
+#!/bin/sh
+# odw variant: a thin entry point; the engine, and its --help, is tools/variant/ (run as
+# tools/variant/__main__.py; Python 3.11 standard library and KiCad 10's kicad-cli).
+self="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+here="$(cd "$(dirname "$self")/.." && pwd)"
+exec python3 "$here/tools/variant/__main__.py" "$@"

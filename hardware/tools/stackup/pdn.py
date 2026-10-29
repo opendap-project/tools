@@ -1,4 +1,4 @@
-"""odapkit stackup pdn: a lumped power-distribution-network model of one or more rails, to see
+"""odw stackup pdn: a lumped power-distribution-network model of one or more rails, to see
 how much the distance between a power plane and its ground (and the plane's depth in the stack)
 changes the impedance a load sees, against a target impedance.
 

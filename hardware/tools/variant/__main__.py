@@ -1,4 +1,4 @@
-"""Run odapkit variant's engine, tools/variant/cli.py: `python3 tools/variant ARGS...`, as bin/odapkit-variant does."""
+"""Run odw variant's engine, tools/variant/cli.py: `python3 tools/variant ARGS...`, as bin/odw-variant does."""
 import sys
 
 from cli import main

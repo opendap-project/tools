@@ -1,8 +1,1 @@
-#!/bin/sh
-# Keep generated trees (target/, .venv/, test caches) out of the macOS Spotlight index.
-#
-# Usage: odapkit noindex [--apply] [--node-modules] [--json] [PATH...]
-# Each tree becomes <name>.noindex behind a <name> symlink; without --apply it only lists. Spec:
-# docs/specs/development-workflow.md (Generated trees).
-here="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/.." && pwd)"
-exec uv run --quiet --project "$here" python -m odw.noindex "$@"
+odw-noindex

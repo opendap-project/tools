@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/opendap-project/tools/blob/main/hardware/schemas/craft-rules.schema.json",
   "title": "opendap.craft-rules/v1: the PCB craft standard's rules as data (tools/craft/rules.toml)",
-  "description": "Every CRAFT rule of kicad-lib's docs/specs/pcb-craft-standard.md, in the standard's order. The standard's rule tables are rendered from it (odapkit craft rules render) and the craft checks read their levels and limits from it.",
+  "description": "Every CRAFT rule of kicad-lib's docs/specs/pcb-craft-standard.md, in the standard's order. The standard's rule tables are rendered from it (odw craft rules render) and the craft checks read their levels and limits from it.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "spec", "levels", "rule"],

@@ -1,15 +1,15 @@
 # Stackup and trace geometry method
 
 - **Status:** draft, v1, 2026-10-24. Generic, for every OpenDAP board.
-- **Tool:** `odapkit stackup` ([`bin/odapkit-stackup`](../../bin/odapkit-stackup), [`tools/stackup/`](../../tools/stackup/)).
+- **Tool:** `odw stackup` ([`bin/odw-stackup`](../../bin/odw-stackup), [`tools/stackup/`](../../tools/stackup/)).
 
-A board keeps its layer stack and the geometry of each impedance class in one machine-readable file, `hardware/stackup/stackup-<version>.toml`, explained by a spec in its `docs/specs/`. The file is the input to the fab's stack-up request and to the net classes; `odapkit stackup check` recomputes it after every change, so a width in the net classes is never older than the stack it came from. With `--json` every command prints one document with a `schema`: `opendap.stackup-stack/v1`, `-design/v1` and `-coupling/v1` (their results in `items`), `-check/v1`, `-validate/v1`, `-explore/v1` and `-pdn/v1`.
+A board keeps its layer stack and the geometry of each impedance class in one machine-readable file, `hardware/stackup/stackup-<version>.toml`, explained by a spec in its `docs/specs/`. The file is the input to the fab's stack-up request and to the net classes; `odw stackup check` recomputes it after every change, so a width in the net classes is never older than the stack it came from. With `--json` every command prints one document with a `schema`: `opendap.stackup-stack/v1`, `-design/v1` and `-coupling/v1` (their results in `items`), `-check/v1`, `-validate/v1`, `-explore/v1` and `-pdn/v1`.
 
 ## 1. Steps
 
-1. **Stack.** Layer count, build (1+N+1, 2+N+2), each layer's role, copper weights and dielectrics from the fab's published materials, with every value that is not published marked as an assumption. `odapkit stackup stack` prints the layer table, the total thickness and the board's `[[distance]]` and `[thickness]` checks.
-2. **Design.** For each class, the target impedance, the layer and its reference plane(s), and the dimension held fixed (a pair's gap). `odapkit stackup design` searches the free dimension; the result is rounded to 0.5 µm and recorded in the file with the impedance it gives (`width_um`, `gap_um`, `z_ohm`).
-3. **Check.** `odapkit stackup check` recomputes every class: the nominal within the design window (default ±2 % of the target), the recorded `z_ohm` not stale (0.5 Ω), and the fab corners reported.
+1. **Stack.** Layer count, build (1+N+1, 2+N+2), each layer's role, copper weights and dielectrics from the fab's published materials, with every value that is not published marked as an assumption. `odw stackup stack` prints the layer table, the total thickness and the board's `[[distance]]` and `[thickness]` checks.
+2. **Design.** For each class, the target impedance, the layer and its reference plane(s), and the dimension held fixed (a pair's gap). `odw stackup design` searches the free dimension; the result is rounded to 0.5 µm and recorded in the file with the impedance it gives (`width_um`, `gap_um`, `z_ohm`).
+3. **Check.** `odw stackup check` recomputes every class: the nominal within the design window (default ±2 % of the target), the recorded `z_ohm` not stale (0.5 Ω), and the fab corners reported.
 4. **Fab.** The file goes to the fab with the stack-up request. The fab's answer (its stack, its Dk at frequency, its etch compensation) replaces the assumptions, and the widths are recomputed before the net classes freeze. The fab trims widths to its test coupon; the board's numbers are the design intent, not the fab's final artwork.
 
 ## 2. Solver
@@ -27,7 +27,7 @@ A 2D quasi-static (quasi-TEM) field solver, the same class of method as commerci
 - Dielectric thicknesses are pressed thicknesses, copper surface to copper surface.
 - Not modelled: frequency dependence of Dk and loss, surface roughness, glass-weave skew, resin-rich areas over cut-outs. These come from the fab's coupon and the board's SI simulation.
 
-**Validation** (`odapkit stackup validate`, also run by the tests):
+**Validation** (`odw stackup validate`, also run by the tests):
 
 | Reference | Agreement required | Typical result |
 |---|---|---|
@@ -100,7 +100,7 @@ constraints = "…"                   # free text: the constraint IDs it serves
 
 A line referenced only from above (a bottom-side line) is solved on the mirrored stack.
 
-## 5. Exploring the layer count (`odapkit stackup explore`)
+## 5. Exploring the layer count (`odw stackup explore`)
 
 Before a stack is written, a board whose floorplan is split into zones (each zone with its own layer roles: fast routing, power, ground, RF) enumerates its candidates. The input file holds the layer counts and builds to try, the thickness window, the copper, the fab's dielectric palette (each sheet or core with its pressed thickness and Dk, laser-drillable or not), the impedance classes to solve, the RF ground window and one `[[zone]]` per floorplan zone with its needs:
 
@@ -122,13 +122,13 @@ Builds: `through`, `1+N+1`, `2+N+2`, `3+N+3` and `any-layer` (every dielectric l
 
 The enumeration is exhaustive within the palette and bounded: per layer count and build, every role vector per zone (depth-first, local rules checked as layers are assigned); every symmetric dielectric sequence (laser prepregs on the microvia levels, then core and prepreg alternating); thickness, plane pairing and RF distance per sequence; the narrowest class (`rules.width_gate_class`) solved on every fast layer a zone could use, cached per local cross-section, against `rules.min_trace_um`; then one map per zone chosen by dynamic programming for the fewest full-layer grounds and zone-local grounds. The CSV has one row per (layer count, build, dielectric sequence): its rank, or the first reason it failed. `--set table.key=value` runs a sensitivity without editing the file. Single-threaded; a ten-layer sweep over a fourteen-entry palette takes minutes, not hours.
 
-## 6. Broadside coupling (`odapkit stackup coupling`)
+## 6. Broadside coupling (`odw stackup coupling`)
 
 A `[[coupling]]` case in a stackup file names two routing layers between the same two reference planes, a trace width and a lateral offset. The solver builds the cross-section with both traces and returns each trace's impedance with the other present and the near-end coefficient Kb = (C<sub>m</sub>/C + L<sub>m</sub>/L) / 4 from the Maxwell capacitance and inductance matrices. A dual stripline is acceptable for a class when Kb at the offset the routing can hold is inside the class's crosstalk budget; full overlap gives the worst case of a parallel run.
 
 The same command checks edge coupling on one layer: `layers = ["L4", "L4"]` puts both traces on L4 at `offset_um` centre to centre (trace width plus spacing), between the references above and below.
 
-## 7. Plane pairing and the PDN (`odapkit stackup pdn`)
+## 7. Plane pairing and the PDN (`odw stackup pdn`)
 
 How far a power plane may sit from its ground, and how deep in the stack, is a power-integrity question: a screening model answers it before a layout exists. The input file lists rails (nominal voltage, allowed ripple, the current step, the regulator as R + L, the decoupling capacitors with ESR, ESL, count, lateral distance to the load and vias per pad, the load's via count) and cases (the plane-to-ground dielectric d and its Dk, the plane area, the via length from the capacitors' side to the plane and from the load to the plane). Per rail and case:
 

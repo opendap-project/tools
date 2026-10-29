@@ -1,4 +1,4 @@
-"""odapkit stackup's computations on the model: design (solve a class for its target), check (a recorded
+"""odw stackup's computations on the model: design (solve a class for its target), check (a recorded
 geometry, with the fab's corners), validate (the solver against closed forms) and coupling (two traces on
 two layers). Method: docs/specs/stackup-method.md."""
 from __future__ import annotations

@@ -2,7 +2,7 @@
 # The command-line behaviour every odapkit shell tool shares (command standard §5, §6), sourced (POSIX sh).
 # The Python tools use the same contract through odw.clikit. Spec: docs/specs/cli-conformance.md.
 #
-#   CLI_TOOL                       the tool as people type it (`odapkit qemu`); the default comes from $0
+#   CLI_TOOL                       the tool as people type it (`odw qemu`); the default comes from $0
 #   CLI_JSON=1                     errors also print an opendap.error/v1 document on stdout
 #   cli_fail CODE MSG HINT FIX [STATUS]
 #                                  an error an agent can act on: a stable dotted code, a hint and a fix
@@ -12,7 +12,9 @@
 #   cli_interactive                true only when a person can answer a prompt: stdin and stdout are
 #                                  terminals, and neither CI nor ODAP_NONINTERACTIVE is set
 
-: "${CLI_TOOL:=odapkit ${0##*/odapkit-}}"
+# The plugin is odw-<tool>; odapkit-<tool>, its old name, is a link to it (HL-72).
+cli_name="${0##*/}"; cli_name="${cli_name#odw-}"; cli_name="${cli_name#odapkit-}"
+: "${CLI_TOOL:=odw $cli_name}"
 : "${CLI_JSON:=0}"
 
 cli_json_str() {

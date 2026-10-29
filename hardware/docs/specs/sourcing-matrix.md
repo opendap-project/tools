@@ -1,6 +1,6 @@
 # Sourcing matrix
 
-`odapkit parts matrix` turns a list of candidate parts into an evaluation matrix: for every candidate and every channel, the stock, the price breaks, the lifecycle status and the date they were read; then a verdict and a score, with the reason each candidate passes or fails. It serves requirements such as T1-010, T1-028 and T1-029 (prefer available parts, validate availability before adoption).
+`odw parts matrix` turns a list of candidate parts into an evaluation matrix: for every candidate and every channel, the stock, the price breaks, the lifecycle status and the date they were read; then a verdict and a score, with the reason each candidate passes or fails. It serves requirements such as T1-010, T1-028 and T1-029 (prefer available parts, validate availability before adoption).
 
 The tool and this document are public; its inputs and outputs are not. Stock, prices and the matrices built from them are sourcing data: they are never committed to a public repository, so `--out` is required and should point to a private location.
 
@@ -40,7 +40,7 @@ rk3566 = "T/A"
 
 `match` patterns compare normalised part numbers (upper case, letters and digits only), with `*` and `?` as wildcards, so `XM4X1G32-046-IT-C-TR` matches `XM4X1G32-046 IT:C TR`. Gate values are compared as text after removing trailing note marks such as `[7][11]`.
 
-`odapkit parts rk-ddr-list LIST.pdf --soc RK3566 … --format toml` writes candidate stubs from Rockchip's DDR SDRAM Support List: each row's SoC status, density, type, package and the list's product-status column (as `lifecycle`), plus two attributes the list states indirectly: `lpddr4x_mode` ("LPDDR4 only" when the row carries note [11] or the part is LPDDR4) and `ranks = 2` when the density cell says "2cs". Entries without a second part (SK hynix, Nanya) match every suffix, as the list's first-part rule says (Ver 2.65 p. 3).
+`odw parts rk-ddr-list LIST.pdf --soc RK3566 … --format toml` writes candidate stubs from Rockchip's DDR SDRAM Support List: each row's SoC status, density, type, package and the list's product-status column (as `lifecycle`), plus two attributes the list states indirectly: `lpddr4x_mode` ("LPDDR4 only" when the row carries note [11] or the part is LPDDR4) and `ranks = 2` when the density cell says "2cs". Entries without a second part (SK hynix, Nanya) match every suffix, as the list's first-part rule says (Ver 2.65 p. 3).
 
 ## Channels
 
@@ -88,7 +88,7 @@ In `--out DIR` (required; a private location; `--dry-run` reads the candidates o
 
 ## Re-rendering a saved matrix
 
-`odapkit parts matrix --render DIR/matrix.json --out DIR2` rebuilds `matrix.md`, `matrix.csv` and `listings.csv` from a saved `matrix.json`, without fetching anything: the results, their order and the generation time are the saved ones, so only a change in the renderer changes the files. The JSON is read, never rewritten.
+`odw parts matrix --render DIR/matrix.json --out DIR2` rebuilds `matrix.md`, `matrix.csv` and `listings.csv` from a saved `matrix.json`, without fetching anything: the results, their order and the generation time are the saved ones, so only a change in the renderer changes the files. The JSON is read, never rewritten.
 
 The attribute columns come from the JSON's `columns`. A `matrix.json` written before it recorded them needs `--columns a,b,c`, in the candidates file's order (the attribute columns of its `matrix.md` header); `--columns` also replaces a recorded list. A column that no candidate has as an attribute, a JSON without columns and without `--columns`, or a file that is not an `opendap.sourcing-matrix/v1` document is a usage or file error (exit 2). `--json` prints the document used, with its columns; otherwise the Markdown matrix is printed.
 

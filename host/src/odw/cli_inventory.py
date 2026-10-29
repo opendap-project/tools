@@ -38,7 +38,7 @@ FACTS = {
     "error_code": re.compile(r"""["'`][a-z][a-z0-9_]*\.[a-z][a-z0-9_]*["'`]"""),
     "stderr": re.compile(r">&2|sys\.stderr|eprintln!|file=sys\.stderr"),
 }
-# A bracketed letter keeps a pattern from matching its own source, which the closure of odapkit cli reads.
+# A bracketed letter keeps a pattern from matching its own source, which the closure of odw cli reads.
 PROMPT = re.compile(r"\binput\(|getpass\.getpass\(|\bread\s+-[a-z]*p\b|<[/]dev/tty|stdin\(\)\s*\.\s*(read_line|lines|lock)"
                     r"|dialogue[r]|inquir[e]::|rpasswor[d]")
 WRITES = {
@@ -318,6 +318,8 @@ def inventory(ws, roots=None):
         hooks = _hook_names(repo, files)
         declared = declarations(ws, root)
         for rel, mode in modes.items():
+            if mode == "120000":
+                continue  # a link is another name for an executable listed under its own (odapkit-x → odw-x)
             parts = pathlib.PurePath(rel).parts
             if not any(p in FOLDERS for p in parts[:-1]):
                 continue

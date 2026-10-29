@@ -101,7 +101,7 @@ def report(path, results, target, as_json, cfg_path, erc):
             "levels": {lv: [r.as_dict() for r in results if r.level == lv] for lv in LEVELS},
         }, indent=2))
     else:
-        print(f"odapkit craft check: {os.path.relpath(path)}")
+        print(f"odw craft check: {os.path.relpath(path)}")
         for lv in LEVELS:
             group = [r for r in results if r.level == lv]
             if not group:

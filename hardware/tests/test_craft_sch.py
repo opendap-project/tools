@@ -1,4 +1,4 @@
-"""Tests for the schematic and symbol part of bin/odapkit-craft (tools/sch-craft-check.py).
+"""Tests for the schematic and symbol part of bin/odw-craft (tools/sch-craft-check.py).
 
 Fixtures in tests/fixtures/craft-sch/: good/ is a copy of kicad-lib's examples/load-switch and must
 pass every check and reach Q4; bad/ and bad.kicad_sym are written from it by make_fixture.py and must
@@ -20,7 +20,7 @@ for _k in [k for k in os.environ if k.startswith("GIT_")]:
     del os.environ[_k]
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TOOL = os.path.join(HERE, "..", "bin", "odapkit-craft")
+TOOL = os.path.join(HERE, "..", "bin", "odw-craft")
 FIX = os.path.join(HERE, "fixtures", "craft-sch")
 APP = os.environ.get("KICAD_APP", "/Applications/KiCad/KiCad.app")
 HAVE_CLI = bool(os.path.exists(os.path.join(APP, "Contents", "MacOS", "kicad-cli")) or shutil.which("kicad-cli"))

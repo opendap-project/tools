@@ -1,4 +1,4 @@
-"""Run odapkit parts's engine, tools/sourcing/partscli.py: `python3 tools/sourcing ARGS...`, as bin/odapkit-parts does."""
+"""Run odw parts's engine, tools/sourcing/partscli.py: `python3 tools/sourcing ARGS...`, as bin/odw-parts does."""
 import sys
 
 from partscli import main

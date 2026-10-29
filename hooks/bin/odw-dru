@@ -1,0 +1,27 @@
+#!/bin/sh
+# Compose a KiCad project's .kicad_dru from its fab and product rule sources, or check it.
+#
+# Usage: odw dru compose [--stdout|--dry-run] MANIFEST...   write <project>.kicad_dru from <project>.dru.toml
+#        odw dru check [--json] [MANIFEST...]     verify; no manifest = every *.dru.toml in the repo
+#
+# The engine is hooks/kicad-dru.py in this repository, the script the kicad-dru-composed
+# pre-commit hook runs, so the tool and the hook never disagree. The manifest format is in its
+# help and in this repository's README.
+#
+# Examples:
+#   odw dru check --json
+#   odw dru compose board.dru.toml
+#
+# Exit status: 0 success, 1 a stale, missing or invalid composition, 2 usage error.
+set -eu
+self="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+here="$(cd "$(dirname "$self")/.." && pwd)"
+CLI_TOOL="odw dru"
+. "$here/lib/cli.sh"
+case "${1:-}" in
+  -h|--help|help) cli_header "$self" 15; exit 0 ;;
+  "") cli_header "$self" 15; exit 2 ;;
+esac
+command -v python3 >/dev/null 2>&1 || cli_fail "tool.missing" "python3 not found" \
+  "the composition runs with Python 3.11 or later" "\"\${ODAP_TOOLKIT_HOST_DIR:-<toolkit-host>}/setup.sh\""
+exec python3 "$here/hooks/kicad-dru.py" "$@"

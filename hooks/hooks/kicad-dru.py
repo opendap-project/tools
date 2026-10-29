@@ -41,7 +41,10 @@ if sys.version_info < (3, 11):
 import tomllib
 
 MANIFEST_SUFFIX = ".dru.toml"
-TOOL = "odapkit dru"
+TOOL = "odw dru"
+# The composed files' header keeps the old name until the boards' roots are cut, so a header the hook
+# compares stays current (HL-72).
+HEADER_TOOL = "odapkit dru"
 
 
 class DruError(Exception):
@@ -233,8 +236,8 @@ def compose(manifest):
     rel_manifest = os.path.relpath(os.path.realpath(manifest), base)
     out = [
         "(version 1)\n",
-        f"# Composed by `{TOOL}` from {rel_manifest}. Do not edit by hand:\n",
-        f"# edit the sources and run `{TOOL} compose {rel_manifest}`.\n",
+        f"# Composed by `{HEADER_TOOL}` from {rel_manifest}. Do not edit by hand:\n",
+        f"# edit the sources and run `{HEADER_TOOL} compose {rel_manifest}`.\n",
     ]
     seen = {}
     for src in sources:

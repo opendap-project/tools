@@ -1,7 +1,7 @@
 # Verification matrices
 
 - **Status:** draft
-- **Tool:** `odapkit verify` (`src/odw/verify.py`); schema `opendap.verification/v1` ([`schemas/verification.schema.json`](../../schemas/verification.schema.json))
+- **Tool:** `odw verify` (`src/odw/verify.py`); schema `opendap.verification/v1` ([`schemas/verification.schema.json`](../../schemas/verification.schema.json))
 
 A verification matrix lists every case a component must prove, one row each, with what was expected, what was seen, the evidence, a status and the levels at which the case runs again. It is data; its Markdown is generated.
 
@@ -16,9 +16,9 @@ A case observed by hand keeps its observation in the matrix. A case with `checks
 
 | Command | Does |
 |---|---|
-| `odapkit verify render MATRIX [--check \| --dry-run]` | Writes the Markdown beside the matrix: coverage by area and status, cases by level, the cases seen only by hand, then every case by area; `--check` fails when it is stale |
-| `odapkit verify collect MATRIX --results DIR... [--check \| --dry-run]` | Joins the check results found under the folders to the cases that name them, per variant (pass, fail, warn, measured when every result is an `info` value with no limit, missing) |
-| `odapkit verify coverage MATRIX [--prefix P...] [--json]` | Lists the confirmed and draft requirements (of the given id prefixes, or the whole workspace) that no case `verifies`; `--json` prints `opendap.verify-coverage/v1` (`matrix`, `uncovered`) |
+| `odw verify render MATRIX [--check \| --dry-run]` | Writes the Markdown beside the matrix: coverage by area and status, cases by level, the cases seen only by hand, then every case by area; `--check` fails when it is stale |
+| `odw verify collect MATRIX --results DIR... [--check \| --dry-run]` | Joins the check results found under the folders to the cases that name them, per variant (pass, fail, warn, measured when every result is an `info` value with no limit, missing) |
+| `odw verify coverage MATRIX [--prefix P...] [--json]` | Lists the confirmed and draft requirements (of the given id prefixes, or the whole workspace) that no case `verifies`; `--json` prints `opendap.verify-coverage/v1` (`matrix`, `uncovered`) |
 
 ## Rules
 

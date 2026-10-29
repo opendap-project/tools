@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/opendap-project/tools/blob/main/hardware/schemas/variant-absent-state.schema.json",
   "title": "opendap.variant-absent-state/v1",
-  "description": "The absent-state check of one variant (RFC 0011 rule 2): every net that touches a part the variant leaves unfitted, classified with the fitted parts only, and the declared absent state it was matched to. Written by odapkit variant apply as absent-state.json. Spec: docs/specs/variant-tool.md §6.",
+  "description": "The absent-state check of one variant (RFC 0011 rule 2): every net that touches a part the variant leaves unfitted, classified with the fitted parts only, and the declared absent state it was matched to. Written by odw variant apply as absent-state.json. Spec: docs/specs/variant-tool.md §6.",
   "type": "object",
   "additionalProperties": false,
   "required": [

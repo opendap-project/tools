@@ -1,5 +1,5 @@
 """odw check hooks (HL-103): pre-commit and pre-push run `odw check` for the stages each root's check.toml declares,
-rendered by odapkit sync (a generated block) and by odapkit rename config (a cut root's one configuration)."""
+rendered by odw sync (a generated block) and by odw rename config (a cut root's one configuration)."""
 import os
 import shutil
 import subprocess
@@ -154,5 +154,5 @@ def test_rename_config_renders_one_block_for_the_cut_root(tmp_path, capsys, monk
     assert [i for i in ids if i.startswith("odw-check")] == ["odw-check-fast-host", "odw-check-full-host",
                                                              "odw-check-full-image"]
     assert cfg.hook("odw-check-full-image").get("files") == "^image/"
-    # The block is what odapkit sync renders for the cut root: nothing to repair after the cut.
+    # The block is what odw sync renders for the cut root: nothing to repair after the cut.
     assert text.endswith(_synced("", check_hooks.roots(top, trc.tracked(top))))

@@ -1,7 +1,7 @@
 # Docs gates
 
 - **Status:** draft
-- **Tool:** `odapkit docs` (`src/odw/docs.py`); method behind it: living docs (maintainers)
+- **Tool:** `odw docs` (`src/odw/docs.py`); method behind it: living docs (maintainers)
 
 Docs are a maintained product: the gates below keep them correct on every commit, so the practice holds without anyone remembering it.
 
@@ -9,7 +9,7 @@ Docs are a maintained product: the gates below keep them correct on every commit
 
 A spec, ADR or RFC starts with its title and a header: the bullet list of `- **Key:** value` items right after the title (`Status`, `Date`, `Requirements`, `Supersedes`, `Affected repositories`, …). `Status` starts with one word of the vocabulary: `draft`, `accepted`, `confirmed`, `superseded`, `withdrawn`, `implemented`; what follows the word (a date, the decision that set it) is free text.
 
-## Gates (`odapkit docs check PATH...`)
+## Gates (`odw docs check PATH...`)
 
 A directory path is searched for Markdown, leaving out build trees (`target/`, `node_modules/`, `*.noindex`), vendored third-party code (`vendor/`), test fixtures (`tests/fixtures/`: data, not docs) and linked worktrees below it (a folder whose `.git` is a file: another task's copy of a repository, checked on its own).
 
@@ -24,11 +24,11 @@ A directory path is searched for Markdown, leaving out build trees (`target/`, `
 
 `--strict` makes warnings fail. `--json` prints `opendap.check-result/v1`: one result per finding, `fail` for an error (and for a warning with `--strict`), `warn` otherwise, with the path and line. Code spans and fenced blocks are not checked for terms or working notes.
 
-## Index (`odapkit docs index DOCS_DIR [--check | --dry-run]`)
+## Index (`odw docs index DOCS_DIR [--check | --dry-run]`)
 
 `docs/README.md` keeps its own introduction; the table of documents (title and status of every Markdown file under `docs/`, requirements READMEs excepted) is generated between `<!-- index:start -->` and `<!-- index:end -->`. `--readme PATH` puts the table in another README (an RFC repository indexes `text/` from its root README); `--check` fails when it is stale; `--dry-run` says whether the table would change and writes nothing.
 
-## RFC application (`odapkit docs rfc-status [--workspace DIR] [--write DIR [--dry-run]] [--json]`)
+## RFC application (`odw docs rfc-status [--workspace DIR] [--write DIR [--dry-run]] [--json]`)
 
 An accepted RFC becomes Implemented when every repository it affects has recorded the outcome. The tool reads each RFC in the rfcs repository's `text/` and reports one row per affected repository:
 

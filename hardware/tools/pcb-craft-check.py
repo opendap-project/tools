@@ -4,7 +4,7 @@
 Usage:
     pcb-craft-check.py [--json] [--config FILE] [--target Qn] [--no-drc] BOARD.kicad_pcb
 
-Run it with KiCad's bundled Python (it needs pcbnew); `odapkit craft check` finds that Python.
+Run it with KiCad's bundled Python (it needs pcbnew); `odw craft check` finds that Python.
 Keep it compatible with Python 3.9, the version KiCad 10 ships on macOS.
 
 The standard is kicad-lib's docs/specs/pcb-craft-standard.md

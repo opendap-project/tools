@@ -1,7 +1,7 @@
 # Workspace sync
 
 - **Status:** draft
-- **Tool:** `odapkit sync` (`src/odw/sync.py`); templates in the workspace's [`templates/`](https://github.com/opendap-project/workspace/tree/main/templates)
+- **Tool:** `odw sync` (`src/odw/sync.py`); templates in the workspace's [`templates/`](https://github.com/opendap-project/workspace/tree/main/templates)
 
 The boilerplate every repository shares (agent settings and rules, lint configuration, and later the composed files) exists once, as a template in the workspace. Copies in repositories are rendered from it; editing a copy is drift.
 
@@ -27,7 +27,7 @@ A composed file (`.gitignore`, `.gitattributes`) is listed as a `[[block]]`: its
 
 ### odw check hooks
 
-The `odw-check` generator (`src/odw/check_hooks.py`) renders the hooks that run `odw check` (command standard §7) in `.pre-commit-config.yaml`. A repository's check roots are its folders that hold a tracked `check.toml` (the repository itself, or folders such as `system/` and `emulator/` of a merged root; folders under `tests/` or `fixtures/` are not). Each root gets one local hook per stage its `check.toml` declares: `odw-check-fast` before each commit and `odw-check-full` with `stages: [pre-push]` before each push; `release` has no hook, and a root that declares neither gets none, so `odw check` never meets `check.no_stage`. The hook passes the changed paths and `odw check` runs the steps whose `paths` match them, so a step without `paths` runs on every commit or push. A root in a folder gets the folder as an id suffix, `files: ^<folder>/` and an entry that runs inside it with each path given back relative to it (`sh -c 'cd system && … exec odw check --stage full "$@"' --`). `require_serial` keeps one `odw check` at a time. The steps the block runs are not listed again in the configuration: a repository that takes the block removes its own hooks for them. `odapkit rename config` renders the same block for a cut root.
+The `odw-check` generator (`src/odw/check_hooks.py`) renders the hooks that run `odw check` (command standard §7) in `.pre-commit-config.yaml`. A repository's check roots are its folders that hold a tracked `check.toml` (the repository itself, or folders such as `system/` and `emulator/` of a merged root; folders under `tests/` or `fixtures/` are not). Each root gets one local hook per stage its `check.toml` declares: `odw-check-fast` before each commit and `odw-check-full` with `stages: [pre-push]` before each push; `release` has no hook, and a root that declares neither gets none, so `odw check` never meets `check.no_stage`. The hook passes the changed paths and `odw check` runs the steps whose `paths` match them, so a step without `paths` runs on every commit or push. A root in a folder gets the folder as an id suffix, `files: ^<folder>/` and an entry that runs inside it with each path given back relative to it (`sh -c 'cd system && … exec odw check --stage full "$@"' --`). `require_serial` keeps one `odw check` at a time. The steps the block runs are not listed again in the configuration: a repository that takes the block removes its own hooks for them. `odw rename config` renders the same block for a cut root.
 
 ## Generated files
 
@@ -41,7 +41,7 @@ A `[[generated]]` entry renders one `target` per repository from a workspace `so
 
 ## Commands
 
-`odapkit sync --check` reports each target that is missing or differs and exits 1 when there is any; `odapkit sync --apply` writes them, and `--apply --dry-run` names them and writes nothing. `--json` prints `opendap.check-result/v1`: with `--check` each drift is a `fail`, with `--apply` each target written (or that would be) is `info`. A missing `sync.toml` is the error `templates.not_found` (exit 2). The workspace's pre-commit runs `--check`.
+`odw sync --check` reports each target that is missing or differs and exits 1 when there is any; `odw sync --apply` writes them, and `--apply --dry-run` names them and writes nothing. `--json` prints `opendap.check-result/v1`: with `--check` each drift is a `fail`, with `--apply` each target written (or that would be) is `info`. A missing `sync.toml` is the error `templates.not_found` (exit 2). The workspace's pre-commit runs `--check`.
 
 ## Stages
 

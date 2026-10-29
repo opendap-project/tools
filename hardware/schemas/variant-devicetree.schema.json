@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/opendap-project/tools/blob/main/hardware/schemas/variant-devicetree.schema.json",
   "title": "opendap.variant-devicetree/v1",
-  "description": "The devicetree status of each block's node in one variant (RFC 0011 rule 7): okay when the variant fits the block, disabled when it does not; blocks whose catalog record names no node are listed as skipped. Written by odapkit variant apply as software/devicetree.json next to software/variant.dtso. Spec: docs/specs/variant-tool.md §7.",
+  "description": "The devicetree status of each block's node in one variant (RFC 0011 rule 7): okay when the variant fits the block, disabled when it does not; blocks whose catalog record names no node are listed as skipped. Written by odw variant apply as software/devicetree.json next to software/variant.dtso. Spec: docs/specs/variant-tool.md §7.",
   "type": "object",
   "additionalProperties": false,
   "required": [

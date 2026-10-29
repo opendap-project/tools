@@ -1,5 +1,5 @@
 """Generated files in a root's cut: a rendered file is never rewritten; its source is, and the file is rendered again
-from the rewritten source, so the generated-file check (`odapkit req render --check`) still passes after the cut.
+from the rewritten source, so the generated-file check (`odw req render --check`) still passes after the cut.
 
 Today one generator: a requirements README rendered from the `requirements.toml` beside it (odw/requirements.py).
 Spec: docs/specs/rename.md.

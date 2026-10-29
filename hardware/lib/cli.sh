@@ -5,7 +5,8 @@
 # ODAP_TOOLKIT_HOST_DIR (odapkit sets it), else the workspace's repos.tsv; without it,
 # the same error format in its smallest form. cli_root is this checkout.
 cli_root="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/.." && pwd)"
-: "${CLI_TOOL:=odapkit ${0##*/odapkit-}}"
+cli_name="${0##*/}"; cli_name="${cli_name#odw-}"; cli_name="${cli_name#odapkit-}"
+: "${CLI_TOOL:=odw $cli_name}"
 CLI_JSON="${CLI_JSON:-0}"
 
 # True when FILE belongs to the user running the tool (POSIX: no test -O).
@@ -50,6 +51,6 @@ fi
 
 # cli_header FILE LAST: --help: `<tool>: <summary>` (this root's tools.toml), then lines 3 to LAST of the header.
 cli_header() {
-  printf '%s: %s\n' "$CLI_TOOL" "$(cli_summary "${CLI_TOOL#odapkit }" "$cli_root/tools.toml")"
+  printf '%s: %s\n' "$CLI_TOOL" "$(cli_summary "${CLI_TOOL#* }" "$cli_root/tools.toml")"
   sed -n "3,${2}p" "$1" | sed 's/^# \{0,1\}//'
 }

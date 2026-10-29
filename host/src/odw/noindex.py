@@ -1,10 +1,10 @@
-"""odapkit noindex: keep generated trees out of the macOS Spotlight index.
+"""odw noindex: keep generated trees out of the macOS Spotlight index.
 
 Spotlight skips any folder whose name ends in `.noindex`. Each generated tree `<name>` (a Cargo `target/`, a
 Python `.venv/`, test caches) is renamed `<name>.noindex` and replaced by a relative symlink `<name>`, so every tool keeps
 using the old path while builds stop feeding the indexer.
 
-Usage: odapkit noindex [--apply [--force] | --check | --dry-run] [--node-modules] [--json] [PATH...]
+Usage: odw noindex [--apply [--force] | --check | --dry-run] [--node-modules] [--json] [PATH...]
 (default PATH: the current folder). Without --apply (or with --dry-run) it lists what it would change; --check fails while a generated tree is not linked. --apply moves
 nothing while a build runs (cargo, rustc, pytest), since moving a tree under a running build breaks it: it says
 it skipped and exits 0, so a check stage that ends with it never fails for that; --force moves anyway.
@@ -19,7 +19,7 @@ import sys
 
 from odw import clikit
 
-TOOL = "odapkit noindex"
+TOOL = "odw noindex"
 SCHEMA = "opendap.noindex/v1"
 
 DEFAULT = frozenset({"target", ".venv", ".pytest_cache", ".ruff_cache", ".mypy_cache"})
@@ -88,7 +88,7 @@ def main(argv=None):
 def _main(argv):
     ap = clikit.Parser(prog=TOOL, summary=clikit.summary("noindex"),
                        description="Keep generated trees out of the Spotlight index.",
-                       examples=["odapkit noindex --dry-run --json .", "odapkit noindex --apply ."])
+                       examples=["odw noindex --dry-run --json .", "odw noindex --apply ."])
     ap.add_argument("paths", nargs="*", default=["."])
     mode = ap.add_mutually_exclusive_group()
     mode.add_argument("--apply", action="store_true", help="rename and link (default: only list)")
@@ -111,10 +111,10 @@ def _main(argv):
             out += [str(c) for c in apply(pathlib.Path(p), names, dry_run=not args.apply)]
     except NoindexError as e:
         raise clikit.CliError("noindex.conflict", str(e), "a <name>.noindex already sits beside a real <name>/",
-                              "merge the two folders or remove one by hand, then run odapkit noindex --apply") from e
+                              "merge the two folders or remove one by hand, then run odw noindex --apply") from e
     if args.check:
         for p in out:
-            print(f"{TOOL}: {p} is not linked: run odapkit noindex --apply", file=sys.stderr)
+            print(f"{TOOL}: {p} is not linked: run odw noindex --apply", file=sys.stderr)
         if args.json:
             print(json.dumps({"schema": SCHEMA, "applied": False, "paths": out}))
         return 1 if out else 0

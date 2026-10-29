@@ -1,9 +1,9 @@
 """odw rename: one root's cut from the rename map (RFC 0017 §7 steps 3 and 4).
 
-Usage: odapkit rename merge ROOT --into DIR [...]   (step 2, the history merge: odw/rename_merge.py)
-       odapkit rename config ROOT [...]             (step 4, the shared configuration: odw/rename_config.py)
-       odapkit rename links [...]                   (after the cuts, the workspace-wide link check: odw/rename_links.py)
-       odapkit rename (plan | apply | check) ROOT [--workspace DIR] [--map TSV] [--root-dir DIR] [--cut ROOTS]
+Usage: odw rename merge ROOT --into DIR [...]   (step 2, the history merge: odw/rename_merge.py)
+       odw rename config ROOT [...]             (step 4, the shared configuration: odw/rename_config.py)
+       odw rename links [...]                   (after the cuts, the workspace-wide link check: odw/rename_links.py)
+       odw rename (plan | apply | check) ROOT [--workspace DIR] [--map TSV] [--root-dir DIR] [--cut ROOTS]
        [--landing REPO=DIR] [--kind KINDS] [--structure-only] [--dry-run] [--json | --text]
 
 plan (a dry run, the default) lists every move, delete, identifier rewrite and link or URL rewrite the root needs;
@@ -24,7 +24,7 @@ import sys
 from odw import (audit, clikit, rename_generated, rename_idents as ri, rename_keys as rk, rename_map, rename_merge,
                  rename_rewrite as rw, workspace)
 
-TOOL = "odapkit rename"
+TOOL = "odw rename"
 
 MAX_TEXT = 8 * 1024 * 1024
 TMP = ".odw-rename-tmp"
@@ -292,11 +292,11 @@ def apply(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
         raise Refused("rename.no-root", f"no root checkout at {root_dir}",
                       "apply runs in the root repository after its sources are merged into it with history "
                       "(RFC 0017 §7 step 2); plan works on the sources before that",
-                      f"odapkit rename plan {root} --root-dir <merged {root} checkout>")
+                      f"odw rename plan {root} --root-dir <merged {root} checkout>")
     top = pathlib.Path(_git(root_dir, "rev-parse", "--show-toplevel").strip()).resolve()
     if top != root_dir.resolve():
         raise Refused("rename.not-toplevel", f"{root_dir} is inside {top}, not a root checkout",
-                      "pass the root repository's own folder", f"odapkit rename apply {root} --root-dir {top}")
+                      "pass the root repository's own folder", f"odw rename apply {root} --root-dir {top}")
     landed = [s.landing for s in m.sources_of(root) if s.landing]
     if landed and not any((root_dir / d).is_dir() for d in landed):
         raise Refused("rename.not-merged", f"none of {', '.join(landed)} is in {root_dir}",
@@ -312,7 +312,7 @@ def apply(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
     if plan.conflicts:
         raise Refused("rename.conflict", f"{len(plan.conflicts)} conflicting targets, first {plan.conflicts[0]['path']}",
                       "two rows move files to one path, or a target exists; fix the rename map",
-                      f"odapkit rename plan {root} --root-dir {root_dir} --json")
+                      f"odw rename plan {root} --root-dir {root_dir} --json")
     base, commits = _git(root_dir, "rev-parse", "HEAD").strip(), []
     if plan.moves or plan.deletes:
         tmp = [(mv, f"{TMP}/{n}") for n, mv in enumerate(plan.moves)]
@@ -327,7 +327,7 @@ def apply(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
             _git(root_dir, "mv", "--", t, mv["to"])
         _prune(root_dir, [t for _, t in tmp])
         _git(root_dir, "commit", "-q", "-m", f"{root}: moves and deletes from the rename map\n\n"
-             f"{len(plan.moves)} moves, {len(plan.deletes)} deletes (odapkit rename apply {root}).")
+             f"{len(plan.moves)} moves, {len(plan.deletes)} deletes (odw rename apply {root}).")
         commits.append(_git(root_dir, "rev-parse", "HEAD").strip())
     if plan.texts or plan.links:
         for rel, text in plan.texts.items():
@@ -337,7 +337,7 @@ def apply(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
         _git(root_dir, "commit", "-q", "-m", f"{root}: references from the rename map\n\n"
              f"{len(plan.edits)} link, URL and identifier rewrites and {len(plan.generated)} generated files "
              f"rendered again, in {len(plan.texts)} files "
-             f"(odapkit rename apply {root}).")
+             f"(odw rename apply {root}).")
         commits.append(_git(root_dir, "rev-parse", "HEAD").strip())
     return document(plan, "apply", base=base, commits=commits)
 
@@ -382,7 +382,7 @@ def check(m, root, ws, root_dir, cut, kinds=None, structure_only=False):
         value=len(plan.cross_root))
     commit = _git(root_dir, "rev-parse", "HEAD", check=False).strip() if plan.view == "root" else ""
     subject = {"repo": root, **({"commit": commit} if commit else {})}
-    return {"schema": "opendap.check-result/v1", "tool": {"name": "odapkit rename"}, "subject": subject,
+    return {"schema": "opendap.check-result/v1", "tool": {"name": "odw rename"}, "subject": subject,
             "generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"), "results": res}
 
 
@@ -407,13 +407,13 @@ def _parser():
     ap = clikit.Parser(
         prog=TOOL, summary=clikit.summary("rename"), description="One root's cut from the rename map (moves, links, "
         "identifiers).", formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="examples:\n  odapkit rename merge libs --map rename-map.tsv --into ../libs   (step 2: history merge)\n"
-               "  odapkit rename plan libs --map rename-map.tsv\n"
-               "  odapkit rename plan libs --map rename-map.tsv --json\n"
-               "  odapkit rename apply libs --map rename-map.tsv --root-dir ../libs\n"
-               "  odapkit rename check libs --map rename-map.tsv --root-dir ../libs --json")
+        epilog="examples:\n  odw rename merge libs --map rename-map.tsv --into ../libs   (step 2: history merge)\n"
+               "  odw rename plan libs --map rename-map.tsv\n"
+               "  odw rename plan libs --map rename-map.tsv --json\n"
+               "  odw rename apply libs --map rename-map.tsv --root-dir ../libs\n"
+               "  odw rename check libs --map rename-map.tsv --root-dir ../libs --json")
     ap.add_argument("verb", choices=["plan", "apply", "check"], help="plan, apply or check; `merge` and `config` "
-                    "have their own options (odapkit rename merge --help, odapkit rename config --help)")
+                    "have their own options (odw rename merge --help, odw rename config --help)")
     ap.add_argument("root")
     ap.add_argument("--workspace")
     ap.add_argument("--map", help="the rename map (default: $ODAP_RENAME_MAP)")
@@ -451,17 +451,17 @@ def _main(argv):
         ws = pathlib.Path(args.workspace) if args.workspace else workspace.root()
         if ws is None:
             raise Refused("rename.no-workspace", "not inside a workspace (no repos.tsv)", "run it from the workspace",
-                          "odapkit rename plan ROOT --workspace <workspace>", 2)
+                          "odw rename plan ROOT --workspace <workspace>", 2)
         map_path = args.map or os.environ.get("ODAP_RENAME_MAP")
         if not map_path or not pathlib.Path(map_path).is_file():
             raise Refused("rename.no-map", f"no rename map ({map_path or 'none given'})",
                           "pass the map with --map or set ODAP_RENAME_MAP",
-                          f"odapkit rename {args.verb} {args.root} --map <rename-map.tsv>", 2)
+                          f"odw rename {args.verb} {args.root} --map <rename-map.tsv>", 2)
         landings = dict(x.split("=", 1) for x in args.landing if "=" in x)
         m = rename_map.load(ws, map_path, landings)
         if args.root not in m.roots:
             raise Refused("rename.unknown-root", f"the map names no root {args.root!r}",
-                          f"roots in the map: {', '.join(m.roots)}", f"odapkit rename plan {m.roots[0]}", 2)
+                          f"roots in the map: {', '.join(m.roots)}", f"odw rename plan {m.roots[0]}", 2)
         root_dir = pathlib.Path(args.root_dir) if args.root_dir else ws / "public" / args.root
         cut = m.cut(args.root, [c for c in (args.cut or "").split(",") if c], ws)
         kinds = {k for k in (args.kind or "").split(",") if k}

@@ -48,7 +48,7 @@ def load_pcbnew():
             import pcbnew as module
     except ImportError:  # pragma: no cover
         sys.exit("pcb-craft-check: pcbnew not found: run it with KiCad's Python, or through "
-                 "`odapkit craft check`")
+                 "`odw craft check`")
     pcbnew = module
 
 

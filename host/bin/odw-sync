@@ -1,0 +1,7 @@
+#!/bin/sh
+# Shared boilerplate from the workspace templates: report drift (--check) or repair it (--apply).
+#
+# Usage: odw sync [--workspace DIR] [--templates DIR] (--check | --apply) [--json]
+# Spec: docs/specs/workspace-sync.md.
+here="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/.." && pwd)"
+exec uv run --quiet --project "$here" python -m odw.sync "$@"

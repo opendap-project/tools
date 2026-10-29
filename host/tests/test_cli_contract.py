@@ -18,7 +18,7 @@ PYTHON = {"audit": audit, "cli": cli_conformance, "docs": docs, "noindex": noind
 
 
 def test_every_plugin_in_bin_is_declared():
-    on_disk = {p.name.removeprefix("odapkit-") for p in (HOST / "bin").glob("odapkit-*")}
+    on_disk = {p.name.removeprefix("odw-") for p in (HOST / "bin").glob("odw-*")}
     assert on_disk == set(TOOLS)
     assert all((HOST / t["entry"]).is_file() for t in TOOLS.values())
 
@@ -27,7 +27,7 @@ def test_every_plugin_in_bin_is_declared():
 def test_help_first_line_is_front_tool_and_the_declared_summary(name, capsys):
     assert PYTHON[name].main(["--help"]) == 0
     first = capsys.readouterr().out.splitlines()[0]
-    assert first == f"odapkit {name}: {TOOLS[name]['summary']}"
+    assert first == f"odw {name}: {TOOLS[name]['summary']}"
 
 
 @pytest.mark.parametrize("name", sorted(PYTHON))
@@ -46,21 +46,21 @@ def test_a_usage_error_with_json_is_an_error_document(name, capsys):
 
 @pytest.mark.parametrize("name", ["qemu", "vmnet"])
 def test_shell_plugins_help_first_line(name):
-    r = subprocess.run([str(HOST / "bin" / f"odapkit-{name}"), "--help"], capture_output=True, text=True)
+    r = subprocess.run([str(HOST / "bin" / f"odw-{name}"), "--help"], capture_output=True, text=True)
     assert r.returncode == 0
-    assert r.stdout.splitlines()[0] == f"odapkit {name}: {TOOLS[name]['summary']}"
+    assert r.stdout.splitlines()[0] == f"odw {name}: {TOOLS[name]['summary']}"
 
 
 @pytest.mark.parametrize("name", ["qemu", "vmnet"])
 def test_shell_plugins_unknown_flag_exits_2_with_a_code(name):
-    r = subprocess.run([str(HOST / "bin" / f"odapkit-{name}"), "--odw-no-such-flag"], capture_output=True,
+    r = subprocess.run([str(HOST / "bin" / f"odw-{name}"), "--odw-no-such-flag"], capture_output=True,
                        text=True)
     assert r.returncode == 2 and "error input.invalid:" in r.stderr and "hint: " in r.stderr
 
 
 def test_qemu_install_dry_run_names_its_steps_and_changes_nothing(tmp_path):
     env = {"HOME": str(tmp_path), "PATH": "/usr/bin:/bin"}
-    r = subprocess.run([str(HOST / "bin" / "odapkit-qemu"), "install", "--dry-run"], capture_output=True,
+    r = subprocess.run([str(HOST / "bin" / "odw-qemu"), "install", "--dry-run"], capture_output=True,
                        text=True, env=env)
     # Without the build tools on PATH the dry run says the install would fail, and exits 1.
     assert r.returncode == 1 and "would fail: missing" in r.stderr
@@ -69,7 +69,7 @@ def test_qemu_install_dry_run_names_its_steps_and_changes_nothing(tmp_path):
 
 
 def test_qemu_status_json_has_a_schema(tmp_path):
-    r = subprocess.run([str(HOST / "bin" / "odapkit-qemu"), "status", "--json"], capture_output=True, text=True,
+    r = subprocess.run([str(HOST / "bin" / "odw-qemu"), "status", "--json"], capture_output=True, text=True,
                        env={"HOME": str(tmp_path), "PATH": "/usr/bin:/bin"})
     assert r.returncode == 1
     doc = json.loads(r.stdout)
@@ -77,10 +77,10 @@ def test_qemu_status_json_has_a_schema(tmp_path):
 
 
 @pytest.mark.skipif(subprocess.run(["uname", "-s"], capture_output=True, text=True).stdout.strip() != "Darwin",
-                    reason="odapkit vmnet is macOS only")
+                    reason="odw vmnet is macOS only")
 @pytest.mark.parametrize("verb", ["install", "uninstall"])
 def test_vmnet_dry_run_names_its_steps_and_runs_nothing_as_root(verb):
-    r = subprocess.run([str(HOST / "bin" / "odapkit-vmnet"), verb, "--dry-run"], capture_output=True, text=True,
+    r = subprocess.run([str(HOST / "bin" / "odw-vmnet"), verb, "--dry-run"], capture_output=True, text=True,
                        stdin=subprocess.DEVNULL, env={"PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
                                                       "ODAP_LAN_INTERFACE": "en9"})
     assert r.returncode == 0, r.stderr
@@ -88,9 +88,9 @@ def test_vmnet_dry_run_names_its_steps_and_runs_nothing_as_root(verb):
 
 
 @pytest.mark.skipif(subprocess.run(["uname", "-s"], capture_output=True, text=True).stdout.strip() != "Darwin",
-                    reason="odapkit vmnet is macOS only")
+                    reason="odw vmnet is macOS only")
 def test_vmnet_status_json_has_a_schema():
-    r = subprocess.run([str(HOST / "bin" / "odapkit-vmnet"), "status", "--json"], capture_output=True, text=True,
+    r = subprocess.run([str(HOST / "bin" / "odw-vmnet"), "status", "--json"], capture_output=True, text=True,
                        env={"PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "ODAP_LAN_INTERFACE": "en9"})
     doc = json.loads(r.stdout)
     assert doc["schema"] == "opendap.vmnet-status/v1" and doc["running"] is False and r.returncode == 1
@@ -111,14 +111,12 @@ def test_umbrella_help_json_lists_the_tools_with_a_schema(tmp_path):
     own) still lists this checkout's tools, through ODAP_TOOLKIT_HOST_DIR, which the alias sets (HL-102)."""
     if not _odw():
         pytest.skip("odw is not built and not on PATH (setup.sh builds it)")
-    env = {k: v for k, v in os.environ.items() if not k.startswith("ODAP_")}
-    env["ODAP_WORKSPACE_DIR"] = str(tmp_path)
-    r = _umbrella("help", "--json", env=env)
+    r = _umbrella("help", "--json", env=_outside(tmp_path))
     assert r.returncode == 0, r.stderr
     doc = json.loads(r.stdout)
     assert schemas.errors(doc, "tools-list") == []
     by_name = {t["name"]: t for t in doc["items"]}
-    assert by_name["plan"]["entry"] == f"{HOST}/bin/odapkit-plan"
+    assert by_name["plan"]["entry"] == f"{HOST}/bin/odw-plan"
     for name, tool in TOOLS.items():  # every tool of this checkout, as its tools.toml declares it
         item = by_name[name]
         assert (item["summary"], item["audience"], item["stability"]) == (
@@ -126,9 +124,18 @@ def test_umbrella_help_json_lists_the_tools_with_a_schema(tmp_path):
         assert item["entry"] == str(HOST / tool["entry"])
 
 
-def test_umbrella_runs_the_declared_entry():
-    r = _umbrella("plan", "--help")
-    assert r.returncode == 0 and r.stdout.splitlines()[0] == f"odapkit plan: {TOOLS['plan']['summary']}"
+def _outside(tmp_path):
+    """No workspace: the odw that runs lists this checkout's tools (ODAP_TOOLKIT_HOST_DIR, set by the alias)."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith("ODAP_")}
+    env["ODAP_WORKSPACE_DIR"] = str(tmp_path)
+    return env
+
+
+def test_umbrella_runs_the_declared_entry(tmp_path):
+    if not _odw():
+        pytest.skip("odw is not built and not on PATH (setup.sh builds it)")
+    r = _umbrella("plan", "--help", env=_outside(tmp_path))
+    assert r.returncode == 0 and r.stdout.splitlines()[0] == f"odw plan: {TOOLS['plan']['summary']}"
 
 
 def test_umbrella_unknown_tool_is_an_error_with_a_code_and_a_fix():

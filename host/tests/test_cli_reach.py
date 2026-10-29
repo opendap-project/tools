@@ -1,4 +1,4 @@
-"""odapkit cli: the umbrellas (HL-102) and the scripts a tool runs (HL-100) in the conformance test."""
+"""odw cli: the umbrellas (HL-102) and the scripts a tool runs (HL-100) in the conformance test."""
 import json
 
 import pytest
@@ -104,7 +104,7 @@ def test_the_craft_scripts_are_verified_through_the_calls_that_name_them(tmp_pat
     (tmp_path / "public").mkdir()
     (tmp_path / "public/tools").symlink_to(HOST.parent)
     items = [e for e in cli_inventory.inventory(tmp_path)
-             if e["name"] in ("odapkit-craft", "sch-craft-check.py", "craftrules.py", "pcb-craft-check.py")]
+             if e["name"] in ("odw-craft", "sch-craft-check.py", "craftrules.py", "pcb-craft-check.py")]
     m = cli_conformance.conformance(tmp_path, items, cli_probe.probe_all(items, tmp_path, timeout=60))
     why = {(c["option"], c["criterion"]): (c["state"], c["why"]) for c in m["results"]}
     tools = "public/tools/hardware/tools"

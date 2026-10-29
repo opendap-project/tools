@@ -1,4 +1,4 @@
-"""Tests for odapkit component (bin/odapkit-component, engine tools/component/validate.py) on the board example in tests/fixtures/component (needs uv).
+"""Tests for odw component (bin/odw-component, engine tools/component/validate.py) on the board example in tests/fixtures/component (needs uv).
 
 Run from the repository root: python3 -m unittest discover tests
 """
@@ -15,7 +15,7 @@ for _k in [k for k in os.environ if k.startswith("GIT_")]:
     del os.environ[_k]
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TOOL = os.path.join(HERE, "..", "bin", "odapkit-component")
+TOOL = os.path.join(HERE, "..", "bin", "odw-component")
 FIXTURE = os.path.join(HERE, "fixtures", "component", "board")
 
 

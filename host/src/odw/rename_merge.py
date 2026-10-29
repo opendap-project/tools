@@ -1,7 +1,7 @@
 """odw rename merge: a root's source repositories joined into one root repository with their history (RFC 0017
-§7 step 2), before `odapkit rename apply`.
+§7 step 2), before `odw rename apply`.
 
-Usage: odapkit rename merge ROOT --into DIR [--workspace DIR] [--map TSV] [--branch B] [--source NAME=LOCATION]
+Usage: odw rename merge ROOT --into DIR [--workspace DIR] [--map TSV] [--branch B] [--source NAME=LOCATION]
        [--landing NAME=DIR] [--engine auto|filter-repo|fast-export] [--report FILE] [--dry-run] [--json | --text]
 
 Each source is cloned fresh (never touched), its history rewritten under its landing folder, and the rewritten
@@ -21,7 +21,7 @@ import tempfile
 from odw import audit, clikit, rename_map, workspace
 from odw import rename_merge_git as g
 
-TOOL = "odapkit rename merge"
+TOOL = "odw rename merge"
 SCHEMA = "opendap.rename-merge/v1"
 REF = "refs/odw-merge"
 
@@ -204,7 +204,7 @@ def message(root, srcs, engine):
     rows = "".join(f"- {s.name} → {s.landing or '.'}/: {s.report['commits']} commits, head {s.head}\n" for s in srcs)
     trailers = "".join(f"Source-Head: {s.name} {s.head}\n" for s in srcs)
     return (f"{root}: join {names} with their history\n\nRFC 0017 §7 step 2. Each source's history is rewritten "
-            f"under its folder (odapkit rename merge {root}, engine {engine}); its last commit is recorded below.\n\n"
+            f"under its folder (odw rename merge {root}, engine {engine}); its last commit is recorded below.\n\n"
             f"{rows}\n{trailers}")
 
 
@@ -271,11 +271,11 @@ def _text(doc):
 def _parser():
     ap = clikit.Parser(
         prog=TOOL, formatter_class=argparse.RawDescriptionHelpFormatter,
-        description="odapkit rename merge: join a root's source repositories with their history (RFC 0017 §7 "
+        description="odw rename merge: join a root's source repositories with their history (RFC 0017 §7 "
                     "step 2). Never pushes; never touches the source clones.",
-        epilog="examples:\n  odapkit rename merge libs --map rename-map.tsv --dry-run\n"
-               "  odapkit rename merge libs --map rename-map.tsv --into ../cut/libs --json\n"
-               "  odapkit rename merge libs --map rename-map.tsv --into ../cut/libs "
+        epilog="examples:\n  odw rename merge libs --map rename-map.tsv --dry-run\n"
+               "  odw rename merge libs --map rename-map.tsv --into ../cut/libs --json\n"
+               "  odw rename merge libs --map rename-map.tsv --into ../cut/libs "
                "--source kicad-lib=../kicad-lib.bundle")
     ap.add_argument("root")
     ap.add_argument("--into", help="the new root repository (a new or empty folder); not needed with --dry-run")
@@ -304,19 +304,19 @@ def run(a):
     ws = pathlib.Path(a.workspace) if a.workspace else workspace.root()
     if ws is None:
         raise Refused("merge.no-workspace", "not inside a workspace (no repos.tsv)", "run it from the workspace",
-                      "odapkit rename merge ROOT --workspace <workspace>", 2)
+                      "odw rename merge ROOT --workspace <workspace>", 2)
     map_path = a.map or os.environ.get("ODAP_RENAME_MAP")
     if not map_path or not pathlib.Path(map_path).is_file():
         raise Refused("merge.no-map", f"no rename map ({map_path or 'none given'})",
                       "pass the map with --map or set ODAP_RENAME_MAP",
-                      f"odapkit rename merge {a.root} --map <rename-map.tsv>", 2)
+                      f"odw rename merge {a.root} --map <rename-map.tsv>", 2)
     m = rename_map.load(ws, map_path, _pairs(a.landing))
     if a.root not in m.roots:
         raise Refused("merge.unknown-root", f"the map names no root {a.root!r}", f"roots: {', '.join(m.roots)}",
-                      f"odapkit rename merge {m.roots[0]} --dry-run", 2)
+                      f"odw rename merge {m.roots[0]} --dry-run", 2)
     if not a.into and not a.dry_run:
         raise Refused("merge.no-into", "no --into folder", "the merge builds the root in a new folder you name",
-                      f"odapkit rename merge {a.root} --into <new folder>, or --dry-run", 2)
+                      f"odw rename merge {a.root} --into <new folder>, or --dry-run", 2)
     into = pathlib.Path(a.into).resolve() if a.into else None
     engine = engine_of(a.engine)
     srcs, problems = sources(m, a.root, ws, _pairs(a.source), a.branch)
@@ -343,7 +343,7 @@ def run(a):
             for p in into.iterdir():
                 shutil.rmtree(p) if p.is_dir() else p.unlink()
         raise Refused("merge.git", str(e), "a git step failed; the new root was removed and no source changed",
-                      f"odapkit rename merge {a.root} --dry-run --text") from e
+                      f"odw rename merge {a.root} --dry-run --text") from e
     finally:
         shutil.rmtree(work, ignore_errors=True)
     doc = document(a.root, into, a.branch, engine, srcs, "merge", head=head, into_dir=into)

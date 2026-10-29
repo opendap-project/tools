@@ -1,4 +1,4 @@
-"""Tests for odapkit sim (its engine, tools/sim/simchecks.py) on the RC fixture in tests/fixtures/sim (needs ngspice on PATH).
+"""Tests for odw sim (its engine, tools/sim/simchecks.py) on the RC fixture in tests/fixtures/sim (needs ngspice on PATH).
 
 Run from the repository root: python3 -m unittest discover tests
 """

@@ -1,7 +1,7 @@
-"""odapkit component: validate a component's export/component.yaml against the export contract.
+"""odw component: validate a component's export/component.yaml against the export contract.
 
 Usage:
-    odapkit component validate [--json] [PATH...]
+    odw component validate [--json] [PATH...]
 
 PATH is a component.yaml, an export/ folder, or a component repository (its export/component.yaml).
 Default: the current folder.
@@ -12,8 +12,8 @@ files in export/ that are not listed are reported as warnings (README.md and com
 not exported files).
 
 Examples:
-    odapkit component validate --json .
-    odapkit component validate export/component.yaml
+    odw component validate --json .
+    odw component validate export/component.yaml
 
 Errors carry a stable dotted code, a hint and a fix (toolkit-host's odw.clikit; with --json, also an
 opendap.error/v1 document on stdout).
@@ -32,7 +32,7 @@ SCHEMA = os.path.join(HERE, "..", "..", "schemas", "component.schema.json")
 sys.path.insert(0, os.path.join(HERE, ".."))
 from clihost import load, summary  # noqa: E402
 
-TOOL = "odapkit component"
+TOOL = "odw component"
 clikit = load(TOOL)
 NOT_EXPORTED = {"component.yaml", "README.md", ".DS_Store"}
 
@@ -95,7 +95,7 @@ def main(argv):
     as_json = "--json" in argv
 
     def usage(message):
-        return clikit.report(TOOL, clikit.CliError("input.invalid", message, "usage: odapkit component validate "
+        return clikit.report(TOOL, clikit.CliError("input.invalid", message, "usage: odw component validate "
                                                    "[--json] [PATH...]", f"{TOOL} --help", status=2), as_json)
     if not argv or argv[0] != "validate":
         return usage(f"unknown command {argv[0]}" if argv else "no command (validate)")

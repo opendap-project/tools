@@ -1,4 +1,4 @@
-"""odapkit variant: a board's variants (RFC 0011) validated, resolved and built from schematic to PCB.
+"""odw variant: a board's variants (RFC 0011) validated, resolved and built from schematic to PCB.
 
 Reads a component's variant files (opendap.board-variant/v1, `variants/` or `hardware/variants/`), the block
 catalog each one names, and the KiCad project of its board. Spec: docs/specs/variant-tool.md.
@@ -11,7 +11,7 @@ import sys
 import tempfile
 
 if sys.version_info < (3, 11):
-    sys.exit("odapkit variant: Python 3.11 or later is needed (tomllib)")
+    sys.exit("odw variant: Python 3.11 or later is needed (tomllib)")
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 sys.path.insert(0, HERE)
 from clihost import load  # noqa: E402
 
-TOOL = "odapkit variant"
+TOOL = "odw variant"
 clikit = load(TOOL)
 import absent  # noqa: E402
 import build  # noqa: E402
@@ -133,7 +133,7 @@ def evaluate(arg, folder, project=None, schematic=False, absent_state=False):
                     findings.append({"level": "warning", "code": "pcb.variant-missing", "where": pcb,
                                      "message": f"the schematic has KiCad variant data for '{v.name}' but the board "
                                                 "does not: its --variant fab outputs are the base population until "
-                                                "the board is updated from the schematic (odapkit variant apply "
+                                                "the board is updated from the schematic (odw variant apply "
                                                 "writes it into its copy)"})
     return v, cat, findings, rows, mode, pro
 
@@ -349,10 +349,10 @@ def parser():
                        description=__doc__.split("\n", 2)[2].split("\nExit status")[0].strip()
                        + "\n\nExit status: 0 no error (warnings allowed), 1 a finding at error level, 2 usage, "
                          "file or tool error.",
-                       examples=["odapkit variant list", "odapkit variant get production --json",
-                                 "odapkit variant diff full production", "odapkit variant bom production --out bom.csv",
-                                 "odapkit variant apply production --out /tmp/t1-production",
-                                 "odapkit variant check --no-build"])
+                       examples=["odw variant list", "odw variant get production --json",
+                                 "odw variant diff full production", "odw variant bom production --out bom.csv",
+                                 "odw variant apply production --out /tmp/t1-production",
+                                 "odw variant check --no-build"])
     ap.formatter_class = __import__("argparse").RawDescriptionHelpFormatter
     sub = ap.add_subparsers(dest="cmd", required=True, parser_class=clikit.Parser)
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/opendap-project/tools/blob/main/host/schemas/rename-config.schema.json",
-  "title": "opendap.rename-config/v1: a cut root's shared configuration (odapkit rename config)",
+  "title": "opendap.rename-config/v1: a cut root's shared configuration (odw rename config)",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema", "mode", "root", "folders", "hoisted", "removed", "written", "kept", "stripped", "hooks",

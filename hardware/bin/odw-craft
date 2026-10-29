@@ -1,0 +1,62 @@
+#!/bin/sh
+# Check a KiCad board, schematic or symbol library against the OpenDAP craft standard, by level.
+#
+# Usage: odw craft check [--json] [--config FILE] [--target Qn] [--no-drc] BOARD.kicad_pcb
+#        odw craft check [--json] [--config FILE] [--target Qn] [--no-erc] ROOT.kicad_sch
+#        odw craft check [--json] [--target Qn] LIBRARY.kicad_sym
+#        odw craft rules render SPEC.md [--check]
+#
+# A board runs tools/pcb-craft-check.py with KiCad's bundled Python (pcbnew), with its DRC folded
+# in (unless --no-drc). A schematic (the project's root sheet) or a symbol library runs
+# tools/sch-craft-check.py with python3 and kicad-cli, with the project's ERC folded in (unless
+# --no-erc). Results are grouped by level (RFC 0010) with the level reached. Configuration:
+# <project>.craft.toml next to the file; see each script's help for the format. Standard:
+# kicad-lib docs/specs/pcb-craft-standard.md. KiCad is found through $KICAD_PYTHON, then KiCad.app
+# ($KICAD_APP, default /Applications/KiCad/KiCad.app).
+# The rules, their levels and the limits the checks read are data: tools/craft/rules.toml
+# (schemas/craft-rules.schema.json). `rules render` writes the standard's rule tables from it
+# between their `odapkit craft rules` markers; with --check it only reports a stale table.
+#
+# Errors carry a stable dotted code, a hint and a fix (toolkit-host's lib/cli.sh, through lib/cli.sh).
+#
+# Examples:
+#   odw craft check --json board.kicad_pcb
+#   odw craft rules render docs/specs/pcb-craft-standard.md --check
+#
+# Exit status: 0 every item at or below the target passes (or the tables are current), 1 otherwise,
+# 2 usage error.
+set -eu
+self="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+here="$(cd "$(dirname "$self")/.." && pwd)"
+CLI_TOOL="odw craft"
+. "$here/lib/cli.sh"
+case "${1:-}" in
+  -h|--help|help) cli_header "$self" 27; exit 0 ;;
+  "") cli_header "$self" 27; exit 2 ;;
+  check) shift ;;
+  rules) shift; exec "${ODAPKIT_PYTHON3:-python3}" "$here/tools/craft/craftrules.py" "$@" ;;
+  -*) cli_usage "unknown flag $1" ;;
+  *) cli_usage "unknown command $1 (check, rules)" ;;
+esac
+# Schematics and symbol libraries: plain Python 3.9+ (tomllib from 3.11, else through python3).
+for a in "$@"; do
+  case "$a" in
+    *.kicad_sch|*.kicad_sym)
+      ODAPKIT_PYTHON3="${ODAPKIT_PYTHON3:-$(command -v python3 || echo python3)}"
+      export ODAPKIT_PYTHON3 KICAD_APP="${KICAD_APP:-/Applications/KiCad/KiCad.app}"
+      exec "$ODAPKIT_PYTHON3" "$here/tools/sch-craft-check.py" "$@" ;;
+  esac
+done
+app="${KICAD_APP:-/Applications/KiCad/KiCad.app}"
+py="${KICAD_PYTHON:-$app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3}"
+if [ ! -x "$py" ]; then
+  py="$(command -v python3 || true)"
+  if [ -z "$py" ] || ! "$py" -c 'import pcbnew' 2>/dev/null; then
+    cli_fail "kicad.not_found" "KiCad's Python (pcbnew) not found" "a board check runs with KiCad's bundled Python" \
+      "export KICAD_APP=/Applications/KiCad/KiCad.app"
+  fi
+fi
+# KiCad's Python (3.9) has no tomllib: the script reads the configuration through this one.
+ODAPKIT_PYTHON3="${ODAPKIT_PYTHON3:-$(command -v python3 || echo python3)}"
+export ODAPKIT_PYTHON3 KICAD_APP="$app"
+exec "$py" "$here/tools/pcb-craft-check.py" "$@"

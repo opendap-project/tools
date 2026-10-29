@@ -1,4 +1,4 @@
-"""The feature-block catalog `odapkit variant` validates variant files against (RFC 0011 §1).
+"""The feature-block catalog `odw variant` validates variant files against (RFC 0011 §1).
 
 Two sources, chosen by the variant file's `catalog` path:
 
@@ -7,7 +7,7 @@ Two sources, chosen by the variant file's `catalog` path:
   column, then one record per block under a heading that names it in backticks, with an `Alternates` row.
   This reader is transitional: it goes when the catalog becomes block records.
 
-Besides the fields `odapkit variant` validates against, each block carries what the absent-state check and the
+Besides the fields `odw variant` validates against, each block carries what the absent-state check and the
 software outputs read: `absent_text` (the block-level absent state), `absent_nets` (per-net declarations of a
 record's `absent_state` table; the schematic's interface tables add theirs in absent.py) and `software` (devicetree
 node, compatibles, `cc.opendap.Blackbird.Hw.*` interfaces, device-description sections), parsed from a record's `software`

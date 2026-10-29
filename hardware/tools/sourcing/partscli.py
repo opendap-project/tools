@@ -1,12 +1,12 @@
 """Sourcing evaluation matrix: stock, price breaks and lifecycle per part and channel, scored.
 
 Usage:
-    odapkit parts matrix CANDIDATES.toml --out DIR [--offline] [--max-age HOURS]
+    odw parts matrix CANDIDATES.toml --out DIR [--offline] [--max-age HOURS]
                          [--cache DIR] [--no-findchips] [--json] [--dry-run]
-    odapkit parts matrix --render MATRIX.json --out DIR [--columns a,b,c] [--json] [--dry-run]
-    odapkit parts rk-ddr-list LIST.pdf [--soc RK3566] [--type LPDDR4] [--package 200ball]
+    odw parts matrix --render MATRIX.json --out DIR [--columns a,b,c] [--json] [--dry-run]
+    odw parts rk-ddr-list LIST.pdf [--soc RK3566] [--type LPDDR4] [--package 200ball]
                          [--density 16,32,64] [--supported] [--format csv|json|toml]
-    odapkit parts channels
+    odw parts channels
 
 matrix       reads the candidates (docs/specs/sourcing-matrix.md), collects every candidate's
              listings per channel (Digi-Key, Mouser, Newark, Arrow, TTI, LCSC; FindChips for the
@@ -30,7 +30,7 @@ ELEMENT14_API_KEY (Newark), ARROW_API_KEY with ARROW_LOGIN, TTI_API_KEY.
 
 --dry-run (matrix) reads the candidates or the saved JSON, names the files it would write, and fetches
 and writes nothing. Errors carry a stable dotted code, a hint and a fix (toolkit-host's odw.clikit).
-Example: odapkit parts matrix candidates.toml --out ../private/sourcing --dry-run
+Example: odw parts matrix candidates.toml --out ../private/sourcing --dry-run
 
 Exit status: 0 done, 1 a fetch or parse failed for every channel, 2 usage or file error
 (including a --render JSON without columns, or a column no candidate has).
@@ -46,13 +46,13 @@ sys.path.insert(0, os.path.join(HERE, ".."))
 from sourcing import channels, matrix, rkddr  # noqa: E402
 from clihost import load, summary  # noqa: E402
 
-TOOL = "odapkit parts"
+TOOL = "odw parts"
 clikit = load(TOOL)
 FILES = ("matrix.md", "matrix.csv", "listings.csv")
 
 
 def usage(msg=None):
-    clikit.report(TOOL, clikit.CliError("input.invalid", msg or "no command", "the usage is in odapkit parts --help",
+    clikit.report(TOOL, clikit.CliError("input.invalid", msg or "no command", "the usage is in odw parts --help",
                                         f"{TOOL} --help", 2))
     print(__doc__.split("\n", 2)[2].split("\n\n")[0], file=sys.stderr)
     return 2
@@ -98,7 +98,7 @@ def cmd_render(args, out, as_json, dry_run):
     try:
         doc, spec = matrix.load_saved(path, None if cols is None else [c for c in cols.split(",") if c])
     except (OSError, matrix.MatrixError, ValueError) as e:
-        return fail("matrix.invalid", e, "a saved matrix.json from odapkit parts matrix, with its columns",
+        return fail("matrix.invalid", e, "a saved matrix.json from odw parts matrix, with its columns",
                     f"{TOOL} matrix --render MATRIX.json --out DIR --columns a,b,c")
     if dry_run:
         return would_write(out, FILES)
@@ -107,7 +107,7 @@ def cmd_render(args, out, as_json, dry_run):
         print(json.dumps(doc, indent=1, ensure_ascii=False))
     else:
         print(md)
-    print(f"odapkit parts: wrote {out}/matrix.md, matrix.csv, listings.csv from {path}", file=sys.stderr)
+    print(f"odw parts: wrote {out}/matrix.md, matrix.csv, listings.csv from {path}", file=sys.stderr)
     return 0
 
 
@@ -147,7 +147,7 @@ def cmd_matrix(args):
             print(f.read())
     else:
         print(md)
-    print(f"odapkit parts: wrote {out}/matrix.md, matrix.csv, listings.csv, matrix.json", file=sys.stderr)
+    print(f"odw parts: wrote {out}/matrix.md, matrix.csv, listings.csv, matrix.json", file=sys.stderr)
     every = [c for r in results for c in r["coverage"].values()]
     return 1 if every and all(str(c).startswith(("error", "skipped")) for c in every) else 0
 

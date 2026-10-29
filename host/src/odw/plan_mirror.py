@@ -1,6 +1,6 @@
 """odw plan mirror: the public part of a programme as GitHub issues, one tracking issue per accepted RFC.
 
-`odapkit plan mirror [--workspace DIR] [--dry-run]` reads the programme's tasks with `visibility = "public"` and
+`odw plan mirror [--workspace DIR] [--dry-run]` reads the programme's tasks with `visibility = "public"` and
 groups them by the RFC they apply: the task's entry in `[task_rfc]` of the programme's mirror.toml, else the
 first `RFC NNNN` in its public title, else `[phase_rfc]` for its phase. A task's public title is its entry in
 `[public_title]`, else its title. A task whose RFC is missing or not Accepted is
@@ -28,7 +28,7 @@ import urllib.parse
 
 from odw import clikit, rfcstatus, schemas
 
-TOOL = "odapkit plan mirror"
+TOOL = "odw plan mirror"
 SCHEMA = "opendap.plan-mirror/v1"
 CONFIG = "mirror.toml"
 MARKER = "<!-- odapkit plan mirror: rfc {} -->"
@@ -46,7 +46,7 @@ def load_config(root):
     if not path.is_file():
         raise clikit.CliError("mirror.no_config", f"no {path}",
                               "the programme folder holds mirror.toml (opendap.plan-mirror-config/v1)",
-                              f"odapkit plan --programme DIR mirror --dry-run", status=2)
+                              f"odw plan --programme DIR mirror --dry-run", status=2)
     cfg = clikit.load_toml(path, "mirror.invalid_config", status=2)
     errs = schemas.errors(cfg, "plan-mirror-config")
     if errs:
@@ -171,7 +171,7 @@ def guard(doc, ws, programme):
         raise clikit.CliError("mirror.private_fact", "the issues would publish private facts: "
                               + "; ".join(sorted(set(found))),
                               "a public task's title states public facts only",
-                              "reword the task's title or set visibility = \"private\", then odapkit plan mirror --dry-run")
+                              "reword the task's title or set visibility = \"private\", then odw plan mirror --dry-run")
 
 
 class GitHub:

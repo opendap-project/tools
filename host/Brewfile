@@ -9,7 +9,7 @@ brew "reuse"
 brew "yq"
 brew "jq"
 brew "gh"
-brew "git-filter-repo"   # history-preserving moves for the topology cutover (odapkit rename merge)
+brew "git-filter-repo"   # history-preserving moves for the topology cutover (odw rename merge)
 
 # Python (per-study simulation environments)
 brew "uv"
@@ -32,12 +32,12 @@ brew "zig"
 
 # Emulation, and the Linux VM that builds images and the sysroot
 brew "qemu"
-# Building the patched QEMU (bin/odapkit-qemu); QEMU's own libraries come with brew "qemu"
+# Building the patched QEMU (bin/odw-qemu); QEMU's own libraries come with brew "qemu"
 brew "meson"
 brew "ninja"
 brew "pkgconf"
 brew "lima"
-# The LAN for virtual devices (socket_vmnet) is installed by bin/odapkit-vmnet, not Homebrew
+# The LAN for virtual devices (socket_vmnet) is installed by bin/odw-vmnet, not Homebrew
 
-# Motion review and presentation videos: recording, frames, encoding (toolkit-verify odapkit motion)
+# Motion review and presentation videos: recording, frames, encoding (toolkit-verify odw motion)
 brew "ffmpeg"

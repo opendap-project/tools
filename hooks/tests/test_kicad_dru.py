@@ -1,5 +1,5 @@
-"""Tests for hooks/kicad-dru.py on the fixture in tests/fixtures/dru, and for bin/odapkit-dru, the same engine
-reached as `odapkit dru` (the one DRU test suite: the hook and the tool never disagree).
+"""Tests for hooks/kicad-dru.py on the fixture in tests/fixtures/dru, and for bin/odw-dru, the same engine
+reached as `odw dru` (the one DRU test suite: the hook and the tool never disagree).
 
 Run from the repository root: python3 -m unittest discover tests
 """
@@ -14,7 +14,7 @@ import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TOOL = os.path.join(HERE, "..", "hooks", "kicad-dru.py")
-WRAPPER = os.path.join(HERE, "..", "bin", "odapkit-dru")
+WRAPPER = os.path.join(HERE, "..", "bin", "odw-dru")
 TOOLS_TOML = os.path.join(HERE, "..", "tools.toml")
 FIXTURE = os.path.join(HERE, "fixtures", "dru")
 MANIFEST = "hardware/demo.dru.toml"
@@ -237,7 +237,7 @@ class KicadDru(unittest.TestCase):
 
 
 class OdapkitDru(unittest.TestCase):
-    """bin/odapkit-dru: `odapkit dru` runs hooks/kicad-dru.py, the kicad-dru-composed hook's engine."""
+    """bin/odw-dru: `odw dru` runs hooks/kicad-dru.py, the kicad-dru-composed hook's engine."""
 
     FAB = '(version 1)\n(rule "Fab: track width"\n\t(constraint track_width (min 0.1mm))\n)\n'
     PRODUCT = '(version 1)\n(rule "Product: track width"\n\t(constraint track_width (min 0.2mm))\n)\n'
@@ -280,12 +280,14 @@ class OdapkitDru(unittest.TestCase):
         r = self.run_tool("--help")
         self.assertEqual(r.returncode, 0)
         summary = re.search(r'name = "dru"\nsummary = "([^"]+)"', read(TOOLS_TOML)).group(1)
-        self.assertEqual(r.stdout.splitlines()[0], f"odapkit dru: {summary}")
+        self.assertEqual(r.stdout.splitlines()[0], f"odw dru: {summary}")
         self.assertEqual(self.run_tool().returncode, 2)
 
     def test_declared_in_tools_toml(self):
         names = set(re.findall(r'^name = "([^"]+)"', read(TOOLS_TOML), re.M))
-        self.assertEqual({f.removeprefix("odapkit-") for f in os.listdir(os.path.dirname(WRAPPER))}, names)
+        bin_ = os.path.dirname(WRAPPER)
+        self.assertEqual({f.removeprefix("odw-") for f in os.listdir(bin_) if f.startswith("odw-")}, names)
+        self.assertEqual({os.readlink(os.path.join(bin_, f"odapkit-{n}")) for n in names}, {f"odw-{n}" for n in names})
 
 
 if __name__ == "__main__":

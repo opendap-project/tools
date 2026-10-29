@@ -1,7 +1,1 @@
-#!/bin/sh
-# Verification matrices as data: render them, collect check results by variant, list uncovered requirements.
-#
-# Usage: odapkit verify render MATRIX [--check] | collect MATRIX --results DIR... [--check] | coverage MATRIX
-# Spec: docs/specs/verification.md.
-here="$(cd "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")/.." && pwd)"
-exec uv run --quiet --project "$here" python -m odw.verify "$@"
+odw-verify

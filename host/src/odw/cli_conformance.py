@@ -1,7 +1,7 @@
-"""odapkit cli: Inventory every command-line surface and check it against the command standard
+"""odw cli: Inventory every command-line surface and check it against the command standard
 
-Usage: odapkit cli list  [--workspace DIR] [--root ROOT]... [--json]
-       odapkit cli check [--workspace DIR] [--root ROOT]... [--no-probe] [--timeout S] [--jobs N]
+Usage: odw cli list  [--workspace DIR] [--root ROOT]... [--json]
+       odw cli check [--workspace DIR] [--root ROOT]... [--no-probe] [--timeout S] [--jobs N]
                          [--write DIR] [--dry-run] [--json]
 
   list    the inventory: every executable in a public root's bin/, scripts/, tools/ and hooks/ folders and
@@ -13,9 +13,9 @@ Usage: odapkit cli list  [--workspace DIR] [--root ROOT]... [--json]
           DIR/cli-conformance.json and DIR/cli-conformance.md; --dry-run names the files and writes nothing
 
 Examples:
-  odapkit cli list --json
-  odapkit cli check --root public/toolkit/host
-  odapkit cli check --json --write matrices --dry-run
+  odw cli list --json
+  odw cli check --root public/toolkit/host
+  odw cli check --json --write matrices --dry-run
 
 Exit status: 0 no executable fails (or list succeeded), 1 one fails, 2 usage error.
 Errors: a dotted code, a hint and a fix on stderr; with --json, also an opendap.error/v1 document on stdout.
@@ -28,7 +28,7 @@ import sys
 
 from odw import cli_inventory, cli_probe, cli_rules, clikit, evaluate, workspace
 
-TOOL = "odapkit cli"
+TOOL = "odw cli"
 SUMMARY = __doc__.splitlines()[0].split(": ", 1)[1]
 VERDICT = {"pass": "pass", "fail": "fail", "warning": "warn", "unverified": "skip", "info": "info"}
 

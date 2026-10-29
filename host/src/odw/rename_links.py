@@ -1,6 +1,6 @@
 """odw rename links: the workspace-wide link check after the cuts (RFC 0017 §7; spec docs/specs/rename.md, Links).
 
-Usage: odapkit rename links [--workspace DIR] [--map TSV] [--apply] [--find-in REPO ...] [--keep GLOB ...]
+Usage: odw rename links [--workspace DIR] [--map TSV] [--apply] [--find-in REPO ...] [--keep GLOB ...]
        [--json | --text]
 
 Reads the tracked files of every repository of the workspace (the workspace itself, repos.tsv and the repos.tsv of any
@@ -24,7 +24,7 @@ import urllib.parse
 
 from odw import audit, clikit, rename, rename_map, rename_merge, rename_rewrite as rw, workspace
 
-TOOL = "odapkit rename links"
+TOOL = "odw rename links"
 KEEP = ("history/**", "archive/**", "plans/**", "journal/**", "runs/**")
 
 
@@ -198,8 +198,8 @@ def scan(ws, m, keep=KEEP, apply=False, find_in=()):
 
 def _parser():
     ap = clikit.Parser(prog=TOOL, summary="Old and broken repository URLs across the workspace, after the cuts",
-                       examples=["odapkit rename links --map rename-map.tsv",
-                                 "odapkit rename links --map rename-map.tsv --apply --json"])
+                       examples=["odw rename links --map rename-map.tsv",
+                                 "odw rename links --map rename-map.tsv --apply --json"])
     ap.add_argument("--workspace")
     ap.add_argument("--map", help="the rename map (default: $ODAP_RENAME_MAP)")
     ap.add_argument("--apply", action="store_true", help="rewrite the old URLs whose new target exists")
@@ -227,7 +227,7 @@ def _main(argv):
     if not map_path or not pathlib.Path(map_path).is_file():
         raise rename.Refused("rename.no-map", f"no rename map ({map_path or 'none given'})",
                              "pass the map with --map or set ODAP_RENAME_MAP",
-                             "odapkit rename links --map <rename-map.tsv>", 2)
+                             "odw rename links --map <rename-map.tsv>", 2)
     results, written = scan(ws, rename_map.load(ws, map_path, {}), KEEP + tuple(args.keep), args.apply,
                             args.find_in)
     doc = {"schema": "opendap.check-result/v1", "tool": {"name": TOOL}, "subject": {"repo": "workspace"},

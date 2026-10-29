@@ -42,13 +42,13 @@ sources = [
 
 Paths are relative to the component's folder: the repository root, or, in a root that merged several components (the `t1` root's `board/`), the nearest folder above the manifest from which every source resolves. The composed file has `(version 1)` once, then each source's rules, each block preceded by a comment with the source path and its sha256; two rules with the same name are an error. `hooks/kicad-dru.py compose MANIFEST` writes it (`--dry-run` composes and names the file, writing nothing) and `hooks/kicad-dru.py check [--json] [MANIFEST…]` verifies it; with no manifest, `check` covers every `*.dru.toml` in the repository. Python 3.11 or later, standard library only.
 
-The same engine is the maintainers' `odapkit dru compose|check` (`bin/odapkit-dru`, declared in `tools.toml`), so the tool and the `kicad-dru-composed` hook never disagree; one test suite covers both.
+The same engine is the maintainers' `odw dru compose|check` (`bin/odw-dru`, declared in `tools.toml`), so the tool and the `kicad-dru-composed` hook never disagree; one test suite covers both.
 
 ## Layout
 
 - `.pre-commit-hooks.yaml` — hook definitions
 - `hooks/` — the hook scripts and their engines
-- `bin/` — the tools this repository adds to `odapkit` (`tools.toml`), thin wrappers over the engines in `hooks/`
+- `bin/` — the tools this repository adds to `odw` (`tools.toml`; `odw-*`, each `odapkit-*` a link for one minor release), thin wrappers over the engines in `hooks/`
 - `lib/cli.sh` — the command-line helpers of the shell wrappers (toolkit-host's, with a minimal fallback): `host/` of the same repository when this checkout is one of its folders (the merged `tools` root), else `ODAP_TOOLKIT_HOST_DIR`, else the `toolkit-host` row of `repos.tsv` (`tests/test_host_lookup.py` builds both layouts)
 - `tests/` — tests and their fixtures: `python3 -m unittest discover tests` (pre-commit runs them). They pass in both toolkit layouts: this repository, and `hooks/` of the merged `tools` root, where `.pre-commit-hooks.yaml` sits at the root with entries under `hooks/hooks/`
 

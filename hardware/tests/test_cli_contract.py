@@ -28,7 +28,7 @@ def run(*argv, cwd=ROOT, env=None):
 
 
 def tool(name):
-    return os.path.join(ROOT, "bin", f"odapkit-{name}")
+    return os.path.join(ROOT, "bin", f"odw-{name}")
 
 
 PLUGINS = [n for n in sorted(TOOLS) if n != "component" or shutil.which("uv")]
@@ -36,7 +36,11 @@ PLUGINS = [n for n in sorted(TOOLS) if n != "component" or shutil.which("uv")]
 
 class Plugins(unittest.TestCase):
     def test_every_plugin_is_declared(self):
-        self.assertEqual({f.removeprefix("odapkit-") for f in os.listdir(os.path.join(ROOT, "bin"))}, set(TOOLS))
+        bin_ = os.path.join(ROOT, "bin")
+        self.assertEqual({f.removeprefix("odw-") for f in os.listdir(bin_) if f.startswith("odw-")}, set(TOOLS))
+        # Each old name is a link to its plugin for one minor release (HL-72).
+        self.assertEqual({f: os.readlink(os.path.join(bin_, f)) for f in os.listdir(bin_) if f.startswith("odapkit-")},
+                         {f"odapkit-{n}": f"odw-{n}" for n in TOOLS})
 
     def test_every_plugin_is_a_thin_entry_point(self):
         # bin/ holds entry points only: each execs its engine (under tools/, or toolkit-host's helpers).
@@ -51,7 +55,7 @@ class Plugins(unittest.TestCase):
         for name in PLUGINS:
             r = run(tool(name), "--help")
             self.assertEqual(r.returncode, 0, name)
-            self.assertEqual(r.stdout.splitlines()[0], f"odapkit {name}: {TOOLS[name]}", name)
+            self.assertEqual(r.stdout.splitlines()[0], f"odw {name}: {TOOLS[name]}", name)
 
     def test_unknown_flag_exits_2_with_a_code_a_hint_and_a_fix(self):
         for name in ["component", "craft", "parts", "sim", "variant"]:

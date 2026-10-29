@@ -1,4 +1,4 @@
-"""odapkit stackup explore's model: the builds, the roles a layer may take under each zone of a board, the
+"""odw stackup explore's model: the builds, the roles a layer may take under each zone of a board, the
 symmetric dielectric sequences from the fab's list, and the geometry they give. The search and the ranking
 are in explore.py. Method: docs/specs/stackup-method.md §5."""
 from __future__ import annotations

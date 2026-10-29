@@ -1,4 +1,4 @@
-"""odapkit stackup's model: the layer stack (load, layers, thickness, the stack report) and its cross-sections
+"""odw stackup's model: the layer stack (load, layers, thickness, the stack report) and its cross-sections
 (the field solver's geometry and impedance). Format and method: docs/specs/stackup-method.md."""
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
-try:  # numpy, scipy and scikit-fem: tools/stackup's own environment (uv run, as odapkit stackup runs it)
+try:  # numpy, scipy and scikit-fem: tools/stackup's own environment (uv run, as odw stackup runs it)
     import analytic  # noqa: E402
     import fieldsolver as fs  # noqa: E402
     MISSING = None
@@ -55,7 +55,7 @@ def load(path):
     if doc.get("version") != 1:
         raise StackupError(f"{path}: version = 1 expected")
     if "layer" not in doc and "zone" in doc:
-        raise StackupError(f"{path}: an explore file: use `odapkit stackup explore`")
+        raise StackupError(f"{path}: an explore file: use `odw stackup explore`")
     layers = []
     for i, d in enumerate(doc.get("layer", [])):
         unknown = set(d) - LAYER_KEYS

@@ -1,6 +1,6 @@
 """odw sync: shared boilerplate rendered from the workspace templates.
 
-Usage: odapkit sync [--workspace DIR] [--templates DIR] (--check | --apply [--dry-run]) [--json]
+Usage: odw sync [--workspace DIR] [--templates DIR] (--check | --apply [--dry-run]) [--json]
 
 `<templates>/sync.toml` (opendap.sync/v1) lists [[file]] entries: a `template` path, the `target` path inside each
 repository, the repository globs it applies to (`repos`, over the paths in every repos.tsv) and `when`: `always`
@@ -27,7 +27,7 @@ import tomllib
 
 from odw import audit, check_hooks, clikit, owners, workspace
 
-TOOL = "odapkit sync"
+TOOL = "odw sync"
 
 
 @dataclasses.dataclass
@@ -65,7 +65,7 @@ def _markers(block):
     return BEGIN.format(c=c) + tail, END.format(c=c) + tail
 
 
-# The markers of a block in a `#`-comment file, such as .pre-commit-config.yaml (odapkit rename config renders one).
+# The markers of a block in a `#`-comment file, such as .pre-commit-config.yaml (odw rename config renders one).
 BLOCK_MARKERS = _markers({})
 
 
@@ -300,7 +300,7 @@ def main(argv=None):
 def _main(argv):
     ap = clikit.Parser(prog=TOOL, summary=clikit.summary("sync"),
                        description="Shared boilerplate from the workspace templates.",
-                       examples=["odapkit sync --check --json", "odapkit sync --apply --dry-run", "odapkit sync --apply"])
+                       examples=["odw sync --check --json", "odw sync --apply --dry-run", "odw sync --apply"])
     ap.add_argument("--workspace")
     ap.add_argument("--templates")
     mode = ap.add_mutually_exclusive_group(required=True)

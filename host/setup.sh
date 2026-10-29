@@ -53,7 +53,7 @@ case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) echo "Add ~/.local/bin to PATH t
 echo "linked ~/.local/bin/odw and ~/.local/bin/odapkit; odw help lists the tools"
 
 echo "== Generated trees out of the Spotlight index"
-# odapkit noindex renames target/, .venv/ and test caches to <name>.noindex behind a symlink; the global
+# odw noindex renames target/, .venv/ and test caches to <name>.noindex behind a symlink; the global
 # Git ignore must cover both, because repositories ignore target/ as a directory only.
 ignore="${XDG_CONFIG_HOME:-$HOME/.config}/git/ignore"
 [ -n "$(git config --global core.excludesFile)" ] && ignore="$(git config --global core.excludesFile)"
@@ -61,14 +61,14 @@ mkdir -p "$(dirname "$ignore")"; touch "$ignore"
 for pattern in '*.noindex' target .venv .pytest_cache .ruff_cache .mypy_cache; do
   grep -qxF "$pattern" "$ignore" || echo "$pattern" >> "$ignore"
 done
-echo "global Git ignore: $ignore; run odapkit noindex --apply <workspace> after builds create new trees"
+echo "global Git ignore: $ignore; run odw noindex --apply <workspace> after builds create new trees"
 
 echo "== QEMU for virtual devices"
 # A source build with the patches OpenDAP carries (about ten minutes); not run automatically.
-"$here/bin/odapkit-qemu" status || echo "run: odapkit qemu install"
+"$here/bin/odw-qemu" status || echo "run: odw qemu install"
 
 echo "== Virtual T1 network"
 # The LAN for the virtual T1 needs administrator rights once; it is not run automatically.
-"$here/bin/odapkit-vmnet" status || true
+"$here/bin/odw-vmnet" status || true
 
 echo "== Done"

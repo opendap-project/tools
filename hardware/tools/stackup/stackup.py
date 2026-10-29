@@ -1,13 +1,13 @@
-"""odapkit stackup: layer stack and impedance-controlled trace geometry of a PCB.
+"""odw stackup: layer stack and impedance-controlled trace geometry of a PCB.
 
 Usage:
-    odapkit stackup stack    STACKUP.toml [--json]
-    odapkit stackup design   STACKUP.toml [--only CLASS]... [--json]
-    odapkit stackup check    STACKUP.toml [--only CLASS]... [--json] [--no-corners]
-    odapkit stackup validate [--json]
-    odapkit stackup coupling STACKUP.toml [--json]
-    odapkit stackup explore  EXPLORE.toml [--csv OUT.csv] [--json] [--set KEY=VALUE]...
-    odapkit stackup pdn      PDN.toml [--json]
+    odw stackup stack    STACKUP.toml [--json]
+    odw stackup design   STACKUP.toml [--only CLASS]... [--json]
+    odw stackup check    STACKUP.toml [--only CLASS]... [--json] [--no-corners]
+    odw stackup validate [--json]
+    odw stackup coupling STACKUP.toml [--json]
+    odw stackup explore  EXPLORE.toml [--csv OUT.csv] [--json] [--set KEY=VALUE]...
+    odw stackup pdn      PDN.toml [--json]
 
 stack     prints the layer table: z positions, total thickness (laminate and finished), and the
           [[distance]] and [thickness] checks of the file.
@@ -50,7 +50,7 @@ def _fmt(v, nd=1):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(prog="odapkit stackup", description=__doc__.split("\n")[0])
+    ap = argparse.ArgumentParser(prog="odw stackup", description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name in ("stack", "design", "check"):
         p = sub.add_parser(name)
@@ -76,8 +76,8 @@ def main(argv=None):
     p.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
     if MISSING is not None:
-        print(f"odapkit stackup: error env.missing: {MISSING}\n  hint: the solver runs in tools/stackup's locked "
-              "environment\n  fix: odapkit stackup " + " ".join(argv if argv is not None else sys.argv[1:]),
+        print(f"odw stackup: error env.missing: {MISSING}\n  hint: the solver runs in tools/stackup's locked "
+              "environment\n  fix: odw stackup " + " ".join(argv if argv is not None else sys.argv[1:]),
               file=sys.stderr)
         return 2
 
@@ -86,7 +86,7 @@ def main(argv=None):
         try:
             return pdn.main(args)
         except pdn.PdnError as e:
-            print(f"odapkit stackup pdn: {e}", file=sys.stderr)
+            print(f"odw stackup pdn: {e}", file=sys.stderr)
             return 2
 
     if args.cmd == "explore":
@@ -94,7 +94,7 @@ def main(argv=None):
         try:
             return explore.main(args)
         except explore.ExploreError as e:
-            print(f"odapkit stackup explore: {e}", file=sys.stderr)
+            print(f"odw stackup explore: {e}", file=sys.stderr)
             return 2
 
     try:
@@ -174,7 +174,7 @@ def main(argv=None):
             print("check:", "pass" if ok else "FAIL")
         return 0 if ok else 1
     except StackupError as e:
-        print(f"odapkit stackup: {e}", file=sys.stderr)
+        print(f"odw stackup: {e}", file=sys.stderr)
         return 2
 
 

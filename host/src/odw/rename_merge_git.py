@@ -1,4 +1,4 @@
-"""Git steps of `odapkit rename merge`: fresh clones, a history rewritten under a folder, the checks that every
+"""Git steps of `odw rename merge`: fresh clones, a history rewritten under a folder, the checks that every
 commit and tree came through. Two engines rewrite: `git filter-repo --to-subdirectory-filter` when it is
 installed, and a `git fast-export | fast-import` path rewrite this module implements. Spec: docs/specs/rename.md.
 """

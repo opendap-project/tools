@@ -1,6 +1,6 @@
 """odw audit: workspace metrics measured from every repository's tracked files.
 
-Usage: odapkit audit [--workspace DIR] [--rename-map TSV] [--write DIR [--dry-run]] [--json]
+Usage: odw audit [--workspace DIR] [--rename-map TSV] [--write DIR [--dry-run]] [--json]
 
 Repositories come from every repos.tsv at the workspace root or two levels below it (the public list and any
 overlay). Metrics keep the keys of a programme's baseline so snapshots compare over time; --write appends a dated
@@ -20,7 +20,7 @@ import sys
 
 from odw import clikit, workspace
 
-TOOL = "odapkit audit"
+TOOL = "odw audit"
 SCHEMA = "opendap.workspace-audit/v1"
 
 # The shared hooks: toolkit-hooks, or the merged tools root that serves them after the tools cut.
@@ -232,7 +232,7 @@ def main(argv=None):
 
 def _main(argv):
     ap = clikit.Parser(prog=TOOL, summary=clikit.summary("audit"), description="Workspace metrics from tracked files.",
-                       examples=["odapkit audit --json", "odapkit audit --write baseline --dry-run"])
+                       examples=["odw audit --json", "odw audit --write baseline --dry-run"])
     ap.add_argument("--workspace")
     ap.add_argument("--rename-map")
     ap.add_argument("--write", metavar="DIR")

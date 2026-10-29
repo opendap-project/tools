@@ -1,12 +1,12 @@
 # Variant tool
 
 - **Status:** Draft v0 (2026-10-27). Implements the toolkit-hardware row of [RFC 0011](https://github.com/opendap-project/rfcs/blob/main/text/0011-feature-blocks-and-variants.md) §6 for the schematic-to-PCB part of rule 7 (variants are data) and the `opendap.board-variant/v1` record of [RFC 0018](https://github.com/opendap-project/rfcs/blob/main/text/0018-digital-thread.md) §3, the absent-state check of RFC 0011 rule 2 for unfitted blocks (§6), and the software outputs of rule 7 and rule 8: a capabilities fragment for the device description and a devicetree overlay fragment (§7). The verification plan is not generated yet.
-- **Tool:** `odapkit variant` ([`bin/odapkit-variant`](../../bin/odapkit-variant), an entry point to [`tools/variant/`](../../tools/variant/): `cli.py` the command line, `catalog.py`, `variantfile.py`, `resolve.py`, `kicad.py`, `absent.py`, `software.py`, `build.py`); Python 3.11 standard library and KiCad 10's `kicad-cli`.
+- **Tool:** `odw variant` ([`bin/odw-variant`](../../bin/odw-variant), an entry point to [`tools/variant/`](../../tools/variant/): `cli.py` the command line, `catalog.py`, `variantfile.py`, `resolve.py`, `kicad.py`, `absent.py`, `software.py`, `build.py`); Python 3.11 standard library and KiCad 10's `kicad-cli`.
 - **Schemas:** [`schemas/board-variant.schema.json`](../../schemas/board-variant.schema.json), [`schemas/block.schema.json`](../../schemas/block.schema.json), [`schemas/variant-absent-state.schema.json`](../../schemas/variant-absent-state.schema.json), [`schemas/variant-capabilities.schema.json`](../../schemas/variant-capabilities.schema.json), [`schemas/variant-devicetree.schema.json`](../../schemas/variant-devicetree.schema.json).
 
 ## 1. What it does
 
-A variant is a named selection of feature blocks (`fit`, `dnp`, `alternate`) and parameters over one board design. `odapkit variant` reads a component's variant files, the block catalog each one names and the board's KiCad project, and gives each variant its own pipeline from schematic to PCB: a validated block selection, a per-part resolution, a BOM, KiCad 10 variant data, plots, placement, and a variant-specific ERC and DRC, in an output tree of its own. The base design is never written.
+A variant is a named selection of feature blocks (`fit`, `dnp`, `alternate`) and parameters over one board design. `odw variant` reads a component's variant files, the block catalog each one names and the board's KiCad project, and gives each variant its own pipeline from schematic to PCB: a validated block selection, a per-part resolution, a BOM, KiCad 10 variant data, plots, placement, and a variant-specific ERC and DRC, in an output tree of its own. The base design is never written.
 
 It is generic: nothing in it names a board. A component is found by its folder layout (`variants/` or `hardware/variants/`), its catalog by the variant file's `catalog` path, and its KiCad project by the variant's `board` name (`<board>.kicad_pro` under the component root) or `--project`.
 
@@ -99,7 +99,7 @@ The BOM groups the parts in the BOM by value, footprint, MPN and manufacturer; f
 
 ## 5. The variant build: `apply`
 
-`odapkit variant apply <variant> --out DIR` refuses an invalid variant file (exit 1, nothing written), an output folder inside the KiCad project, and a non-empty folder that is not a previous build (exit 2). It writes:
+`odw variant apply <variant> --out DIR` refuses an invalid variant file (exit 1, nothing written), an output folder inside the KiCad project, and a non-empty folder that is not a previous build (exit 2). It writes:
 
 | Path | Content |
 |---|---|

@@ -2,7 +2,7 @@
 
 rules.toml (schema opendap.craft-rules/v1, schemas/craft-rules.schema.json) holds every CRAFT rule
 of the craft standard with its level, text, value, reason, source and enforcement, and the limits the
-checks read. The craft checks import this module; `odapkit craft rules render` writes the standard's
+checks read. The craft checks import this module; `odw craft rules render` writes the standard's
 rule tables from it, between the markers
 
     <!-- >>> odapkit craft rules §<section>: ... -->
@@ -114,19 +114,19 @@ def render(text, rules):
     return out
 
 
-USAGE = """usage: odapkit craft rules render SPEC.md [--check] [--rules FILE] [--json]
+USAGE = """usage: odw craft rules render SPEC.md [--check] [--rules FILE] [--json]
 
 Writes the standard's rule tables in SPEC.md from the rules data (default tools/craft/rules.toml), between
-their `odapkit craft rules` markers; --check only reports a stale table (exit 1). --json prints
+their `odw craft rules` markers; --check only reports a stale table (exit 1). --json prints
 opendap.craft-rules-render/v1: spec, current, written.
 
-Example: odapkit craft rules render docs/specs/pcb-craft-standard.md --check --json
+Example: odw craft rules render docs/specs/pcb-craft-standard.md --check --json
 Exit status: 0 current or written, 1 stale or invalid rules, 2 usage error."""
 
 
 def _usage_error(message):
-    print(f"odapkit craft rules: error input.invalid: {message}\n  hint: {USAGE.splitlines()[0]}\n"
-          "  fix: odapkit craft rules --help", file=sys.stderr)
+    print(f"odw craft rules: error input.invalid: {message}\n  hint: {USAGE.splitlines()[0]}\n"
+          "  fix: odw craft rules --help", file=sys.stderr)
     return 2
 
 
@@ -155,7 +155,7 @@ def main(argv):
     try:
         out = render(text, load(path))
     except (ValueError, KeyError) as e:
-        print(f"odapkit craft rules: {spec}: {e}", file=sys.stderr)
+        print(f"odw craft rules: {spec}: {e}", file=sys.stderr)
         return 1
     written = not check and out != text
     if as_json:
@@ -163,7 +163,7 @@ def main(argv):
                           "written": written}))
     if check:
         if out != text:
-            print(f"odapkit craft rules: {spec} is not current (run: odapkit craft rules render {spec})", file=sys.stderr)
+            print(f"odw craft rules: {spec} is not current (run: odw craft rules render {spec})", file=sys.stderr)
             return 1
         return 0
     if written:

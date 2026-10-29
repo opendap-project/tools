@@ -5,7 +5,7 @@ Usage:
     sch-craft-check.py [--json] [--config FILE] [--target Qn] [--no-erc] ROOT.kicad_sch
     sch-craft-check.py [--json] [--target Qn] LIBRARY.kicad_sym
 
-`odapkit craft check` runs it for .kicad_sch and .kicad_sym files. It needs only Python 3.9 or
+`odw craft check` runs it for .kicad_sch and .kicad_sym files. It needs only Python 3.9 or
 later and kicad-cli (KiCad 10): it reads the S-expressions itself and runs kicad-cli for ERC and the
 netlist. Standard: kicad-lib's docs/specs/pcb-craft-standard.md, section 9
 (https://github.com/opendap-project/libs/blob/main/kicad/docs/specs/pcb-craft-standard.md). Each

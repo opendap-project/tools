@@ -1,10 +1,10 @@
 """Run a board's simulation regression checks (ngspice) against limits from its constraints and ADRs.
 
 Usage:
-    odapkit sim [run] [PATH] [--only GLOB]... [--json] [--report FILE] [--fetch]
+    odw sim [run] [PATH] [--only GLOB]... [--json] [--report FILE] [--fetch]
                 [--allow-missing-models] [--dry-run]
-    odapkit sim list [PATH] [--json]
-    odapkit sim fetch [PATH] [--dry-run]
+    odw sim list [PATH] [--json]
+    odw sim fetch [PATH] [--dry-run]
 
 PATH is a repository (its sim/*/checks.toml are run), a folder of studies (*/checks.toml) or one
 study (checks.toml). Default: the current folder.
@@ -49,7 +49,7 @@ checks.toml (one per study, next to its netlists):
     timeout = 600                    # optional, seconds (default 1800)
 
 --dry-run (run, fetch) names the checks, report and models it would run, write and fetch, and does none of
-it (example: odapkit sim --dry-run). Errors carry a dotted code, a hint and a fix (toolkit-host's odw.clikit).
+it (example: odw sim --dry-run). Errors carry a dotted code, a hint and a fix (toolkit-host's odw.clikit).
 
 Environment: JOBS (parallel runs, default 2), NGSPICE (the ngspice binary, default ngspice).
 Exit status: 0 every check passed, 1 a check failed, errored or is blocked, 2 usage error.
@@ -69,13 +69,13 @@ import time
 import zipfile
 
 if sys.version_info < (3, 11):
-    sys.exit("odapkit sim: Python 3.11 or later is needed (tomllib)")
+    sys.exit("odw sim: Python 3.11 or later is needed (tomllib)")
 import tomllib
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
 from clihost import load, summary  # noqa: E402
 
-TOOL = "odapkit sim"
+TOOL = "odw sim"
 clikit = load(TOOL)
 
 HERE = os.path.dirname(os.path.realpath(__file__))
@@ -196,7 +196,7 @@ def model_state(study_dir, m):
     """'ok', or why the model is not usable."""
     dest = os.path.join(study_dir, m["dest"])
     if not os.path.isfile(dest):
-        return f"missing {m['dest']} (odapkit sim fetch)"
+        return f"missing {m['dest']} (odw sim fetch)"
     if sha256(dest) != m["sha256"]:
         return f"{m['dest']} does not match its sha256"
     return "ok"
@@ -430,7 +430,7 @@ def main(argv):
             models[os.path.dirname(f)] = m
             checks += c
     except ConfigError as e:
-        return fail("checks.invalid", str(e), "the checks.toml format is in odapkit sim --help", f"{TOOL} --help")
+        return fail("checks.invalid", str(e), "the checks.toml format is in odw sim --help", f"{TOOL} --help")
     if opts["only"]:
         checks = [c for c in checks if any(fnmatch.fnmatch(f"{c['study']}/{c['id']}", g) for g in opts["only"])]
     log = lambda s: s and print(s, file=sys.stderr)

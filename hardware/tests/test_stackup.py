@@ -1,4 +1,4 @@
-"""Tests for bin/odapkit-stackup on the fixture in tests/fixtures/stackup (needs uv on PATH).
+"""Tests for bin/odw-stackup on the fixture in tests/fixtures/stackup (needs uv on PATH).
 
 Run from the repository root: python3 -m unittest discover tests
 """
@@ -16,7 +16,7 @@ for _k in [k for k in os.environ if k.startswith("GIT_")]:
     del os.environ[_k]
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TOOL = os.path.join(HERE, "..", "bin", "odapkit-stackup")
+TOOL = os.path.join(HERE, "..", "bin", "odw-stackup")
 FIXTURE = os.path.join(HERE, "fixtures", "stackup", "fixture.toml")
 sys.path.insert(0, os.path.join(HERE, "..", "tools", "stackup"))
 

@@ -1,7 +1,7 @@
 # Programme plan
 
 - **Status:** draft
-- **Tool:** `odapkit plan` (`src/odw/plan.py`); formats in [workspace schemas](workspace-schemas.md) (`task`, `decisions`, `plan-mirror-config`, `plan-mirror`)
+- **Tool:** `odw plan` (`src/odw/plan.py`); formats in [workspace schemas](workspace-schemas.md) (`task`, `decisions`, `plan-mirror-config`, `plan-mirror`)
 
 A programme is a piece of maintainers' work that spans many sessions and repositories. Its state lives in files, never in a session, so any person or agent can resume it.
 
@@ -30,7 +30,7 @@ A programme is a piece of maintainers' work that spans many sessions and reposit
 
 ## Public tracking mirror
 
-`odapkit plan mirror [--workspace DIR] [--dry-run] [--json]` publishes the public part of a programme as GitHub issues: one tracking issue per accepted RFC, in the RFC repository named by `mirror.toml`.
+`odw plan mirror [--workspace DIR] [--dry-run] [--json]` publishes the public part of a programme as GitHub issues: one tracking issue per accepted RFC, in the RFC repository named by `mirror.toml`.
 
 - **Tasks.** Only tasks with `visibility = "public"`. A task applies the RFC named in `[task_rfc]`, else the first `RFC NNNN` in its public title, else the RFC of its phase in `[phase_rfc]`. A task whose RFC is not found or not Accepted is listed as `unmapped` and mirrored nowhere.
 - **Issue.** Title `Tracking: <the RFC's title>`. The body starts with the hidden marker `<!-- odapkit plan mirror: rfc NNNN -->`, links the RFC, counts the tasks done, and lists each task as a checklist item: id, public title (its `[public_title]` entry, else its title), status, and the evidence commits of public repositories as `owner/repo@sha`. Sources, notes and evidence from private repositories are never read into it.

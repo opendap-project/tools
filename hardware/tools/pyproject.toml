@@ -1,11 +1,11 @@
 # The Python dependencies of this repository's tools, one project and one lock (uv.lock, hash-locked):
-# odapkit stackup (numpy, scipy, scikit-fem), odapkit component and the craft rules' schema test (pyyaml,
+# odw stackup (numpy, scipy, scikit-fem), odw component and the craft rules' schema test (pyyaml,
 # jsonschema). The other tools need the standard library only. The entry points run through
 # `uv run --locked --project tools`.
 [project]
 name = "odapkit-hardware-tools"
 version = "0.1.0"
-description = "OpenDAP hardware tools: the dependencies of odapkit stackup and odapkit component"
+description = "OpenDAP hardware tools: the dependencies of odw stackup and odw component"
 requires-python = ">=3.12"
 dependencies = [
     "numpy==2.5.4",

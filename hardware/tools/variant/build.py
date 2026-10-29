@@ -1,4 +1,4 @@
-"""`odapkit variant apply`: one variant's schematic and PCB outputs in their own tree, never touching the base design.
+"""`odw variant apply`: one variant's schematic and PCB outputs in their own tree, never touching the base design.
 
 OUT/
   design/     copy of the KiCad project with this variant's KiCad 10 variant data written from the variant file
@@ -14,7 +14,7 @@ OUT/
   manifest.json  opendap.variant-build/v1: inputs' and outputs' sha256, KiCad version, tool hash, checks, findings
 
 Dates written by KiCad (PDF CreationDate, SVG title, report date) are zeroed and absolute paths in reports are made
-relative, so two runs over the same inputs give identical files (`odapkit variant check`).
+relative, so two runs over the same inputs give identical files (`odw variant check`).
 """
 import csv
 import glob
@@ -32,7 +32,7 @@ import software
 
 DESIGN_EXT = (".kicad_sch", ".kicad_pcb", ".kicad_pro", ".kicad_dru")
 DESIGN_FILES = ("sym-lib-table", "fp-lib-table")
-TOOL_FILES = ("bin/odapkit-variant", "tools/variant/*.py")
+TOOL_FILES = ("bin/odw-variant", "tools/variant/*.py")
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -336,7 +336,7 @@ def apply(variant, catalog, pro, out, kcli, checks=True, log=lambda s: None, sou
     manifest = {
         "schema": "opendap.variant-build/v1", "variant": variant.name, "board": variant.data.get("board"),
         "kind": variant.data.get("kind"), "status": variant.data.get("status"), "mode": mode,
-        "kicad": kicad.version(kcli), "tool": {"name": "odapkit variant", "sha256": tool_hash()},
+        "kicad": kicad.version(kcli), "tool": {"name": "odw variant", "sha256": tool_hash()},
         "inputs": [{"path": os.path.relpath(p, root), "sha256": hashed[p]} for p in inputs],
         "bom": {"lines": sum(1 for ln in lines if not ln["dnp"]), "parts": sum(ln["quantity"] for ln in lines
                                                                                  if not ln["dnp"]),

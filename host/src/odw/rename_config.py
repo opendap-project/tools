@@ -1,13 +1,13 @@
-"""odw rename config: a cut root's shared configuration (RFC 0017 §7 step 4), after `odapkit rename apply`.
+"""odw rename config: a cut root's shared configuration (RFC 0017 §7 step 4), after `odw rename apply`.
 
-Usage: odapkit rename config ROOT [--workspace DIR] [--map TSV] [--root-dir DIR] [--landing REPO=DIR] [--dry-run]
+Usage: odw rename config ROOT [--workspace DIR] [--map TSV] [--root-dir DIR] [--landing REPO=DIR] [--dry-run]
        [--json | --text]
 
 Each folder brought its repository's configuration. The step hoists what the root shares (`LICENSES/` as the union,
 `.claude/`, `.github/`, `.markdownlint-cli2.jsonc`), joins the pre-commit configurations into one with each folder's
-hooks scoped to it (odw/rename_precommit.py) and the odw check hooks of its check roots rendered as the managed block odapkit sync keeps (odw/check_hooks.py), moves a hook manifest to the root, keeps one managed CLAUDE.md block
+hooks scoped to it (odw/rename_precommit.py) and the odw check hooks of its check roots rendered as the managed block odw sync keeps (odw/check_hooks.py), moves a hook manifest to the root, keeps one managed CLAUDE.md block
 (the root's), and writes the root README, CLAUDE.md and REUSE.toml when the root has none. One local commit; it
-never pushes. `odapkit sync --apply` then renders the root's managed blocks. Exit status: 0 done or nothing to do,
+never pushes. `odw sync --apply` then renders the root's managed blocks. Exit status: 0 done or nothing to do,
 1 refused, 2 usage. Spec: docs/specs/rename.md.
 """
 import argparse
@@ -22,7 +22,7 @@ import sys
 
 from odw import audit, check_hooks, clikit, rename_map, rename_precommit as rp, rename_rewrite as rw, sync, workspace
 
-TOOL = "odapkit rename config"
+TOOL = "odw rename config"
 SCHEMA = "opendap.rename-config/v1"
 HOISTED = ("LICENSES/", ".claude/", ".github/", ".markdownlint-cli2.jsonc")
 PRECOMMIT, MANIFEST, MODULES = ".pre-commit-config.yaml", ".pre-commit-hooks.yaml", ".gitmodules"
@@ -69,7 +69,7 @@ def _rebased(text, folder):
 
 
 def _without_block(text):
-    """A folder's pre-commit configuration without its managed block (odapkit sync renders the root's)."""
+    """A folder's pre-commit configuration without its managed block (odw sync renders the root's)."""
     begin, end = sync.BLOCK_MARKERS
     if begin in text and end in text:
         i, j = text.index(begin), text.index(end) + len(end)
@@ -95,7 +95,7 @@ def claude(root, folders, block, requirements):
               "folder you change."]
     if requirements:
         lines.append("- Requirements are edited in each folder's `docs/requirements/requirements.toml`; its README "
-                     "is rendered with `odapkit req render` and never edited by hand.")
+                     "is rendered with `odw req render` and never edited by hand.")
     return "\n".join(lines) + "\n"
 
 
@@ -148,7 +148,7 @@ def plan(m, root, top, licence_dir=None):
         if PRECOMMIT in files:
             raise Refused("config.exists", f"the root has a {PRECOMMIT} and {len(configs)} folders have their own",
                           "join them by hand, or remove the root's before the step", f"git -C {top} rm {PRECOMMIT}")
-        # Each folder's managed block (odapkit sync) goes; the root gets one, rendered for its check roots (HL-103).
+        # Each folder's managed block (odw sync) goes; the root gets one, rendered for its check roots (HL-103).
         texts[PRECOMMIT], report = rp.merge({f: _without_block(t) for f, t in configs.items()}, set(names))
         checks = check_hooks.body(check_hooks.roots(top, files))
         if checks:
@@ -210,7 +210,7 @@ def plan(m, root, top, licence_dir=None):
 def apply(m, root, top, dry_run=False, licence_dir=None):
     if not (top / ".git").exists():
         raise Refused("config.no-root", f"no root checkout at {top}", "the step runs in the merged root, after "
-                      "`odapkit rename merge` and `apply`", f"odapkit rename merge {root} --into {top}")
+                      "`odw rename merge` and `apply`", f"odw rename merge {root} --into {top}")
     dirty = _git(top, "status", "--porcelain=v1", "--untracked-files=all").splitlines()
     if dirty:
         raise Refused("config.dirty", f"{len(dirty)} uncommitted or untracked files: "
@@ -232,7 +232,7 @@ def apply(m, root, top, dry_run=False, licence_dir=None):
     _git(top, "commit", "-q", "-m", f"{root}: one shared configuration at the root\n\n"
          f"{len(doc['hoisted'])} shared files hoisted, {doc['hooks']['shared']} shared and {doc['hooks']['scoped']} "
          f"scoped pre-commit hooks, {len(doc['stripped'])} folder CLAUDE.md blocks left for the root's "
-         f"(odapkit rename config {root}).")
+         f"(odw rename config {root}).")
     doc["commits"] = [_git(top, "rev-parse", "HEAD").strip()]
     return doc
 
@@ -251,10 +251,10 @@ def _text(doc):
 
 def _parser():
     ap = clikit.Parser(prog=TOOL, formatter_class=argparse.RawDescriptionHelpFormatter,
-                       description="odapkit rename config: a cut root's shared configuration (RFC 0017 §7 step 4). "
+                       description="odw rename config: a cut root's shared configuration (RFC 0017 §7 step 4). "
                                    "One local commit; never pushes.",
-                       epilog="examples:\n  odapkit rename config tools --map rename-map.tsv --root-dir ../cut/tools "
-                              "--dry-run\n  odapkit rename config tools --map rename-map.tsv --root-dir ../cut/tools")
+                       epilog="examples:\n  odw rename config tools --map rename-map.tsv --root-dir ../cut/tools "
+                              "--dry-run\n  odw rename config tools --map rename-map.tsv --root-dir ../cut/tools")
     ap.add_argument("root")
     ap.add_argument("--workspace")
     ap.add_argument("--map", help="the rename map (default: $ODAP_RENAME_MAP)")
@@ -279,16 +279,16 @@ def _main(argv):
         ws = pathlib.Path(a.workspace) if a.workspace else workspace.root()
         if ws is None:
             raise Refused("config.no-workspace", "not inside a workspace (no repos.tsv)", "run it from the workspace",
-                          "odapkit rename config ROOT --workspace <workspace>", 2)
+                          "odw rename config ROOT --workspace <workspace>", 2)
         map_path = a.map or os.environ.get("ODAP_RENAME_MAP")
         if not map_path or not pathlib.Path(map_path).is_file():
             raise Refused("config.no-map", f"no rename map ({map_path or 'none given'})",
                           "pass the map with --map or set ODAP_RENAME_MAP",
-                          f"odapkit rename config {a.root} --map <rename-map.tsv>", 2)
+                          f"odw rename config {a.root} --map <rename-map.tsv>", 2)
         m = rename_map.load(ws, map_path, dict(x.split("=", 1) for x in a.landing if "=" in x))
         if a.root not in m.roots:
             raise Refused("config.unknown-root", f"the map names no root {a.root!r}", f"roots: {', '.join(m.roots)}",
-                          f"odapkit rename config {m.roots[0]} --dry-run", 2)
+                          f"odw rename config {m.roots[0]} --dry-run", 2)
         top = pathlib.Path(a.root_dir) if a.root_dir else ws / "public" / a.root
         doc = apply(m, a.root, top, a.dry_run, ws / "LICENSES")
     except Refused as e:

@@ -1,4 +1,4 @@
-"""The absent-state check of `odapkit variant` (RFC 0011 rule 2; docs/specs/variant-tool.md §6).
+"""The absent-state check of `odw variant` (RFC 0011 rule 2; docs/specs/variant-tool.md §6).
 
 For one variant, every net that touches a part the variant leaves unfitted is looked at with the fitted parts only:
 

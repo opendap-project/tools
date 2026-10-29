@@ -1,4 +1,4 @@
-"""KiCad side of `odapkit variant`: kicad-cli, the XML netlist, and KiCad 10 variant data in S-expression files.
+"""KiCad side of `odw variant`: kicad-cli, the XML netlist, and KiCad 10 variant data in S-expression files.
 
 - `cli()` finds kicad-cli (KICAD_CLI, PATH, the macOS application); `run()` runs it and drops font warnings.
 - `components(xml)` reads `sch export netlist --format kicadxml`: one record per reference with its fields, its

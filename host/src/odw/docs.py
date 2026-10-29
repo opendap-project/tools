@@ -1,10 +1,10 @@
 """odw docs: the docs gates and the generated docs index.
 
 Usage:
-    odapkit docs check [--strict] [--json] PATH...   Markdown files or folders
-    odapkit docs index DOCS_DIR [--readme R] [--check | --dry-run]   the table between <!-- index:start --> and
+    odw docs check [--strict] [--json] PATH...   Markdown files or folders
+    odw docs index DOCS_DIR [--readme R] [--check | --dry-run]   the table between <!-- index:start --> and
                                                      <!-- index:end -->
-    odapkit docs rfc-status [--workspace DIR] [--write DIR [--dry-run]] [--json]   which affected repositories
+    odw docs rfc-status [--workspace DIR] [--write DIR [--dry-run]] [--json]   which affected repositories
                                                      recorded each RFC
 
 Errors: broken relative links, relative links that leave the repository (links between repositories are GitHub
@@ -26,7 +26,7 @@ import sys
 
 from odw import clikit, rfcstatus, workspace
 
-TOOL = "odapkit docs"
+TOOL = "odw docs"
 
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 GITHUB_REPO = re.compile(r"https://github\.com/opendap-project/([A-Za-z0-9._-]+)")
@@ -209,8 +209,8 @@ def main(argv=None):
 
 def _parser():
     ap = clikit.Parser(prog=TOOL, summary=clikit.summary("docs"), description="Docs gates and the docs index.",
-                       examples=["odapkit docs check --strict docs/", "odapkit docs check --json README.md",
-                                 "odapkit docs index docs --dry-run", "odapkit docs rfc-status --json"])
+                       examples=["odw docs check --strict docs/", "odw docs check --json README.md",
+                                 "odw docs index docs --dry-run", "odw docs rfc-status --json"])
     sub = ap.add_subparsers(dest="cmd", required=True, parser_class=clikit.Parser)
     ck = sub.add_parser("check")
     ck.add_argument("paths", nargs="+")
@@ -240,7 +240,7 @@ def _main(argv):
         if args.check:
             if index_is_current(d, readme):
                 return 0
-            print(f"{readme} index is not current: run odapkit docs index {d}", file=sys.stderr)
+            print(f"{readme} index is not current: run odw docs index {d}", file=sys.stderr)
             return 1
         if args.dry_run:
             state = "unchanged" if index_is_current(d, readme) else "changed"

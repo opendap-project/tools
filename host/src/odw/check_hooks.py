@@ -4,8 +4,8 @@ A repository's check roots are its folders that hold a tracked check.toml (the r
 merged root such as blackbird's system/ and emulator/; tests and fixtures are not roots). Each root gets one local
 hook per stage it declares: `fast` before each commit, `full` before each push (`stages: [pre-push]`); `release`
 has none. The hook passes the changed paths, so odw check runs the steps whose `paths` match (command standard §7).
-A root in a folder runs inside it, with the paths given back relative to it. odapkit sync renders the hooks as a
-generated block at the end of .pre-commit-config.yaml (generator `odw-check`), and odapkit rename config renders the
+A root in a folder runs inside it, with the paths given back relative to it. odw sync renders the hooks as a
+generated block at the end of .pre-commit-config.yaml (generator `odw-check`), and odw rename config renders the
 same block for a cut root. Spec: docs/specs/workspace-sync.md.
 """
 import pathlib
@@ -73,5 +73,5 @@ def body(found):
 
 
 def render(top, files):
-    """The generated fragment for odapkit sync: the hooks of a repository's check roots."""
+    """The generated fragment for odw sync: the hooks of a repository's check roots."""
     return body(roots(top, files))

@@ -1,7 +1,7 @@
 """Tests for the craft rules as data (tools/craft/rules.toml, tools/craft/craftrules.py).
 
 - golden: tests/fixtures/craft-rules/pcb-craft-standard.md is kicad-lib's craft standard with its rule
-  tables between `odapkit craft rules` markers; rendering it from rules.toml changes nothing, and
+  tables between `odw craft rules` markers; rendering it from rules.toml changes nothing, and
   without the markers it is byte-identical to the standard at kicad-lib 0157d44;
 - every limit a check reads is stated in its rule's row, and every rule cites a source cell;
 - drift: the board and schematic checks take their limits and levels from rules.toml, and each
@@ -28,7 +28,7 @@ RULES = os.path.join(TOOLS, "craft", "rules.toml")
 SCHEMA = os.path.join(ROOT, "schemas", "craft-rules.schema.json")
 TOOLS_PROJECT = os.path.join(ROOT, "tools")
 SPEC = os.path.join(HERE, "fixtures", "craft-rules", "pcb-craft-standard.md")
-TOOL = os.path.join(ROOT, "bin", "odapkit-craft")
+TOOL = os.path.join(ROOT, "bin", "odw-craft")
 # sha256 of kicad/docs/specs/pcb-craft-standard.md at libs v0.1.1 (52fe7dd)
 SPEC_SHA256 = "9386df44dc23d2ba00330d19c2591f2c867f0b611adc4c5fa72dae45ccb92349"
 
