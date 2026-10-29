@@ -61,6 +61,24 @@ def git_env():
     return {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
 
 
+# The tool's own runtime, which a hook of a commit it makes must not inherit (HL-109): uv's virtual environment (first
+# on PATH, so the hook's python3 would be ours, with odw installed) and the folders the dispatcher exports.
+RUNTIME = ("VIRTUAL_ENV", "UV_RUN_RECURSION_DEPTH", "ODAP_TOOLS_DIR")
+
+
+def hook_env():
+    """The environment a plain `git commit` from the maintainer's shell has: git_env() without the tool's runtime
+    (RUNTIME, ODAP_TOOLKIT_*_DIR) and without the virtual environment's bin/ on PATH."""
+    env = git_env()
+    venv = env.get("VIRTUAL_ENV")
+    for k in [k for k in env if k in RUNTIME or (k.startswith("ODAP_TOOLKIT_") and k.endswith("_DIR"))]:
+        del env[k]
+    if venv and "PATH" in env:
+        drop = os.path.join(venv, "bin")
+        env["PATH"] = os.pathsep.join(p for p in env["PATH"].split(os.pathsep) if p.rstrip("/") != drop)
+    return env
+
+
 def tracked(repo):
     out = subprocess.run(["git", "-C", str(repo), "ls-files", "-z"], capture_output=True, check=True, env=git_env()).stdout
     return [p for p in out.decode().split("\0") if p]

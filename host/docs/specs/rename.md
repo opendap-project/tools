@@ -143,7 +143,7 @@ URL text (`Texas-Instruments%20BQ.pdf`), display slashes (`Microchip/Atmel`, `NX
 | `rename.dirty` | The checkout has uncommitted or untracked files, whoever they belong to |
 | `rename.conflict` | The plan has a conflict |
 
-Otherwise it moves every file with `git mv` in two steps through a temporary folder (so case-only renames work on case-insensitive file systems), deletes with `git rm`, removes the folders left empty, and commits the moves alone, so `git log --follow` and blame keep the history. It then writes the rewritten files and commits them separately. Both commits run the root's hooks. The result is the plan document with `mode: apply`, the `base` commit and the two `commits`; `git reset --keep <base>` undoes the cut. Pushing is left to the person running the cut.
+Otherwise it moves every file with `git mv` in two steps through a temporary folder (so case-only renames work on case-insensitive file systems), deletes with `git rm`, removes the folders left empty, and commits the moves alone, so `git log --follow` and blame keep the history. It then writes the rewritten files and commits them separately. Both commits run the root's hooks, in the environment a plain `git commit` has: every git call of the tool drops the tool's own runtime (`audit.hook_env`: uv's virtual environment, first on `PATH` while the tool runs, and the folder variables the dispatcher exports), so a hook's `python3` is never the tool's. The result is the plan document with `mode: apply`, the `base` commit and the two `commits`; `git reset --keep <base>` undoes the cut. Pushing is left to the person running the cut.
 
 ## Config
 

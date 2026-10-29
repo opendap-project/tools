@@ -36,7 +36,7 @@ class Refused(clikit.CliError):
 
 
 def _git(cwd, *args):
-    r = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, env=audit.git_env())
+    r = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, env=audit.hook_env())
     if r.returncode:
         raise Refused("config.git", f"git {' '.join(args[:2])} failed: {r.stderr.strip()}",
                       "the root checkout refused a git operation", f"git -C {cwd} status")

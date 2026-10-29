@@ -53,7 +53,7 @@ class Plan:
 
 
 def _git(cwd, *args, check=True):
-    r = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, env=audit.git_env())
+    r = subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True, env=audit.hook_env())
     if check and r.returncode:
         raise Refused("rename.git", f"git {' '.join(args[:2])} failed: {r.stderr.strip()}",
                       "the root checkout refused a git operation; nothing after it ran", f"git -C {cwd} status")

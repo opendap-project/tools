@@ -22,9 +22,9 @@ class GitError(Exception):
 
 
 def env():
-    """git's environment: no GIT_* from a hook, the caller's identity, and Git LFS pointers left as they are (the
-    merge moves history, never LFS objects, and never downloads them)."""
-    e = audit.git_env()
+    """git's environment: no GIT_* from a hook nor the tool's runtime (audit.hook_env), the caller's identity, and
+    Git LFS pointers left as they are (the merge moves history, never LFS objects, and never downloads them)."""
+    e = audit.hook_env()
     e.update({k: v for k, v in os.environ.items() if k.startswith(KEEP)})
     e["GIT_LFS_SKIP_SMUDGE"] = "1"
     return e
