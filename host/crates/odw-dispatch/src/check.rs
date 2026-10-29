@@ -1,5 +1,5 @@
 //! `odw check` (command standard §7): run a root's `check.toml` stage. The root is the nearest folder at or
-//! above the current directory that holds a `check.toml`; a step runs when the stage selects it and its
+//! above the current directory that holds a `check.toml`, inside its git repository; a step runs when the stage selects it and its
 //! `paths` globs match a changed path (every step when no path is given or it lists none). Each step runs in
 //! the root with stdin closed, its output passed to stderr; a step that `emits = "check-result"` has its
 //! document's results collected under its name. The report is one `opendap.check-result/v1`.
@@ -110,9 +110,15 @@ fn check_error(code: &'static str, message: String, hint: &str, fix: String) -> 
     }
 }
 
-/// The nearest folder at or above `cwd` that holds a `check.toml`.
+/// The nearest folder at or above `cwd` that holds a `check.toml`, inside the git repository `cwd` is in:
+/// the search stops at the repository's top (the folder holding `.git`), so a `check.toml` above it never
+/// runs; outside a repository there is no root.
 pub fn find_root(host: &dyn Host, cwd: &Path) -> Option<PathBuf> {
+    let top = cwd
+        .ancestors()
+        .find(|d| host.list_dir(d).iter().any(|n| n == ".git"))?;
     cwd.ancestors()
+        .take_while(|d| d.starts_with(top))
         .find(|d| host.read_to_string(&d.join(FILE)).is_some())
         .map(Path::to_path_buf)
 }
@@ -375,8 +381,9 @@ pub fn usage(front: &str) -> String {
         "{front} check: Run a root's check.toml stage on the changed paths and collect the results\n\n\
          Usage: {front} check [--stage fast|full|release] [--json] [--dry-run] [PATHS…]\n\n\
          The root is the nearest folder at or above the current directory that holds check.toml\n\
-         (opendap.check/v1). The stage (fast by default; release runs full, then release) runs the steps whose\n\
-         paths globs match a changed path, and every step when no path is given or a step lists none. Steps\n\
+         (opendap.check/v1), inside the git repository: one above the repository never runs. The stage\n\
+         (fast by default; release runs full, then release) runs the steps whose paths globs match a\n\
+         changed path, and every step when no path is given or a step lists none. Steps\n\
          run in the root with stdin closed; their output goes to stderr. A step that emits check-result has its\n\
          results collected under its name. --json prints one opendap.check-result/v1; text names the failures.\n\
          --dry-run names the steps and runs nothing.\n\n\

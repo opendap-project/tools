@@ -42,6 +42,7 @@ run = ["sh", "-c", "touch {m}-extra"]
     );
     f.write("ws/r/src/deep/a.rs", "", false);
     f.write("ws/r/emitted.json", EMITTED, false);
+    f.write("ws/r/.git/HEAD", "ref: refs/heads/main\n", false);
     f
 }
 
@@ -185,4 +186,26 @@ fn usage_and_check_toml_errors_exit_2() {
     let o = f.odw_in(&r, &["check", "--help"], &[]);
     assert_eq!(o.status.code(), Some(0));
     assert!(stdout(&o).starts_with("odw check: "));
+}
+
+#[test]
+fn a_check_toml_above_the_repository_is_never_used() {
+    // The search stops at the repository's top (its .git): a check.toml planted above it never runs.
+    let f = root();
+    let marker = f.dir.join("planted");
+    f.write(
+        "ws/check.toml",
+        &format!("schema = \"opendap.check/v1\"\n[[stage.fast]]\nname = \"x\"\nrun = [\"touch\", \"{}\"]\n", marker.display()),
+        false,
+    );
+    f.write("ws/other/.git", "gitdir: elsewhere\n", false);
+    f.write("ws/other/src/a.rs", "", false);
+    let o = f.odw_in(&f.dir.join("ws/other/src"), &["check"], &[]);
+    assert_eq!(o.status.code(), Some(2));
+    assert!(
+        stderr(&o).contains("error check.not_found:"),
+        "{}",
+        stderr(&o)
+    );
+    assert!(!marker.exists());
 }
