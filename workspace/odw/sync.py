@@ -73,16 +73,26 @@ BLOCK_MARKERS = _markers({})
 FRAGMENTS = {"odw-check": check_hooks.render}
 
 
+def _path_match(path, pattern):
+    """fnmatch over the path from the repository root; a leading `**/` also matches at the root."""
+    return fnmatch.fnmatch(path, pattern) or (pattern.startswith("**/") and fnmatch.fnmatch(path, pattern[3:]))
+
+
+def _tracks(files, names, excepted):
+    """Whether a tracked file's name matches one of `names`, its path matching none of `excepted`."""
+    return any(fnmatch.fnmatch(pathlib.PurePosixPath(f).name, p) and not any(_path_match(f, x) for x in excepted)
+               for f in files for p in names)
+
+
 def render_block(ws, templates, repo, block):
-    """The managed block for `repo`: the fragments whose `when_tracked` patterns match a tracked file, and the
-    generated fragments (`generator`) that render something for it."""
+    """The managed block for `repo`: the fragments whose `when_tracked` patterns match a tracked file (outside the
+    fragment's `when_tracked_except` paths), and the generated fragments (`generator`) that render something for it."""
     b, e = _markers(block)
     files = _tracked(ws, repo)
-    names = [pathlib.PurePosixPath(f).name for f in files]
     parts = []
     for frag in block["fragment"]:
         pats = frag.get("when_tracked")
-        if pats and not any(fnmatch.fnmatch(n, p) for n in names for p in pats):
+        if pats and not _tracks(files, pats, frag.get("when_tracked_except", [])):
             continue
         if "generator" in frag:
             if frag["generator"] not in FRAGMENTS:

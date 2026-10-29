@@ -111,6 +111,24 @@ def test_block_fragments_follow_tracked_files(bws):
     assert "target" not in sync.render_block(bws, bws / "templates", "public/py", sync.blocks(bws / "templates")[0])
 
 
+def test_when_tracked_except_ignores_files_under_those_paths(bws):
+    block = {"target": ".gitignore", "repos": ["public/*"],
+             "fragment": [{"template": "gitignore/rust", "when_tracked": ["x.py"],
+                           "when_tracked_except": ["**/tests/fixtures/**", "**/fixtures/**"]}]}
+    assert sync.render_block(bws, bws / "templates", "public/py", block) is not None   # x.py at the root counts
+    py = bws / "public/py"
+    git(py, "rm", "-q", "--cached", "x.py")
+    for f in ("tests/fixtures/c/x.py", "fixtures/x.py", "a/fixtures/b/x.py"):
+        (py / f).parent.mkdir(parents=True, exist_ok=True)
+        (py / f).write_text("")
+        git(py, "add", f)
+    assert sync.render_block(bws, bws / "templates", "public/py", block) is None        # only fixtures track it
+    (py / "src").mkdir()
+    (py / "src" / "x.py").write_text("")
+    git(py, "add", "src/x.py")
+    assert sync.render_block(bws, bws / "templates", "public/py", block) is not None   # one outside them does
+
+
 def test_missing_block_is_drift_then_apply_inserts_it_and_drops_duplicates(bws):
     states = {(d.repo, d.state) for d in sync.check(bws, bws / "templates")}
     assert states == {("public/r", "no-block"), ("public/py", "no-block")}
