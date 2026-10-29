@@ -65,7 +65,7 @@
             "type": "string"
           },
           "probe": {
-            "description": "The read-only calls whose --json output the conformance test parses: one call (the arguments after the entry), or a list of calls when the tool's scripts answer different calls; {root} is the folder of this tools.toml and {workspace} the workspace (command standard §8 item 5)",
+            "description": "The read-only calls whose --json output the conformance test parses: one call (the arguments after the entry), or a list of calls when the tool's scripts answer different calls, each a list of arguments or a table {call, reaches} naming the script it runs; {root} is the folder of this tools.toml and {workspace} the workspace (command standard §8 item 5)",
             "oneOf": [
               {
                 "type": "array",
@@ -81,14 +81,42 @@
                 "type": "array",
                 "minItems": 1,
                 "items": {
-                  "type": "array",
-                  "minItems": 1,
-                  "items": {
-                    "type": "string"
-                  },
-                  "contains": {
-                    "const": "--json"
-                  }
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "type": "string"
+                      },
+                      "contains": {
+                        "const": "--json"
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "call"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "call": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": {
+                            "type": "string"
+                          },
+                          "contains": {
+                            "const": "--json"
+                          }
+                        },
+                        "reaches": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "The script this call runs, from the folder of this tools.toml: the conformance test credits it with the call's result"
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             ]

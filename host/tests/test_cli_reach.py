@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from odw import cli_conformance, cli_inventory, cli_probe, cli_rules
+from odw import cli_conformance, cli_inventory, cli_probe, cli_rules, schemas
 from test_cli_conformance import HOST, by_name, repo
 
 
@@ -130,3 +130,32 @@ def test_sch_craft_check_is_verified_through_the_craft_probe(tmp_path):
     m = cli_conformance.conformance(tmp_path, items, cli_probe.probe_all(items, tmp_path, timeout=60))
     why = {(c["option"], c["criterion"]): (c["state"], c["why"]) for c in m["results"]}
     assert why[("public/tools/hardware/tools/sch-craft-check.py", "json")][0] == "pass", why
+
+
+# HL-105: a call names the script it reaches (`reaches`, from the tools.toml folder); that script, and only it, is
+# credited by the call.
+def test_the_tools_schema_takes_a_call_that_names_its_script():
+    doc = {"schema": "opendap.tools/v1", "front": "odw", "tool": [{
+        "name": "x", "summary": "s", "entry": "bin/x", "audience": "maintainer", "stability": "preview",
+        "probe": [["a", "--json"], {"call": ["b", "--json"], "reaches": "tools/b.py"}]}]}
+    assert schemas.errors(doc, "tools") == []
+    for bad in ([{"call": ["b"]}], [{"reaches": "tools/b.py"}], [{"call": ["b", "--json"], "colour": "red"}]):
+        doc["tool"][0]["probe"] = bad
+        assert schemas.errors(doc, "tools"), bad
+
+
+def test_a_declared_call_credits_the_script_it_names(tmp_path):
+    ws = _parent_ws(tmp_path)
+    toml = ws / "public/tools/tools.toml"
+    toml.write_text(toml.read_text().replace(
+        'probe = ["a", "--json"]',
+        'probe = [{ call = ["a", "--json"], reaches = "tools/a.py" }, { call = ["b", "--json"], reaches = "tools/b.py" }]'))
+    items = cli_inventory.inventory(ws)
+    par = by_name(items)["odapkit-par"]
+    assert par["json_probe"] == [["a", "--json"], ["b", "--json"]]
+    assert par["json_reaches"] == ["public/tools/tools/a.py", "public/tools/tools/b.py"]
+    m = cli_conformance.conformance(ws, items, cli_probe.probe_all(items, ws, timeout=10))
+    why = {(c["option"], c["criterion"]): (c["state"], c["why"]) for c in m["results"]}
+    for script, schema in (("a", "opendap.a/v1"), ("b", "opendap.b/v1")):
+        state, reason = why[(f"public/tools/tools/{script}.py", "json")]
+        assert state == "pass" and schema in reason, reason

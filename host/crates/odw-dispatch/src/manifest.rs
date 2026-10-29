@@ -36,15 +36,37 @@ pub struct Entry {
 #[serde(untagged)]
 pub enum Probe {
     One(Vec<String>),
-    Many(Vec<Vec<String>>),
+    Many(Vec<Call>),
+}
+
+/// One call of a list: its arguments, or a table naming the script it reaches.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(untagged)]
+pub enum Call {
+    Args(Vec<String>),
+    Reaching(Reaching),
+}
+
+/// `{ call = [...], reaches = "tools/x.py" }`: `reaches` is a path from the tools.toml folder.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Reaching {
+    pub call: Vec<String>,
+    pub reaches: Option<String>,
 }
 
 impl Probe {
-    /// Every call, in order.
+    /// Every call's arguments, in order.
     pub fn calls(&self) -> Vec<Vec<String>> {
         match self {
             Probe::One(call) => vec![call.clone()],
-            Probe::Many(calls) => calls.clone(),
+            Probe::Many(calls) => calls
+                .iter()
+                .map(|c| match c {
+                    Call::Args(a) => a.clone(),
+                    Call::Reaching(r) => r.call.clone(),
+                })
+                .collect(),
         }
     }
 }
@@ -222,6 +244,18 @@ stability = "preview"
         let one = parse_tools(&format!("{GOOD}probe = [\"list\", \"--json\"]\n")).unwrap();
         assert_eq!(one.tool[0].probe.as_ref().unwrap().calls().len(), 1);
         assert!(parse_tools(&format!("{GOOD}probe = [[\"list\", 1]]\n")).is_err());
+    }
+
+    #[test]
+    fn a_probe_call_may_name_the_script_it_reaches() {
+        // HL-105: a call as a table, `reaches` the script it runs (from the tools.toml folder).
+        let f = parse_tools(&format!(
+            "{GOOD}probe = [[\"check\", \"--json\"], {{ call = [\"rules\", \"--json\"], reaches = \"tools/craft/craftrules.py\" }}]\n"
+        ))
+        .unwrap();
+        let p = f.tool[0].probe.as_ref().unwrap();
+        assert_eq!(p.calls()[1], ["rules".to_string(), "--json".into()]);
+        assert!(parse_tools(&format!("{GOOD}probe = [{{ call = [\"x\"], colour = \"red\" }}]\n")).is_err());
     }
 
     #[test]

@@ -48,7 +48,8 @@ audience = "maintainer"       # maintainer | developer | user
 stability = "stable"          # internal | preview | stable | deprecated
 # replaces = "odapkit-stackup" # the name this tool takes over, kept as a deprecated alias
 # probe = ["stack", "{root}/tests/fixtures/stackup/fixture.toml", "--json"]  # a read-only --json call (§8 item 5),
-#   or a list of calls: probe = [["check", "--json", "…"], ["rules", "render", "…", "--json"]]
+#   or a list of calls, each naming the script it runs where that is not the entry itself:
+#   probe = [["check", "--json", "…"], { call = ["rules", "render", "…", "--json"], reaches = "tools/craft/craftrules.py" }]
 ```
 
 Resolution order, first match wins:

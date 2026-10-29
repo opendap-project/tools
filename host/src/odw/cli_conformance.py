@@ -59,9 +59,20 @@ def reached(probes):
     return out
 
 
+def declared(items, probes):
+    """{script path: (parent path, the call's result)} for each call a tools.toml names the script of (`reaches`)."""
+    out = {}
+    for e in items:
+        runs = (probes.get(e["path"]) or {}).get("json_calls", [])
+        for script, j in zip(e.get("json_reaches", []), runs):
+            if script:
+                out[script] = (e["path"], j)
+    return out
+
+
 def conformance(ws, items, probes):
     """The matrix (opendap.matrix/v1) of executables × §5 rules."""
-    ctx = {"summaries": summaries(ws, items), "reached": reached(probes)}
+    ctx = {"summaries": summaries(ws, items), "reached": {**reached(probes), **declared(items, probes)}}
     options = [{"id": e["path"], "name": e["name"], "group": e["root"],
                 "attributes": {"kind": e["kind"], "probed": probes.get(e["path"]) is not None,
                                "not_run": e["probe_skipped"]}} for e in items]

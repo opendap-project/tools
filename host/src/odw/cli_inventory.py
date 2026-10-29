@@ -278,8 +278,18 @@ def _entry(root, path, name, kind, mode, f, built=None):
 
 
 def calls(probe):
-    """A tools.toml `probe` as a list of calls: one call (a list of arguments), or a list of them (HL-105)."""
-    return [list(c) for c in probe] if probe and isinstance(probe[0], list) else [list(probe)]
+    """A tools.toml `probe` as a list of calls: one call (a list of arguments), or a list of calls, each a list of
+    arguments or a table {call, reaches} (HL-105)."""
+    if not probe or isinstance(probe[0], str):
+        return [list(probe)]
+    return [list(c["call"]) if isinstance(c, dict) else list(c) for c in probe]
+
+
+def reaches(probe, base):
+    """The workspace path of the script each call names (`reaches`), None where it names none."""
+    if not probe or isinstance(probe[0], str):
+        return [None]
+    return [f"{base}/{c['reaches']}" if isinstance(c, dict) and c.get("reaches") else None for c in probe]
 
 
 def declarations(ws, root):
@@ -319,6 +329,8 @@ def inventory(ws, roots=None):
             base, tool = declared.get(item["path"], (None, {}))
             if tool.get("probe"):
                 item.update(declared_in=base, json_probe=calls(tool["probe"]))
+                if any(reaches(tool["probe"], base)):
+                    item["json_reaches"] = reaches(tool["probe"], base)
             items.append(item)
         crates = _crates(repo, files)
         for name, crate, entry, deps in _cargo_bins(repo, files):
