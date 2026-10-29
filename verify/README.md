@@ -2,12 +2,12 @@
 
 Verification tooling for OpenDAP: simulations and samples captured from sessions, on the virtual T1 now and on prototypes later. Dedicated lab instruments are not assumed (TK-012).
 
-Part of the [OpenDAP](https://github.com/opendap-project) Developer Toolkit. `odw motion` moved to [`measure/`](../measure/README.md) (HL-71); what is left here is `odap-inject`, which graduates to Blackbird (HL-74), and the verification spec.
+Part of the [OpenDAP](https://github.com/opendap-project) Developer Toolkit. `odw motion` moved to [`measure/`](../measure/README.md) (HL-71); what is left here is `odap-inject`, which graduates to Blackbird (HL-74), and the requirements.
 
 ## Layout
 
 - `crates/odap-inject` — `odap-inject`: touch contacts (`tap`, `swipe`) through uinput on a running instance, for automated tests (development system extension only). `--dry-run` checks the gesture and creates no device; `--json` prints `opendap.inject/v1`; errors carry a dotted code, a hint and a fix
-- `docs/` — requirements and the [verification spec](docs/specs/verification.md): verification levels, the bit-perfect method, the architecture, the first checks and the traceability table
+- `docs/` — requirements; the [verification spec](../workspace/docs/specs/verification.md) (in `workspace/` since HL-71): verification levels, the bit-perfect method, the architecture, the first checks and the traceability table
 
 ## License
 

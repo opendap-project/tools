@@ -11,7 +11,7 @@ priority = "must"
 status = "confirmed"
 [[block.requirement]]
 id = "TK-013"
-text = "The verification method in [`docs/specs/verification.md`](../specs/verification.md) is approved, without lab instruments."
+text = "The verification method in [`workspace/docs/specs/verification.md`](../../../workspace/docs/specs/verification.md) is approved, without lab instruments."
 priority = "must"
 status = "confirmed"
 [[block.requirement]]

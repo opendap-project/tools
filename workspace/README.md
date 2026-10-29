@@ -13,7 +13,7 @@ The maintainers' workspace tools: `odw` itself (dispatch, discovery, `check`, `d
 - `rust-toolchain.toml` — the Rust toolchain `odw` builds with; `setup.sh` builds it from this folder into `target/`
 - `tools.toml` — the tools this folder declares to the maintainers' umbrella command
 - `tests/` — their tests, run by `uv run pytest` from the tools root; the crate's tests run with `cargo test` from this folder
-- `docs/specs/` — the programme plan, the workspace audit, workspace sync and the rename (cut) engine
+- `docs/specs/` — the programme plan, the workspace audit, workspace sync and the rename (cut) engine; and the [verification spec](docs/specs/verification.md) (levels, the bit-perfect method, traceability), from `verify/`
 
 ## License
 
