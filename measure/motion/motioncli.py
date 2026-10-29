@@ -78,7 +78,7 @@ def _host_dir():
     """toolkit-host: host/ of this repository (the merged tools root), else $ODAP_TOOLS_DIR/host (odw sets
     ODAP_TOOLS_DIR), else ODAP_TOOLKIT_HOST_DIR (deprecated; odapkit sets it), else the workspace's repos.tsv."""
     d = HERE
-    sibling = _sibling_host(os.path.join(HERE, "..", ".."))
+    sibling = _sibling_host(os.path.join(HERE, ".."))
     if sibling:
         return sibling
     tools = os.environ.get("ODAP_TOOLS_DIR")  # the tools root, which odw exports: its host/ holds the helpers (HL-71)
@@ -468,7 +468,7 @@ def frames(a):
 
 
 def _main(argv):
-    tools = tomllib.loads(open(os.path.join(HERE, "..", "..", "tools.toml")).read())["tool"]
+    tools = tomllib.loads(open(os.path.join(HERE, "..", "tools.toml")).read())["tool"]
     p = clikit.Parser(prog=TOOL, summary=next(t["summary"] for t in tools if t["name"] == "motion"), description=__doc__.split("\n\n", 1)[1],
                       formatter_class=argparse.RawDescriptionHelpFormatter,
                       examples=["odw motion record --region 0,0,400,300 --seconds 2 --dry-run",

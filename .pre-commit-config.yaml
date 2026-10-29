@@ -114,6 +114,22 @@ repos:
         language: system
         pass_filenames: false
         files: ^image/(?:(bin|lib|tests)/|tools\.toml$)
+  # measure/
+  - repo: local
+    hooks:
+      # odw motion's command-line contract (command standard §6), without a screen or a recording.
+      - id: cli-contract-measure
+        name: measure command-line contract (tests/cli.sh)
+        entry: sh -c 'cd measure && tests/cli.sh'
+        language: system
+        pass_filenames: false
+        files: ^measure/(?:(bin|motion|tests)/|tools\.toml$)
+      - id: motion-tests
+        name: measure odw motion engine tests (tests/test_motion.py; a synthetic recording through ffmpeg)
+        entry: sh -c 'cd measure && python3 -m unittest discover tests'
+        language: system
+        pass_filenames: false
+        files: ^measure/(?:(bin|motion|tests)/|tools\.toml$)
   # verify/
   - repo: local
     hooks:
@@ -124,16 +140,3 @@ repos:
         language: system
         pass_filenames: false
         files: ^verify/docs/requirements/
-      # odw motion's command-line contract (command standard §6), without a screen or a recording.
-      - id: cli-contract-verify
-        name: verify command-line contract (tests/cli.sh)
-        entry: sh -c 'cd verify && tests/cli.sh'
-        language: system
-        pass_filenames: false
-        files: ^verify/(?:(bin|tools|tests)/|tools\.toml$)
-      - id: motion-tests
-        name: verify odw motion engine tests (tests/test_motion.py; a synthetic recording through ffmpeg)
-        entry: sh -c 'cd verify && python3 -m unittest discover tests'
-        language: system
-        pass_filenames: false
-        files: ^verify/(?:(bin|tools|tests)/|tools\.toml$)

@@ -68,18 +68,18 @@ def run(argv, cwd, env=None):
     return subprocess.run(argv, capture_output=True, text=True, cwd=cwd, env={**ENV, **(env or {})},
                           stdin=subprocess.DEVNULL, timeout=60)
 
-FOLDER = "verify"
-FILES = ['tools/motion/motioncli.py']
+FOLDER = "measure"
+FILES = ['motion/motioncli.py']
 
 
 def probe_py(mine, env):
-    """The odw.clikit tools/motion/motioncli.py loads; None when it stops with repo.not_found."""
-    p = run([sys.executable, "-c", "import sys; sys.path.insert(0, 'tools/motion'); import motioncli; print(motioncli.clikit.MARK)"], mine, env)
+    """The odw.clikit motion/motioncli.py loads; None when it stops with repo.not_found."""
+    p = run([sys.executable, "-c", "import sys; sys.path.insert(0, 'motion'); import motioncli; print(motioncli.clikit.MARK)"], mine, env)
     return p.stdout.strip() if p.returncode == 0 else None
 
 
 class MotionHelpers(unittest.TestCase):
-    """tools/motion/motioncli.py: host/ of the same repository first (the merged tools root), then
+    """motion/motioncli.py: host/ of the same repository first (the merged tools root), then
     $ODAP_TOOLS_DIR/host, then ODAP_TOOLKIT_HOST_DIR (deprecated), then
     the toolkit-host row of repos.tsv. Built in both toolkit layouts."""
 
