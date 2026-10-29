@@ -42,7 +42,7 @@ fi
 [ -d "$lib" ] || cli_fail "sysroot.missing" "no sysroot at $sysroot" "cross builds link against the image's sysroot" \
   "odw sysroot install"
 command -v cargo-zigbuild >/dev/null || cli_fail "tool.missing" "cargo-zigbuild not found" \
-  "the toolkit-host setup installs it" "\"\${ODAP_TOOLS_DIR:-<tools>}/host/setup.sh\""
+  "env/setup.sh installs it" "\"\${ODAP_TOOLS_DIR:-<tools>}/env/setup.sh\""
 
 export PKG_CONFIG_ALLOW_CROSS=1
 export PKG_CONFIG_SYSROOT_DIR="$sysroot"

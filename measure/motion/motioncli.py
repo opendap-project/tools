@@ -31,7 +31,7 @@ Usage: odw motion record (--region X,Y,W,H [--screen N] | --qmp SOCKET [--keys Q
 nothing. analyze --json prints opendap.motion-analysis/v1. Errors carry a dotted code, a hint and a
 fix (odw.clikit from toolkit-host; with --json, also an opendap.error/v1 document on stdout).
 
-Times are in seconds from the recording's start. Needs ffmpeg (toolkit-host's Brewfile). On macOS
+Times are in seconds from the recording's start. Needs ffmpeg (env/Brewfile). On macOS
 the terminal needs the Screen Recording permission once. The capture is the host's: what it says
 of frame pacing covers the whole chain on screen (for the virtual T1: the guest, VNC, the
 simulator window, the host's compositor).
@@ -515,7 +515,7 @@ def _main(argv):
     fr.add_argument("--dry-run", action="store_true", help="pick the frames and write nothing")
     a = p.parse_args(argv)
     if not all(run_ok(t) for t in ("ffmpeg", "ffprobe")):
-        die("needs ffmpeg and ffprobe", 1, err="tool.missing", hint="they come with toolkit-host's Brewfile",
+        die("needs ffmpeg and ffprobe", 1, err="tool.missing", hint="they come with env/Brewfile",
             fix="brew install ffmpeg")
     {"record": record, "analyze": analyze, "frames": frames}[a.cmd](a)
     return 0

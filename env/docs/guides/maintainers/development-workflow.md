@@ -37,7 +37,7 @@ On a Linux host the build VM is optional: mkosi can run on the host itself. Only
 | Image builder | mkosi in the build VM | toolkit-image `odw image` |
 | Development key | One ed25519 key, host-wide in `~/.local/share/opendap/dev-ssh` | toolkit-image `odw dev-key` |
 | Emulator | QEMU with HVF on macOS, built from its pinned release with the patches OpenDAP carries (`env/qemu/patches/`: the D-Bus display's sound); socket_vmnet for a LAN address | `bin/odw qemu install` (its build tools from `Brewfile`); `bin/odw vmnet install` |
-| Maintainers' command | `odw` ([command standard](../../../core/docs/specs/command-standard.md) §1–§4), a Rust binary from `workspace/crates/odw-dispatch`, built with the pinned Rust into this checkout's `target/release/odw` and linked as `~/.local/bin/odw`; `bin/odapkit` runs it under its earlier name and is linked as `~/.local/bin/odapkit` | `setup.sh` (`cargo build --release --locked --manifest-path crates/odw-dispatch/Cargo.toml --target-dir target`) |
+| Maintainers' command | `odw` ([command standard](../../../../core/docs/specs/command-standard.md) §1–§4), a Rust binary from `workspace/crates/odw-dispatch`, built with the pinned Rust into this checkout's `target/release/odw` and linked as `~/.local/bin/odw`; `bin/odapkit` runs it under its earlier name and is linked as `~/.local/bin/odapkit` | `setup.sh` (`cargo build --release --locked --manifest-path crates/odw-dispatch/Cargo.toml --target-dir target`) |
 
 - **Sysroot.** Linking against libinput, libseat, GBM, EGL, Wayland or ALSA needs the target's headers and libraries.
   - It is built from the image definition, so binaries link against exactly what the image ships.

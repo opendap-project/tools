@@ -1,6 +1,6 @@
-# OpenDAP developer host tools (macOS). Install with: brew bundle --file=host/Brewfile
+# OpenDAP developer host tools (macOS). Install with: brew bundle --file=env/Brewfile
 # Design applications (KiCad 10, FreeCAD 1.1, Blender 5.2) are installed from their official
-# installers; host/setup.sh checks their versions.
+# installers; env/setup.sh checks their versions.
 
 # Repository hygiene
 brew "git-lfs"

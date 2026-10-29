@@ -50,7 +50,7 @@ odw_dir="$(cd "$here/../workspace" && pwd)"
   --manifest-path crates/odw-dispatch/Cargo.toml --target-dir target)
 mkdir -p "$HOME/.local/bin"
 ln -sf "$odw_dir/target/release/odw" "$HOME/.local/bin/odw"
-ln -sf "$here/bin/odapkit" "$HOME/.local/bin/odapkit"
+ln -sf "$here/../host/bin/odapkit" "$HOME/.local/bin/odapkit"
 case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) echo "Add ~/.local/bin to PATH to run odw and odapkit" >&2 ;; esac
 echo "linked ~/.local/bin/odw and ~/.local/bin/odapkit; odw help lists the tools"
 

@@ -23,5 +23,5 @@ case "${1:-}" in
   "") cli_header "$self" 15; exit 2 ;;
 esac
 command -v python3 >/dev/null 2>&1 || cli_fail "tool.missing" "python3 not found" \
-  "the composition runs with Python 3.11 or later" "\"\${ODAP_TOOLS_DIR:-<tools>}/host/setup.sh\""
+  "the composition runs with Python 3.11 or later" "\"\${ODAP_TOOLS_DIR:-<tools>}/env/setup.sh\""
 exec python3 "$here/hooks/kicad-dru.py" "$@"

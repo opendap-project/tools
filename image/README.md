@@ -14,7 +14,7 @@ Each tool is an `odapkit-<tool>` executable in `bin/`, run as `odapkit <tool>` t
 | `odw dev-key [create\|path\|tree] [--dry-run] [--json]` | The development SSH key that `qemu` images accept, kept host-wide in `~/.local/share/opendap/dev-ssh` (`opendap.dev-key/v1`) |
 | `odw security-check [--json] [--dry-run]` | Checks built images' package manifests against Debian's security, updates and backports archives; `--json` prints `opendap.check-result/v1`, `--dry-run` does not record the run |
 
-Run them as `odapkit <tool>` (toolkit-host `setup.sh` links `odapkit` into `~/.local/bin`), or call them by path. Host prerequisites: toolkit-host `setup.sh` (Lima, zig, cargo-zigbuild, QEMU). Process: [development workflow](../host/docs/specs/development-workflow.md).
+Run them as `odapkit <tool>` (`env/setup.sh` links `odapkit` into `~/.local/bin`), or call them by path. Host prerequisites: `env/setup.sh` (Lima, zig, cargo-zigbuild, QEMU). Process: [development workflow](../env/docs/guides/maintainers/development-workflow.md).
 
 ## Layout
 

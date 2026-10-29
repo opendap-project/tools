@@ -85,7 +85,7 @@ echo "== Documents and 3D"
 "$kicad_cli" pcb export ipc2581 --output "$out/$name.xml" "$pcb" >>"$log" 2>&1 || echo "WARNING: IPC-2581 export failed" >&2
 echo "== Interactive HTML BOM"
 "$kicad_py" -m InteractiveHtmlBom.generate_interactive_bom --no-browser --dest-dir "$out" --name-format "%f-ibom" "$pcb" >>"$log" 2>&1 \
-  || echo "WARNING: Interactive HTML BOM failed (install it with toolkit host/setup.sh)" >&2
+  || echo "WARNING: Interactive HTML BOM failed (install it with env/setup.sh)" >&2
 {
   echo "Fab package: $name"
   echo "Source revision: $rev"

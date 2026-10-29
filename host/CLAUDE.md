@@ -1,8 +1,7 @@
-# Toolkit host setup
+# Toolkit host
 
-Developer host setup for OpenDAP: the tools, toolchains and checks every contributor installs. Everything runs locally; there is no CI.
+The `odapkit` alias, until the `tools` cut retires it; the host setup is in `env/`, `odw` in `workspace/` (HL-71).
 
 ## Working here
 
-- Requirements are edited in the tools root's `docs/requirements/requirements.toml` (HL-71); its README is rendered with `odw req render` and never edited by hand.
-- The toolkit is one repository per tool domain under `public/toolkit/` (`host`, `image`, `hardware`, `verify`, `hooks`); the `opendap` CLI is user-side and lives in `cli`, outside the toolkit. Use another toolkit repository through its documented interface, not its internals.
+- `bin/odapkit` runs the `odw` its checkout built (`workspace/target/release/odw`), else the one on `PATH`; it sets `ODAP_TOOLS_DIR` to its tools root.

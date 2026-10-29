@@ -29,8 +29,8 @@ here="$(cd "$(dirname "$0")" && pwd)"
 . "$here/../lib/odapkit.sh"
 vm="${ODAP_BUILD_VM:-blackbird-os-build}"
 need_lima() {
-  command -v limactl >/dev/null || cli_fail "tool.missing" "limactl not found" "Lima comes with toolkit-host's Brewfile" \
-    "brew bundle --file \"\${ODAP_TOOLS_DIR:-<tools>}/host/Brewfile\""
+  command -v limactl >/dev/null || cli_fail "tool.missing" "limactl not found" "Lima comes with env/Brewfile" \
+    "brew bundle --file \"\${ODAP_TOOLS_DIR:-<tools>}/env/Brewfile\""
 }
 
 vm_status() { need_lima; limactl list --format '{{.Status}}' "$vm" 2>/dev/null || echo absent; }
