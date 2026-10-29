@@ -3,15 +3,6 @@ schema = "opendap.tools/v1"
 front = "odw"
 
 [[tool]]
-name = "component"
-summary = "Validate a component's export/component.yaml against the component export contract"
-entry = "bin/odw-component"
-replaces = "odapkit-component"
-audience = "maintainer"
-stability = "preview"
-probe = ["validate", "--json", "{root}/tests/fixtures/component/board"]
-
-[[tool]]
 name = "craft"
 summary = "Check a KiCad board, schematic or symbol library against the OpenDAP craft standard, by level"
 entry = "bin/odw-craft"

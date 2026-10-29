@@ -98,12 +98,15 @@ SOURCED = re.compile(r'^\s*\.\s+.*?/([\w.-]+/[\w.-]+\.sh)"?\s*$', re.M)
 
 def _resolve(repo, files, token):
     """The tracked file a `python -m X`, `$here/x.py` or `from X import` names, if this repository has it."""
+    def named(f, tail):  # the whole name: `validate.py` is never `test_validate.py` (HL-71)
+        return f == tail or f.endswith("/" + tail)
+
     if token.endswith(".py") or "/" in token:
         tail = token.lstrip("./")
-        hits = [f for f in files if f.endswith(tail)]
+        hits = [f for f in files if named(f, tail)]
     else:
         tail = token.replace(".", "/")
-        hits = [f for f in files if f.endswith(f"{tail}.py") or f.endswith(f"{tail}/__init__.py")]
+        hits = [f for f in files if named(f, f"{tail}.py") or named(f, f"{tail}/__init__.py")]
     return hits[0] if hits else None
 
 

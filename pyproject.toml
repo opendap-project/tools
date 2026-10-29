@@ -28,6 +28,6 @@ dev-mode-dirs = ["core", "documentation", "host/src"]
 "host/tools.toml" = "odw/tools/host.toml"
 
 [tool.pytest.ini_options]
-testpaths = ["core/tests", "documentation/tests", "host/tests", "schemas/tests"]
+testpaths = ["core/tests", "core/component/tests", "documentation/tests", "host/tests", "schemas/tests"]
 pythonpath = ["core/tests"]  # clifixtures, the helpers several domains' tests share
 markers = ["slow: builds the package"]

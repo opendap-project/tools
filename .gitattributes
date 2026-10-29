@@ -19,3 +19,6 @@
 *.tif filter=lfs diff=lfs merge=lfs -text
 *.tiff filter=lfs diff=lfs merge=lfs -text
 # <<< odapkit sync
+
+# Test fixtures stay plain blobs in every domain folder (they were committed before the LFS patterns applied).
+**/tests/fixtures/** !filter !diff !merge

@@ -73,6 +73,7 @@ if sys.version_info < (3, 11):
 import tomllib
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "..", "core"))  # core/: clihost (HL-71); last: core/kicad never shadows
 from clihost import load, summary  # noqa: E402
 
 TOOL = "odw sim"

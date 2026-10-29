@@ -81,7 +81,7 @@ def run(argv, cwd, env=None):
                           stdin=subprocess.DEVNULL, timeout=60)
 
 FOLDER = "hardware"
-FILES = ['lib/cli.sh', 'tools/clihost.py']
+FILES = ['lib/cli.sh']  # clihost.py is core's since HL-71 (core/tests/test_clihost.py)
 
 
 def probe_sh(mine, env):
@@ -93,12 +93,6 @@ def probe_sh(mine, env):
     os.chmod(exe, 0o755)
     out = run([exe], mine, env).stdout.strip()
     return out.removeprefix("helpers of ") if out else None
-
-
-def probe_py(mine, env):
-    """The odw.clikit tools/clihost.py loads; None when it stops with repo.not_found."""
-    p = run([sys.executable, "-c", "import sys; sys.path.insert(0, 'tools'); import clihost; print(clihost.load('t').MARK)"], mine, env)
-    return p.stdout.strip() if p.returncode == 0 else None
 
 
 class ShellHelpers(unittest.TestCase):
@@ -119,56 +113,6 @@ class ShellHelpers(unittest.TestCase):
                 os.makedirs(os.path.join(tmp, "aroot", "host"))
                 extra = {"ODAP_TOOLKIT_HOST_DIR": os.path.join(tmp, "aroot", "host")}
             return probe_sh(mine, extra)
-
-    def test_today_reads_the_toolkit_host_row(self):
-        self.assertEqual(self.found("today"), "host")
-
-    def test_today_the_variable_moves_it(self):
-        self.assertEqual(self.found("today", env=True), "elsewhere")
-
-    def test_merged_finds_host_beside_it(self):
-        self.assertEqual(self.found("merged"), "host")
-
-    def test_merged_host_beside_it_comes_before_the_variable(self):
-        self.assertEqual(self.found("merged", env=True), "host")
-
-    def test_merged_without_host_takes_the_variable(self):
-        self.assertEqual(self.found("merged", env=True, host=False), "elsewhere")
-
-    def test_merged_without_host_or_variable_finds_none(self):
-        self.assertIsNone(self.found("merged", host=False))
-
-    def test_merged_without_host_takes_the_tools_root(self):
-        self.assertEqual(self.found("merged", host=False, tools=True), "troot")
-
-    def test_the_tools_root_comes_before_the_deprecated_variable(self):
-        self.assertEqual(self.found("merged", env=True, host=False, tools=True), "troot")
-
-    def test_merged_host_beside_it_comes_before_the_tools_root(self):
-        self.assertEqual(self.found("merged", host=True, tools=True), "host")
-
-    def test_the_deprecated_variable_on_a_tools_host_finds_its_core(self):
-        self.assertEqual(self.found("merged", host=False, alias_on_tools=True), "aroot")
-
-
-class PythonHelpers(unittest.TestCase):
-    """tools/clihost.py: host/ of the same repository first (the merged tools root), then
-    $ODAP_TOOLS_DIR/core, then ODAP_TOOLKIT_HOST_DIR (deprecated; its sibling core/ when it is host/ of a
-    tools root), then
-    the toolkit-host row of repos.tsv. Built in both toolkit layouts."""
-
-    def found(self, layout, env=False, host=True, tools=False, alias_on_tools=False):
-        with tempfile.TemporaryDirectory() as tmp:
-            mine = build(tmp, layout, FOLDER, FILES, host)
-            extra = {"ODAP_TOOLKIT_HOST_DIR": os.path.join(tmp, "elsewhere")} if env else {}
-            if tools or alias_on_tools:  # ODAP_TOOLS_DIR: the tools root, whose host/ holds the helpers (HL-71)
-                fake_core(os.path.join(tmp, "troot", "core"), "troot")
-                extra["ODAP_TOOLS_DIR"] = os.path.join(tmp, "troot")
-            if alias_on_tools:  # the deprecated variable names host/ of a tools root: its sibling core/ (HL-71)
-                fake_core(os.path.join(tmp, "aroot", "core"), "aroot")
-                os.makedirs(os.path.join(tmp, "aroot", "host"))
-                extra = {"ODAP_TOOLKIT_HOST_DIR": os.path.join(tmp, "aroot", "host")}
-            return probe_py(mine, extra)
 
     def test_today_reads_the_toolkit_host_row(self):
         self.assertEqual(self.found("today"), "host")

@@ -39,7 +39,7 @@ The schema is [`schemas/component.schema.json`](../../../schemas/component.schem
 
 Besides the schema, the validator checks that interface names and file paths are listed once, that every listed file exists inside `export/`, and warns about files in `export/` that are not listed (`README.md` is not an exported file).
 
-Minimal example, a board that exports electronics and renders (illustrative: the names, versions and files are placeholders, not the T1 board's export; it is the test fixture `tests/fixtures/component/board/export/component.yaml`):
+Minimal example, a board that exports electronics and renders (illustrative: the names, versions and files are placeholders, not the T1 board's export; it is the test fixture `core/component/tests/fixtures/board/export/component.yaml`):
 
 ```yaml
 name: board

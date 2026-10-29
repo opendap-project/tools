@@ -290,6 +290,19 @@ def test_the_tool_passes_its_own_test_on_a_copy(tmp_path):
     _conforms(tmp_path)
 
 
+def test_closure_resolves_a_module_by_its_whole_name_not_a_suffix(tmp_path):
+    """HL-71: `from validate import main` is validate.py, never tests/test_validate.py, which sorts first."""
+    (tmp_path / "bin").mkdir()
+    (tmp_path / "component/tests").mkdir(parents=True)
+    (tmp_path / "bin/odw-x").write_text('#!/bin/sh\nexec python3 "$here/component/__main__.py" "$@"\n')
+    (tmp_path / "component/__main__.py").write_text("from validate import main\n")
+    (tmp_path / "component/validate.py").write_text("def main():\n    pass\n")
+    (tmp_path / "component/tests/test_validate.py").write_text('open("x", "w")\n')
+    files = ["bin/odw-x", "component/__main__.py", "component/tests/test_validate.py", "component/validate.py"]
+    sources = [p for p, _ in cli_inventory._closure(tmp_path, files, "bin/odw-x")]
+    assert "component/validate.py" in sources and "component/tests/test_validate.py" not in sources
+
+
 def test_closure_follows_modules_named_by_from_imports(tmp_path):
     (tmp_path / "bin").mkdir()
     (tmp_path / "src/pkg").mkdir(parents=True)
@@ -364,8 +377,8 @@ def test_the_tools_schema_takes_a_list_of_probe_calls():
         assert schemas.errors(doc, "tools"), bad
 
 
-MIGRATED = {"core": {"cli"}, "documentation": {"docs", "req", "verify"}, "host": {"audit", "noindex", "plan", "rename", "sync"},
-            "hardware": {"component", "craft", "sim", "variant", "stackup"}}
+MIGRATED = {"core": {"cli", "component"}, "documentation": {"docs", "req", "verify"}, "host": {"audit", "noindex", "plan", "rename", "sync"},
+            "hardware": {"craft", "sim", "variant", "stackup"}}
 
 
 @pytest.mark.skipif(not (HOST.parent / "hardware" / "tools.toml").is_file(), reason="not the merged tools root")

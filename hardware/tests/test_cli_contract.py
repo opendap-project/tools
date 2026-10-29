@@ -58,7 +58,7 @@ class Plugins(unittest.TestCase):
             self.assertEqual(r.stdout.splitlines()[0], f"odw {name}: {TOOLS[name]}", name)
 
     def test_unknown_flag_exits_2_with_a_code_a_hint_and_a_fix(self):
-        for name in ["component", "craft", "parts", "sim", "variant"]:
+        for name in ["craft", "parts", "sim", "variant"]:
             if name not in PLUGINS:
                 continue
             r = run(tool(name), "--odw-no-such-flag")

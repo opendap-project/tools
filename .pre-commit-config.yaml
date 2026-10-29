@@ -57,7 +57,7 @@ repos:
         entry: sh -c 'cd hardware && python3 -m unittest tests.test_craft_rules tests.test_sexpr_model'
         language: system
         pass_filenames: false
-        files: ^hardware/(tools/craft/|tools/(pcb|sch)-craft-check\.py$|tests/test_(craft_rules|sexpr_model)\.py$|tests/fixtures/craft-rules/|schemas/craft-rules\.schema\.json$)
+        files: ^(?:core/kicad/|hardware/(tools/craft/|tools/(pcb|sch)-craft-check\.py$|tests/test_(craft_rules|sexpr_model)\.py$|tests/fixtures/craft-rules/|schemas/craft-rules\.schema\.json$))
       # odw render (RFC 0021): normalisation, manifests and stamps; the KiCad, FreeCAD and Blender
       # adapters when their programs are installed.
       - id: render-tests
@@ -65,14 +65,14 @@ repos:
         entry: sh -c 'cd hardware && python3 -m unittest tests.test_render'
         language: system
         pass_filenames: false
-        files: ^hardware/(tools/render/|tests/test_render\.py$|tests/fixtures/render/|bin/odw-render$)
+        files: ^(?:core/clihost\.py$|hardware/(tools/render/|tests/test_render\.py$|tests/fixtures/render/|bin/odw-render$))
       # Every tool's command-line contract, without KiCad, ngspice or the network.
       - id: cli-contract-hardware
         name: hardware command-line contract and the toolkit-host lookup (tests/test_cli_contract.py, tests/test_host_lookup.py)
         entry: sh -c 'cd hardware && python3 -m unittest tests.test_cli_contract tests.test_host_lookup'
         language: system
         pass_filenames: false
-        files: ^hardware/(?:(bin|lib|tools|tests)/|tools\.toml$)
+        files: ^(?:core/clihost\.py$|hardware/(?:(bin|lib|tools|tests)/|tools\.toml$))
   # hooks/
   - repo: local
     hooks:
@@ -91,7 +91,7 @@ repos:
         entry: uv run --quiet pytest -q
         language: system
         pass_filenames: false
-        files: ^(?:(?:core|documentation|host)/(?:odw|src|tests|bin|lib)/|(?:core|documentation|host)/tools\.toml$|schemas/|pyproject\.toml$|uv\.lock$|conftest\.py$)
+        files: ^(?:(?:core|documentation|host)/(?:odw|src|tests|bin|lib|component)/|core/clihost\.py$|(?:core|documentation|host)/tools\.toml$|schemas/|pyproject\.toml$|uv\.lock$|conftest\.py$)
       # The odw dispatch crate: its unit and fixture-workspace tests, built into this checkout's target/.
       - id: odw-dispatch-tests
         name: host odw dispatch tests (cargo test)

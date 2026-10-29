@@ -10,3 +10,12 @@ replaces = "odapkit-cli"
 audience = "maintainer"
 stability = "preview"
 probe = ["list", "--workspace", "{workspace}", "--root", "public/tools", "--json"]
+
+[[tool]]
+name = "component"
+summary = "Validate a component's export/component.yaml against the component export contract"
+entry = "bin/odw-component"
+replaces = "odapkit-component"
+audience = "maintainer"
+stability = "preview"
+probe = ["validate", "--json", "{root}/component/tests/fixtures/board"]

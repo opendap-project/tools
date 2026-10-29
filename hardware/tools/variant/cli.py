@@ -16,6 +16,7 @@ if sys.version_info < (3, 11):
 HERE = os.path.dirname(os.path.realpath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
+sys.path.append(os.path.join(ROOT, "..", "core"))  # core/: clihost (HL-71); last: core/kicad never shadows
 sys.path.insert(0, HERE)
 from clihost import load  # noqa: E402
 

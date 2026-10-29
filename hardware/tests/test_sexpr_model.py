@@ -1,4 +1,4 @@
-"""Tests for tools/craft/sexpr.py, the one S-expression model of both craft checks, without KiCad.
+"""Tests for core/kicad/sexpr.py, the one S-expression model of both craft checks, without KiCad.
 
 Run from the repository root: python3 -m unittest tests.test_sexpr_model
 """
@@ -9,6 +9,7 @@ import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "tools", "craft"))
+sys.path.insert(0, os.path.join(HERE, "..", "..", "core", "kicad"))  # core/kicad: the S-expression model (HL-71)
 import pcbmodel  # noqa: E402
 import sexpr  # noqa: E402
 

@@ -57,6 +57,7 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "core"))  # core/: clihost (HL-71); last: core/kicad never shadows
 from clihost import load as load_clikit, summary  # noqa: E402
 
 import core  # noqa: E402

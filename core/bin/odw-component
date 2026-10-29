@@ -1,0 +1,6 @@
+#!/bin/sh
+# odw component: a thin entry point; the engine, and its --help, is component/ (run as component/__main__.py
+# in the hardware tools' environment: pyyaml and jsonschema, pinned in hardware/tools/uv.lock, until HL-71 phase 5).
+self="$(readlink -f "$0" 2>/dev/null || echo "$0")"
+here="$(cd "$(dirname "$self")/.." && pwd)"
+exec uv run --quiet --locked --project "$here/../hardware/tools" python3 "$here/component/__main__.py" "$@"

@@ -45,6 +45,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "craft"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "core", "kicad"))  # core/kicad: the S-expression model (HL-71)
 import craftrules  # noqa: E402  (tools/craft: the rules as data, tools/craft/rules.toml)
 import pcbmodel  # noqa: E402  (tools/craft: the board model and its helpers)
 import pcbreport  # noqa: E402  (tools/craft: the DRC fold, the configuration and the report)

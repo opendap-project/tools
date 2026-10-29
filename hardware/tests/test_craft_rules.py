@@ -33,6 +33,7 @@ TOOL = os.path.join(ROOT, "bin", "odw-craft")
 SPEC_SHA256 = "cacec20514c4b46e8e159b2d52490d580cf8f1f3e9eab0737d5d7d6c7ea8ec48"
 
 sys.path.insert(0, os.path.join(TOOLS, "craft"))
+sys.path.insert(0, os.path.join(TOOLS, "..", "..", "core", "kicad"))  # core/kicad: the S-expression model (HL-71)
 import craftrules  # noqa: E402
 
 # Tests never inherit a hook's GIT_* variables (HL-64): under pre-commit, git exports GIT_DIR, GIT_INDEX_FILE and

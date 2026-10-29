@@ -28,8 +28,8 @@ import jsonschema
 import yaml
 
 HERE = os.path.dirname(os.path.realpath(__file__))
-SCHEMA = os.path.join(HERE, "..", "..", "..", "schemas", "component.schema.json")  # the schemas domain (HL-71)
-sys.path.insert(0, os.path.join(HERE, ".."))
+SCHEMA = os.path.join(HERE, "..", "..", "schemas", "component.schema.json")  # the schemas domain (HL-71)
+sys.path.insert(0, os.path.join(HERE, ".."))  # core/: clihost
 from clihost import load, summary  # noqa: E402
 
 TOOL = "odw component"

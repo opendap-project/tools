@@ -100,6 +100,7 @@ class Craft(unittest.TestCase):
 
 
 sys.path.insert(0, os.path.join(HERE, "..", "tools", "craft"))
+sys.path.insert(0, os.path.join(HERE, "..", "..", "core", "kicad"))  # core/kicad: the S-expression model (HL-71)
 import pin1  # noqa: E402  (the CRAFT-13 geometry, pure Python)
 
 
