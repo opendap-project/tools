@@ -134,8 +134,8 @@ def urls(text, sources, root, paths_of, path=""):
         s = sources.get(name.removesuffix(".git"))
         if s is None or s.landing is None or (kind and ref not in MOVABLE_REFS):
             return m.group(0)
-        if s.name == s.root and any(path == d or path.startswith(d + "/") for d in landed.get(s.root, ())):
-            return m.group(0)
+        if s.name == s.root and (not path or any(path == d or path.startswith(d + "/") for d in landed.get(s.root, ()))):
+            return m.group(0)  # the root's own URL, or already under one of its landing folders
         base = f"{s.landing}/{path}".strip("/") if s.landing else path
         new_path = paths_of(s.root).map(base) if base else base
         if new_path is None:

@@ -2,6 +2,7 @@
 
 Usage: odapkit rename merge ROOT --into DIR [...]   (step 2, the history merge: odw/rename_merge.py)
        odapkit rename config ROOT [...]             (step 4, the shared configuration: odw/rename_config.py)
+       odapkit rename links [...]                   (after the cuts, the workspace-wide link check: odw/rename_links.py)
        odapkit rename (plan | apply | check) ROOT [--workspace DIR] [--map TSV] [--root-dir DIR] [--cut ROOTS]
        [--landing REPO=DIR] [--kind KINDS] [--structure-only] [--dry-run] [--json | --text]
 
@@ -13,6 +14,7 @@ never pushes; check reports the old names left (opendap.check-result/v1). Exit s
 import argparse
 import dataclasses
 import datetime as dt
+import importlib
 import json
 import os
 import pathlib
@@ -446,12 +448,9 @@ def _emit(doc, as_json, text):
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
-    if argv[:1] == ["merge"]:
-        from odw import rename_merge
-        return rename_merge.main(argv[1:])
-    if argv[:1] == ["config"]:
-        from odw import rename_config
-        return rename_config.main(argv[1:])
+    sub = {"merge": "rename_merge", "config": "rename_config", "links": "rename_links"}.get(argv[0] if argv else "")
+    if sub:  # verbs with options of their own
+        return importlib.import_module(f"odw.{sub}").main(argv[1:])
     return clikit.main(TOOL, _main, argv)
 
 
